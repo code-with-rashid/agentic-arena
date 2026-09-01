@@ -1,0 +1,159 @@
+{
+  "_comment": "Every scenario injects one deliberate model/tool fault, then supplies the correct answer on the next turn. A framework that recovers reaches turn 2 and passes; one that crashes or gives up does not. `deliberate_fault` marks scenarios whose faults `arena validate` must not flag.",
+  "scenarios": [
+    {
+      "match": "17 * 23 + 4",
+      "deliberate_fault": "calculator called with malformed JSON arguments",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": "{\"expr\": 17 * 23 + 4"
+            }
+          ]
+        },
+        {
+          "content": "17 * 23 + 4 = 395."
+        }
+      ]
+    },
+    {
+      "match": "144 / 12 - 5",
+      "deliberate_fault": "a tool that does not exist",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "teleport",
+              "arguments": {
+                "destination": "mars"
+              }
+            }
+          ]
+        },
+        {
+          "content": "144 / 12 - 5 = 7."
+        }
+      ]
+    },
+    {
+      "match": "2 to the power of 10",
+      "deliberate_fault": "calculator given an unevaluable expression, returns ERROR",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "two ** ten"
+              }
+            }
+          ]
+        },
+        {
+          "content": "2 to the power of 10 is 1024."
+        }
+      ]
+    },
+    {
+      "match": "15 percent of 240",
+      "deliberate_fault": "required argument missing entirely",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {}
+            }
+          ]
+        },
+        {
+          "content": "15 percent of 240 is 36."
+        }
+      ]
+    },
+    {
+      "match": "1368 subtracted from 1644",
+      "deliberate_fault": "an extra argument the tool does not accept",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "1644 - 1368",
+                "rounding": "banker"
+              }
+            }
+          ]
+        },
+        {
+          "content": "That is 276."
+        }
+      ]
+    },
+    {
+      "match": "years separate 1991 and 2008",
+      "deliberate_fault": "search called with an empty query, returns No results.",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": ""
+              }
+            }
+          ]
+        },
+        {
+          "content": "They are 17 years apart."
+        }
+      ]
+    },
+    {
+      "match": "330 multiplied by 3.28084",
+      "deliberate_fault": "an expression the safe evaluator must refuse",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "__import__('os').system('echo hi')"
+              }
+            }
+          ]
+        },
+        {
+          "content": "330 metres is about 1082.7 feet."
+        }
+      ]
+    },
+    {
+      "match": "8849 minus 227",
+      "deliberate_fault": "arguments serialised as JSON null instead of an object",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": "null"
+            }
+          ]
+        },
+        {
+          "content": "The difference is 8622."
+        }
+      ]
+    }
+  ],
+  "default": {
+    "turns": [
+      {
+        "content": "I could not find a confident answer."
+      }
+    ]
+  }
+}

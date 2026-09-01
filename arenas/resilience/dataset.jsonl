@@ -1,0 +1,8 @@
+{"id": "res-01", "input": "What is 17 * 23 + 4?", "note": "calculator called with malformed JSON arguments", "checks": [{"type": "numeric_equals", "value": 395, "tol": 0.5}]}
+{"id": "res-02", "input": "What is 144 / 12 - 5?", "note": "a tool that does not exist", "checks": [{"type": "numeric_equals", "value": 7, "tol": 0.5}]}
+{"id": "res-03", "input": "What is 2 to the power of 10?", "note": "calculator given an unevaluable expression, returns ERROR", "checks": [{"type": "numeric_equals", "value": 1024, "tol": 0.5}]}
+{"id": "res-04", "input": "What is 15 percent of 240?", "note": "required argument missing entirely", "checks": [{"type": "numeric_equals", "value": 36, "tol": 0.5}]}
+{"id": "res-05", "input": "What is 1368 subtracted from 1644?", "note": "an extra argument the tool does not accept", "checks": [{"type": "numeric_equals", "value": 276, "tol": 0.5}]}
+{"id": "res-06", "input": "How many years separate 1991 and 2008?", "note": "search called with an empty query, returns No results.", "checks": [{"type": "numeric_equals", "value": 17, "tol": 0.5}]}
+{"id": "res-07", "input": "What is 330 multiplied by 3.28084?", "note": "an expression the safe evaluator must refuse", "checks": [{"type": "numeric_equals", "value": 1082.7, "tol": 0.5}]}
+{"id": "res-08", "input": "What is 8849 minus 227?", "note": "arguments serialised as JSON null instead of an object", "checks": [{"type": "numeric_equals", "value": 8622, "tol": 0.5}]}
