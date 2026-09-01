@@ -54,6 +54,45 @@ class MockScript:
         return turns[idx]
 
 
+def _looks_like_react(req: dict[str, Any]) -> bool:
+    """Is this client driving a text ReAct loop rather than native tool calls?
+
+    Not every framework uses OpenAI function calling. CrewAI's agent executor,
+    for example, advertises no tools and instead asks the model for
+    `Thought:/Action:/Action Input:` text, stopping at `Observation:`. Handing
+    such a client a native `tool_calls` message gives it `content: None`, which
+    it cannot parse.
+
+    That is a fact about the framework worth recording in the feature matrix —
+    but it must not decide who can be benchmarked. The mock therefore renders the
+    *same scripted decision* in whichever protocol the client asked for, so every
+    framework still faces an identical sequence of model choices.
+    """
+    if req.get("tools"):
+        return False
+    stop = req.get("stop") or []
+    if isinstance(stop, str):
+        stop = [stop]
+    return any("observation" in str(s).lower() for s in stop)
+
+
+def _build_react_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    """Render a scripted turn as ReAct text."""
+    tool_calls = turn.get("tool_calls")
+    if tool_calls:
+        call = tool_calls[0]
+        args = call.get("arguments", {})
+        args_json = args if isinstance(args, str) else json.dumps(args)
+        text = (
+            f"Thought: I should use the {call['name']} tool.\n"
+            f"Action: {call['name']}\n"
+            f"Action Input: {args_json}"
+        )
+    else:
+        text = f"Thought: I now know the final answer\nFinal Answer: {turn.get('content', '')}"
+    return {"role": "assistant", "content": text}, "stop"
+
+
 def _build_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Return (assistant message dict, finish_reason)."""
     tool_calls = turn.get("tool_calls")
@@ -119,8 +158,17 @@ class _Handler(BaseHTTPRequestHandler):
 
         script: MockScript = self.server.script  # type: ignore[attr-defined]
         scenario = script.pick(first_user)
-        turn = script.turn_for(scenario, assistant_turns)
-        message, finish_reason = _build_message(turn)
+
+        if _looks_like_react(req):
+            # A ReAct client keeps the whole transcript in one growing prompt and
+            # feeds tool results back as "Observation:" text rather than as
+            # `role: tool` messages, so count those instead of assistant turns.
+            served = sum(str(m.get("content", "")).lower().count("observation:") for m in messages)
+            turn = script.turn_for(scenario, served)
+            message, finish_reason = _build_react_message(turn)
+        else:
+            turn = script.turn_for(scenario, assistant_turns)
+            message, finish_reason = _build_message(turn)
 
         completion_text = message.get("content") or json.dumps(message.get("tool_calls", []))
         prompt_tokens = _estimate_tokens(json.dumps(messages))
