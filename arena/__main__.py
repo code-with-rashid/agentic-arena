@@ -59,6 +59,24 @@ def _cmd_run(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_validate(args: argparse.Namespace) -> int:
+    from .validate import validate_all
+
+    reports = validate_all([args.arena] if args.arena else None)
+    failed = 0
+    for report in reports:
+        for warning in report.warnings:
+            print(f"  warn  {report.arena}: {warning}")
+        for error in report.errors:
+            print(f"  ERROR {report.arena}: {error}")
+        status = "ok" if report.ok else f"{len(report.errors)} error(s)"
+        print(f"{report.arena}: {status}")
+        failed += not report.ok
+    if failed:
+        print(f"\n{failed}/{len(reports)} arena(s) invalid")
+    return 1 if failed else 0
+
+
 def _cmd_scorecard(args: argparse.Namespace) -> int:
     record = latest_run(args.arena, mode=args.mode)
     path = write_scorecard(record)
@@ -82,6 +100,10 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--repeat", type=int, default=1)
     p_run.add_argument("--no-scorecard", action="store_true")
     p_run.set_defaults(func=_cmd_run)
+
+    p_val = sub.add_parser("validate", help="statically check arena specs, datasets, mock scripts")
+    p_val.add_argument("--arena", default=None, help="default: every arena")
+    p_val.set_defaults(func=_cmd_validate)
 
     p_sc = sub.add_parser("scorecard", help="regenerate a scorecard from the latest run")
     p_sc.add_argument("--arena", required=True)

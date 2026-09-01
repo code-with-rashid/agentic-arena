@@ -36,6 +36,9 @@ python -m arena run --arena tool_use --framework vanilla --mode mock
 
 # 3. Regenerate the scorecard from the last run
 python -m arena scorecard --arena tool_use
+
+# 4. Statically check every arena spec, dataset, and mock script (no LLM, no network)
+python -m arena validate
 ```
 
 To run a real framework against a real model:

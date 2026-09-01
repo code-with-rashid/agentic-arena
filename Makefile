@@ -1,4 +1,4 @@
-.PHONY: install lint fmt test smoke clean
+.PHONY: install lint fmt validate test smoke clean
 
 install:
 	python -m pip install -e ".[dev]"
@@ -10,6 +10,9 @@ lint:
 fmt:
 	ruff check --fix .
 	ruff format .
+
+validate:
+	python -m arena validate
 
 test:
 	pytest -q

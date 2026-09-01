@@ -1,4 +1,14 @@
-# Scorecard — `tool_use`
+# Scorecard format example
+
+> **Not real numbers.** This is a `--mode mock` run of the `tool_use` arena,
+> committed only to show the shape of a generated scorecard. Mock pass rates are
+> ~100% by construction and the token/latency figures are client-serialisation
+> artifacts (see [methodology §5](methodology.md)). Never cite these.
+
+Real scorecards are generated into `results/<arena>/` by a `--mode live` run.
+
+---
+
 
 > A single agent must answer factual and arithmetic questions using a search tool and a calculator tool. Tests the core tool-calling loop and whether the framework feeds tool results back to the model correctly.
 

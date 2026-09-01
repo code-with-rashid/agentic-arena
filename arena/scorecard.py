@@ -126,9 +126,22 @@ def _render_csv(rows: list[dict[str, Any]]) -> str:
     return buf.getvalue()
 
 
+def output_dir_for(record: dict[str, Any]) -> Path:
+    """Where a run's scorecard belongs.
+
+    Only live runs go to the committed `results/`. Mock scorecards land under
+    `runs/` (gitignored) — methodology §5 says mock numbers are plumbing checks,
+    not a quality signal, so they must never reach a published scorecard. Keeping
+    them out of the tree by construction beats relying on everyone remembering.
+    """
+    if record.get("mode") == "live":
+        return RESULTS_DIR / record["arena"]
+    return RUNS_DIR / "scorecards" / record["arena"]
+
+
 def write_scorecard(record: dict[str, Any]) -> Path:
     rows = _aggregate(record)
-    out_dir = RESULTS_DIR / record["arena"]
+    out_dir = output_dir_for(record)
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "scorecard.md").write_text(_render_markdown(record, rows), encoding="utf-8")
     (out_dir / "scorecard.csv").write_text(_render_csv(rows), encoding="utf-8")

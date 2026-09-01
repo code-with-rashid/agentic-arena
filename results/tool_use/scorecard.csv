@@ -1,2 +1,0 @@
-framework,available,lib_version,items,pass_rate,errors,mean_latency_s,total_tokens,mean_tokens,mean_llm_calls,est_cost_usd,reason
-vanilla,True,stdlib (arena 0.1.0),15,1.0,0,0.018,6721,448.1,2.07,0.003501,

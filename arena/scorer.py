@@ -15,6 +15,24 @@ from .types import AgentResult, EvalItem, ItemOutcome
 _NUMBER = re.compile(r"-?\d[\d,]*\.?\d*")
 _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?\}|\[.*?\])\s*```", re.DOTALL | re.IGNORECASE)
 
+# The check contract, as (required fields, optional fields) keyed by `type`.
+# `arena validate` lints datasets against this, so a new check type must be
+# registered here as well as handled in `_check` — the test suite enforces that.
+CHECK_SPECS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
+    "contains": (("value",), ()),
+    "icontains": (("value",), ()),
+    "not_contains": (("value",), ()),
+    "iregex": (("value",), ()),
+    "numeric_equals": (("value",), ("tol",)),
+    "tool_used": (("name",), ()),
+    "no_tool": ((), ()),
+    "min_tool_calls": (("value",), ()),
+    "max_tool_calls": (("value",), ()),
+    "json_valid": ((), ()),
+    "json_schema": (("schema",), ()),
+    "json_path_equals": (("path", "value"), ("tol",)),
+}
+
 
 def _numbers(text: str) -> list[float]:
     out: list[float] = []

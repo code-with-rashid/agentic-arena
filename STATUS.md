@@ -27,7 +27,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | `frameworks/crewai/adapter.py` | written, **not mock-verified** — CrewAI's transitive tree (chromadb/onnxruntime) has no Python 3.14 wheels, and a first 3.12 CI attempt scored 0/15 (telemetry prompt + an internal `'list' object has no attribute 'rstrip'`). Kept out of the required matrix. | debug on a 3.12 venv, pin the exact version, add its CI cell, refresh results |
 | `frameworks/claude_agent_sdk` | deliberate stub — drives the `claude` CLI (Node) over the Anthropic Messages API, not one OpenAI-compatible endpoint | see `frameworks/claude_agent_sdk/README.md` for the three ways to close it |
 | Arenas 3–6 (`multi_agent`, `rag`, `human_in_the_loop`, `durable_state`) | design docs only, in `docs/arenas/` | promote to `arenas/<id>/`; HITL + durable_state need a harness resume/checkpoint API first |
-| `results/tool_use/scorecard.*` | **mock** numbers, committed as a format sample | replace with a `--mode live` run |
+| `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |
 | Docs site | plain markdown in `docs/` | MkDocs Material + GitHub Pages (Phase 4) |
 
 ## To produce the first real scorecard
