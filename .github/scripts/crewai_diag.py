@@ -17,6 +17,12 @@ with MockServer(arena.mock_script_path) as server:
 
     llm = runner.llm
     print("model string      :", getattr(llm, "model", "?"))
+    print(
+        "tool objects      :",
+        [(type(t).__name__, getattr(t, "name", "?")) for t in runner._probe_tools]
+        if hasattr(runner, "_probe_tools")
+        else "n/a",
+    )
     for probe in ("supports_function_calling", "is_litellm_model"):
         fn = getattr(llm, probe, None)
         if callable(fn):
@@ -34,7 +40,11 @@ with MockServer(arena.mock_script_path) as server:
     for n, r in enumerate(server.requests):
         print(f"--- request {n} messages ---")
         for m in r.get("messages", []):
-            print(f"  [{m.get('role')}] {str(m.get('content'))[:600]}")
+            c = str(m.get("content"))
+            if m.get("role") == "user" and "Observation" in c:
+                print("  [OBSERVATION TAIL]", c[-900:].replace(chr(10), " | "))
+            else:
+                print(f"  [{m.get('role')}] {c[:200]}")
     if server.requests:
         req = server.requests[0]
         print("advertised tools  :", [t["function"]["name"] for t in req.get("tools", []) or []])
