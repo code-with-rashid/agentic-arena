@@ -23,35 +23,12 @@ jobs:
           python -m pip install -r frameworks/crewai/requirements.txt
       - name: Versions
         run: python -m pip freeze | grep -iE "crewai|litellm|^openai|chromadb" || true
-      - name: What does crewai read for tracing/telemetry?
-        run: |
-          python - <<'PY'
-          import crewai, pathlib, re
-          root = pathlib.Path(crewai.__file__).parent
-          seen = set()
-          for f in root.rglob("*.py"):
-              for m in re.findall(r'(?:getenv|environ\.get|environ\[)\(?["']([A-Z0-9_]*(?:TRACING|TELEMETRY|TRACE)[A-Z0-9_]*)', f.read_text(errors="ignore")):
-                  seen.add(m)
-          print("tracing/telemetry env vars crewai reads:", sorted(seen))
-          PY
+      - name: Which tracing/telemetry env vars does crewai read?
+        continue-on-error: true
+        run: python .github/scripts/crewai_probe.py
       - name: Run crewai against the mock LLM
+        continue-on-error: true
         run: python -m arena run --arena tool_use --framework crewai --mode mock --no-scorecard
-      - name: Dump the run record on failure
+      - name: Dump the run record
         if: always()
-        run: |
-          python - <<'PY'
-          import json, pathlib
-          runs = sorted(pathlib.Path("runs").glob("*__tool_use__mock.json"))
-          if not runs:
-              print("no run file"); raise SystemExit(0)
-          rec = json.loads(runs[-1].read_text())
-          fw = rec["frameworks"][0]
-          print("available:", fw.get("available"), "reason:", fw.get("reason"))
-          print("build traceback:", fw.get("traceback", "")[:2000])
-          for it in fw.get("items", [])[:3]:
-              print("---", it["item_id"], "passed:", it["passed"])
-              print("  error :", it["error"])
-              print("  output:", repr(it["output_text"])[:400])
-              print("  tools :", it["tool_calls"])
-              print("  TB    :", it.get("traceback", "")[-2500:])
-          PY
+        run: python .github/scripts/dump_run.py
