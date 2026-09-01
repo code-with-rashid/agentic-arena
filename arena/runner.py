@@ -51,9 +51,14 @@ def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> d
     for rep in range(config.repeat):
         for item in arena.dataset:
             started = time.perf_counter()
+            error_tb: str | None = None
             try:
                 result = agent.run(item)
             except Exception as exc:  # noqa: BLE001
+                # Keep the traceback: an adapter that fails every item otherwise
+                # reports one unhelpful line, and the frame that actually raised
+                # is usually deep inside the framework.
+                error_tb = traceback.format_exc()
                 result = AgentResult(error=f"{type(exc).__name__}: {exc}")
             if not result.latency_s:
                 result = replace(result, latency_s=time.perf_counter() - started)
@@ -71,6 +76,7 @@ def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> d
                     "latency_s": round(result.latency_s, 4),
                     "llm_calls": result.llm_calls,
                     "error": result.error,
+                    **({"traceback": error_tb} if error_tb else {}),
                 }
             )
     return record

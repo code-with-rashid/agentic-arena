@@ -1,0 +1,36 @@
+name: crewai-debug
+
+# Hands-on debugging of the crewai adapter on Python 3.12 — the only version its
+# dependency tree installs on. Run it from the Actions tab; see
+# frameworks/crewai/README.md for what is known and what is still open.
+# Delete once crewai is green and has a normal mock-smoke cell in ci.yml.
+on:
+  workflow_dispatch:
+
+jobs:
+  crewai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install -r frameworks/crewai/requirements.txt
+      - name: Versions
+        run: python -m pip freeze | grep -iE "crewai|litellm|^openai|chromadb" || true
+      - name: Which tracing/telemetry env vars does crewai read?
+        continue-on-error: true
+        run: python .github/scripts/crewai_probe.py
+      - name: Native function calling, or text ReAct fallback?
+        continue-on-error: true
+        run: python .github/scripts/crewai_diag.py
+      - name: Run crewai against the mock LLM
+        continue-on-error: true
+        run: python -m arena run --arena tool_use --framework crewai --mode mock --no-scorecard
+      - name: Dump the run record
+        if: always()
+        run: python .github/scripts/dump_run.py
