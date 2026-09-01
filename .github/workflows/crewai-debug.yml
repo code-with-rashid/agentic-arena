@@ -26,6 +26,9 @@ jobs:
       - name: Which tracing/telemetry env vars does crewai read?
         continue-on-error: true
         run: python .github/scripts/crewai_probe.py
+      - name: Native function calling, or text ReAct fallback?
+        continue-on-error: true
+        run: python .github/scripts/crewai_diag.py
       - name: Run crewai against the mock LLM
         continue-on-error: true
         run: python -m arena run --arena tool_use --framework crewai --mode mock --no-scorecard
