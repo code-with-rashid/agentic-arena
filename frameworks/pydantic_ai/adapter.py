@@ -22,6 +22,7 @@ class _Runner:
         from pydantic_ai import Agent
         from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
         from pydantic_ai.providers.openai import OpenAIProvider
+        from pydantic_ai.usage import UsageLimits
 
         self.config = config
         # Task instruction comes from the arena spec, not from this file.
@@ -34,8 +35,12 @@ class _Runner:
             model,
             system_prompt=self.system_prompt,
             model_settings=OpenAIChatModelSettings(temperature=0.0),
-            retries=config.max_tool_iterations,
         )
+        # `Agent(retries=...)` is a tool/output-validation retry budget, NOT an
+        # agent-loop cap — setting it from max_tool_iterations left this adapter
+        # effectively uncapped (it ran to the library's default request_limit of
+        # 50). The loop cap is a per-run usage limit.
+        self._limits = UsageLimits(request_limit=config.max_tool_iterations)
 
         names = _tool_names(arena.tools)
 
@@ -56,7 +61,7 @@ class _Runner:
     def run(self, item: EvalItem) -> AgentResult:
         from pydantic_ai.messages import ToolCallPart
 
-        result = self._agent.run_sync(item.input)
+        result = self._agent.run_sync(item.input, usage_limits=self._limits)
 
         tool_calls: list[dict[str, Any]] = []
         for message in result.all_messages():

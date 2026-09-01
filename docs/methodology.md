@@ -35,6 +35,20 @@ registers exactly those (`arena.tools.names_for` / `specs_for` resolve the list)
 handing an agent a tool the arena did not declare lets one framework solve a task
 in a way another cannot, which is the same fairness break as swapping the model.
 
+## 3b. One iteration budget
+
+`ArenaConfig.max_tool_iterations` caps how many LLM calls an adapter may spend on
+one item. It is a fairness control, not a safety valve: an adapter allowed to
+grind for fifty calls while another stops at six will post better pass rates and
+far worse latency, token and cost numbers, and none of the four are comparable.
+
+Each framework spells its cap differently and the mapping is easy to get wrong —
+Pydantic AI's `Agent(retries=...)` is a tool-validation budget, not a loop cap,
+and Agent Framework's tool loop is uncapped unless you set
+`max_iterations`. `tests/test_adapters_contract.py` measures the real number: it
+points each adapter at a mock that never stops requesting tools and counts the
+requests that reach the wire. Adapters that exceed the budget fail CI.
+
 ## 4. One task spec + eval set per arena
 
 `arenas/<id>/arena.toml` defines the task and `dataset.jsonl` the graded items. An

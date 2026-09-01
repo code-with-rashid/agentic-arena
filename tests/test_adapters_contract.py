@@ -2,6 +2,7 @@
 a clean NotImplementedError. This keeps stubs honest and catches import-time typos.
 """
 
+import contextlib
 import json
 from dataclasses import replace
 
@@ -93,6 +94,46 @@ def test_adapter_advertises_only_the_tools_the_arena_declares(name):
     assert advertised == ["search"], (
         f"{name}: advertised {advertised}, but the arena declares only ['search']"
     )
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_adapter_respects_the_shared_iteration_budget(name):
+    """Every framework must stop after `max_tool_iterations` LLM calls.
+
+    `max_tool_iterations` is one shared knob, but each framework spells its loop
+    cap differently, and three of them originally mapped it to something that was
+    not a loop cap at all — measured against a mock that never stops requesting
+    tools, budgets of 6 produced 50 (pydantic_ai) and 41 (microsoft_af) LLM calls.
+    An adapter allowed to grind eight times longer reports incomparable latency,
+    token and cost numbers, which are exactly what the scorecard publishes.
+    """
+    budget = 4
+    arena = _sentinel_arena(["calculator"])
+    item = EvalItem(id="loop", input="loop forever", checks=[])
+    never_stops = MockScript(
+        {
+            "default": {
+                "turns": [{"tool_calls": [{"name": "calculator", "arguments": {"expr": "1+1"}}]}]
+            }
+        }
+    )
+
+    with MockServer(never_stops) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            max_tool_iterations=budget,
+        )
+        runner = load_framework(name).build(arena, config)
+        # Hitting the cap raises in some frameworks and returns in others; both
+        # are acceptable, what matters is that the loop stopped.
+        with contextlib.suppress(Exception):
+            runner.run(item)
+        calls = len(server.requests)
+
+    assert calls <= budget, f"{name}: made {calls} LLM calls on a budget of {budget}"
+    assert calls > 1, f"{name}: made {calls} calls — the probe never reached the tool loop"
 
 
 def test_at_least_one_adapter_was_actually_exercised():
