@@ -12,45 +12,46 @@ from typing import Any
 
 from arena.config import ArenaConfig
 from arena.tools import calculator as _calculator
+from arena.tools import names_for as _tool_names
 from arena.tools import search as _search
 from arena.types import AgentResult, ArenaSpec, EvalItem
 
-SYSTEM_PROMPT = (
-    "You are a careful assistant with two tools: `search` (a small factual knowledge "
-    "base) and `calculator` (basic arithmetic). Use `search` for any fact you are not "
-    "certain of and `calculator` for any arithmetic. When you have enough information, "
-    "answer directly and concisely, making sure the key number or fact appears in your "
-    "final message."
-)
-
 
 class _Runner:
-    def __init__(self, config: ArenaConfig) -> None:
+    def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
         from pydantic_ai import Agent
         from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
         from pydantic_ai.providers.openai import OpenAIProvider
 
         self.config = config
+        # Task instruction comes from the arena spec, not from this file.
+        self.system_prompt = arena.system_prompt
         model = OpenAIChatModel(
             config.model,
             provider=OpenAIProvider(base_url=config.base_url, api_key=config.api_key),
         )
         self._agent = Agent(
             model,
-            system_prompt=SYSTEM_PROMPT,
+            system_prompt=self.system_prompt,
             model_settings=OpenAIChatModelSettings(temperature=0.0),
             retries=config.max_tool_iterations,
         )
 
-        @self._agent.tool_plain
-        def search(query: str, k: int = 3) -> str:
-            """Search a small knowledge base of general facts."""
-            return _search(query, k)
+        names = _tool_names(arena.tools)
 
-        @self._agent.tool_plain
-        def calculator(expr: str) -> str:
-            """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
-            return _calculator(expr)
+        if "search" in names:
+
+            @self._agent.tool_plain
+            def search(query: str, k: int = 3) -> str:
+                """Search a small knowledge base of general facts."""
+                return _search(query, k)
+
+        if "calculator" in names:
+
+            @self._agent.tool_plain
+            def calculator(expr: str) -> str:
+                """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+                return _calculator(expr)
 
     def run(self, item: EvalItem) -> AgentResult:
         from pydantic_ai.messages import ToolCallPart
@@ -88,4 +89,4 @@ class Adapter:
         return "pydantic-ai (not installed)"
 
     def build(self, arena: ArenaSpec, config: ArenaConfig) -> _Runner:
-        return _Runner(config)
+        return _Runner(arena, config)

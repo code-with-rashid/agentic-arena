@@ -19,17 +19,12 @@ os.environ.setdefault("CI", "true")
 
 from arena.config import ArenaConfig  # noqa: E402
 from arena.tools import calculator as _calculator  # noqa: E402
+from arena.tools import names_for as _tool_names  # noqa: E402
 from arena.tools import search as _search  # noqa: E402
 from arena.types import AgentResult, ArenaSpec, EvalItem  # noqa: E402
 
-ROLE_BACKSTORY = (
-    "You are a careful research assistant. You always use the search tool for facts "
-    "you are unsure of and the calculator tool for arithmetic, then give a concise "
-    "final answer that contains the key number or fact."
-)
 
-
-def _make_tools(sink: list[dict[str, Any]]) -> list[Any]:
+def _make_tools(sink: list[dict[str, Any]], names: list[str]) -> list[Any]:
     from crewai.tools import BaseTool
 
     class SearchTool(BaseTool):
@@ -50,14 +45,18 @@ def _make_tools(sink: list[dict[str, Any]]) -> list[Any]:
             sink.append({"name": "calculator", "arguments": {"expr": expr}})
             return _calculator(expr)
 
-    return [SearchTool(), CalculatorTool()]
+    available = {"search": SearchTool, "calculator": CalculatorTool}
+    return [available[name]() for name in names if name in available]
 
 
 class _Runner:
-    def __init__(self, config: ArenaConfig) -> None:
+    def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
         from crewai import LLM
 
         self.config = config
+        # Task instruction comes from the arena spec, not from this file.
+        self.system_prompt = arena.system_prompt
+        self.tool_names = _tool_names(arena.tools)
         self.llm = LLM(
             model=f"openai/{config.model}",
             base_url=config.base_url,
@@ -69,12 +68,12 @@ class _Runner:
         from crewai import Agent, Crew, Process, Task
 
         calls: list[dict[str, Any]] = []
-        tools = _make_tools(calls)
+        tools = _make_tools(calls, self.tool_names)
 
         agent = Agent(
             role="Research assistant",
             goal="Answer the user's question accurately and concisely.",
-            backstory=ROLE_BACKSTORY,
+            backstory=self.system_prompt,
             tools=tools,
             llm=self.llm,
             verbose=False,
@@ -117,4 +116,4 @@ class Adapter:
             return "crewai (not installed)"
 
     def build(self, arena: ArenaSpec, config: ArenaConfig) -> _Runner:
-        return _Runner(config)
+        return _Runner(arena, config)

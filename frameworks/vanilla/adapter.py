@@ -12,18 +12,14 @@ from arena.config import ArenaConfig
 from arena.llm.client import ChatClient
 from arena.types import AgentResult, ArenaSpec, EvalItem
 
-SYSTEM_PROMPT = (
-    "You are a careful assistant with two tools: `search` (a small factual knowledge "
-    "base) and `calculator` (basic arithmetic). Use `search` for any fact you are not "
-    "certain of. Use `calculator` for any arithmetic instead of computing it yourself. "
-    "When you have enough information, reply directly and concisely, and make sure the "
-    "key number or fact appears in your final message."
-)
-
 
 class _Runner:
-    def __init__(self, config: ArenaConfig) -> None:
+    def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
         self.config = config
+        # Task instruction comes from the arena, not from this file — otherwise
+        # the baseline sends a tool_use prompt when run on any other arena.
+        self.system_prompt = arena.system_prompt
+        self.tool_specs = tools.specs_for(arena.tools)
 
     def run(self, item: EvalItem) -> AgentResult:
         client = ChatClient(
@@ -33,14 +29,14 @@ class _Runner:
             timeout_s=self.config.request_timeout_s,
         )
         messages: list[dict] = [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": item.input},
         ]
         calls_made: list[dict] = []
 
         last_content = ""
         for _ in range(self.config.max_tool_iterations):
-            resp = client.chat(messages, tools=tools.OPENAI_TOOL_SPECS, tool_choice="auto")
+            resp = client.chat(messages, tools=self.tool_specs, tool_choice="auto")
             last_content = resp.content or last_content
 
             if not resp.tool_calls:
@@ -91,4 +87,4 @@ class Adapter:
         return f"stdlib (arena {arena.__version__})"
 
     def build(self, arena: ArenaSpec, config: ArenaConfig) -> _Runner:
-        return _Runner(config)
+        return _Runner(arena, config)
