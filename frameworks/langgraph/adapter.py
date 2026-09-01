@@ -60,7 +60,10 @@ class _Runner:
                     ("user", item.input),
                 ]
             },
-            config={"recursion_limit": 2 * self.config.max_tool_iterations + 2},
+            # One tool round = two graph steps (model node + tool node), so the
+            # recursion limit must be 2x the LLM-call budget to match the other
+            # adapters. The old +2 bought this framework an extra model call.
+            config={"recursion_limit": 2 * self.config.max_tool_iterations},
         )
         messages = state["messages"]
 
