@@ -1,0 +1,17 @@
+id = "structured_output"
+description = "A single agent must look up a landmark with the search tool and return a record that conforms to a fixed JSON schema (name, year, height_m, sources). Tests each framework's structured / typed-output support and how mechanically its output can be validated."
+tools = ["search"]
+
+system_prompt_intent = """
+You are a data-extraction assistant. For the landmark named by the user, use the
+`search` tool to find its completion/opening year and its height in metres, then
+reply with ONLY a JSON object and nothing else, matching exactly this schema:
+{"name": string, "year": integer, "height_m": number, "sources": [string, ...]}.
+No prose, no markdown fences, no trailing commentary. `sources` lists the titles
+of the search snippets you used.
+"""
+
+# Adapters phrase the above however is idiomatic for their framework, and may use
+# a native structured-output mechanism (response_format, a Pydantic result type, a
+# tool-as-schema). Which mechanism each one uses is a finding for the feature
+# matrix. The exact wording each adapter uses is checked in next to its adapter.py.

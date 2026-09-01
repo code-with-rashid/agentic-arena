@@ -6,12 +6,14 @@ anything requiring an LLM judge belongs in a separate, clearly-labelled arena.
 
 from __future__ import annotations
 
+import json
 import re
 from typing import Any
 
 from .types import AgentResult, EvalItem, ItemOutcome
 
 _NUMBER = re.compile(r"-?\d[\d,]*\.?\d*")
+_JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*?\}|\[.*?\])\s*```", re.DOTALL | re.IGNORECASE)
 
 
 def _numbers(text: str) -> list[float]:
@@ -22,6 +24,106 @@ def _numbers(text: str) -> list[float]:
         except ValueError:
             continue
     return out
+
+
+def _balanced_span(text: str) -> str | None:
+    """Return the first balanced {...} or [...] span in `text`, or None."""
+    start = None
+    opener = closer = ""
+    for i, ch in enumerate(text):
+        if start is None and ch in "{[":
+            start, opener, closer = i, ch, "}" if ch == "{" else "]"
+            depth = 0
+        if start is None:
+            continue
+        if ch == opener:
+            depth += 1
+        elif ch == closer:
+            depth -= 1
+            if depth == 0:
+                return text[start : i + 1]
+    return None
+
+
+def extract_json(text: str) -> Any:
+    """Best-effort parse of a JSON value out of possibly-chatty model output.
+
+    Tries, in order: the whole string, a ```json fenced block, the first balanced
+    bracket span. Raises `ValueError` if none parse.
+    """
+    text = (text or "").strip()
+    candidates: list[str] = [text]
+    fence = _JSON_FENCE.search(text)
+    if fence:
+        candidates.append(fence.group(1))
+    span = _balanced_span(text)
+    if span:
+        candidates.append(span)
+    for candidate in candidates:
+        try:
+            return json.loads(candidate)
+        except (ValueError, TypeError):
+            continue
+    raise ValueError("no JSON value found in output")
+
+
+_JSON_TYPES: dict[str, type | tuple[type, ...]] = {
+    "object": dict,
+    "array": list,
+    "string": str,
+    "integer": int,
+    "number": (int, float),
+    "boolean": bool,
+}
+
+
+def validate_schema(value: Any, schema: dict[str, Any], path: str = "$") -> list[str]:
+    """A deliberately tiny JSON-schema checker (no dependency).
+
+    Supports the keywords the arenas actually use: type, required, properties,
+    additionalProperties (bool), items, minItems, enum. Returns a list of human
+    error strings (empty == valid).
+    """
+    errors: list[str] = []
+    expected = schema.get("type")
+    if expected:
+        py = _JSON_TYPES.get(expected)
+        # bool is a subclass of int — keep them distinct
+        if expected == "integer" and isinstance(value, bool):
+            errors.append(f"{path}: expected integer, got boolean")
+        elif expected in ("integer", "number") and isinstance(value, bool):
+            errors.append(f"{path}: expected {expected}, got boolean")
+        elif py is not None and not isinstance(value, py):
+            errors.append(f"{path}: expected {expected}, got {type(value).__name__}")
+    if "enum" in schema and value not in schema["enum"]:
+        errors.append(f"{path}: {value!r} not in enum {schema['enum']}")
+    if expected == "object" and isinstance(value, dict):
+        props: dict[str, Any] = schema.get("properties", {})
+        for key in schema.get("required", []):
+            if key not in value:
+                errors.append(f"{path}: missing required key {key!r}")
+        if schema.get("additionalProperties") is False:
+            for key in value:
+                if key not in props:
+                    errors.append(f"{path}: unexpected key {key!r}")
+        for key, sub in props.items():
+            if key in value:
+                errors.extend(validate_schema(value[key], sub, f"{path}.{key}"))
+    if expected == "array" and isinstance(value, list):
+        if "minItems" in schema and len(value) < schema["minItems"]:
+            errors.append(f"{path}: expected >= {schema['minItems']} items, got {len(value)}")
+        item_schema = schema.get("items")
+        if isinstance(item_schema, dict):
+            for i, entry in enumerate(value):
+                errors.extend(validate_schema(entry, item_schema, f"{path}[{i}]"))
+    return errors
+
+
+def _dig(value: Any, dotted: str) -> Any:
+    cur = value
+    for part in dotted.split("."):
+        cur = cur[int(part)] if isinstance(cur, list) else cur[part]
+    return cur
 
 
 def _check(check: dict[str, Any], result: AgentResult) -> tuple[bool, str]:
@@ -35,6 +137,9 @@ def _check(check: dict[str, Any], result: AgentResult) -> tuple[bool, str]:
     if ctype == "icontains":
         val = str(check["value"]).lower()
         return (val in text.lower(), f"expected substring (ci) {val!r}")
+    if ctype == "not_contains":
+        val = str(check["value"])
+        return (val not in text, f"expected {val!r} to be absent")
     if ctype == "iregex":
         pat = str(check["value"])
         return (re.search(pat, text, re.IGNORECASE) is not None, f"expected regex /{pat}/i")
@@ -54,6 +159,39 @@ def _check(check: dict[str, Any], result: AgentResult) -> tuple[bool, str]:
     if ctype == "max_tool_calls":
         n = int(check["value"])
         return (len(tool_names) <= n, f"expected <= {n} tool calls")
+    if ctype == "json_valid":
+        try:
+            extract_json(text)
+        except ValueError as exc:
+            return (False, f"expected parseable JSON ({exc})")
+        return (True, "expected parseable JSON")
+    if ctype == "json_schema":
+        try:
+            value = extract_json(text)
+        except ValueError as exc:
+            return (False, f"expected JSON matching schema ({exc})")
+        errs = validate_schema(value, check["schema"])
+        return (not errs, "schema: " + ("; ".join(errs) if errs else "ok"))
+    if ctype == "json_path_equals":
+        path = str(check["path"])
+        try:
+            actual = _dig(extract_json(text), path)
+        except (ValueError, KeyError, IndexError, TypeError) as exc:
+            return (False, f"could not read {path!r} ({exc})")
+        if "tol" in check:
+            try:
+                ok = abs(float(actual) - float(check["value"])) <= float(check["tol"])
+            except (TypeError, ValueError):
+                ok = False
+            return (
+                ok,
+                f"expected {path} within {check['tol']} of {check['value']}, got {actual!r}",
+            )
+        if isinstance(check["value"], str) and isinstance(actual, str):
+            ok = actual.strip().lower() == check["value"].strip().lower()
+        else:
+            ok = actual == check["value"]
+        return (ok, f"expected {path} == {check['value']!r}, got {actual!r}")
     return (False, f"unknown check type {ctype!r}")
 
 

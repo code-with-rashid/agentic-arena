@@ -1,0 +1,292 @@
+{
+  "_comment": "Canned turns replayed by arena.llm.mockserver so structured_output runs offline. Scenario chosen by first case-insensitive substring of the first user message that matches `match`. Turn N is served after N assistant messages already exist. Every scenario returns one search turn then a schema-valid JSON record.",
+  "scenarios": [
+    {
+      "match": "eiffel tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Eiffel Tower"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Eiffel Tower\", \"year\": 1889, \"height_m\": 330, \"sources\": [\"Eiffel Tower\"]}"
+        }
+      ]
+    },
+    {
+      "match": "golden gate bridge",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Golden Gate Bridge"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Golden Gate Bridge\", \"year\": 1937, \"height_m\": 227, \"sources\": [\"Golden Gate Bridge\"]}"
+        }
+      ]
+    },
+    {
+      "match": "statue of liberty",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Statue of Liberty"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Statue of Liberty\", \"year\": 1886, \"height_m\": 93, \"sources\": [\"Statue of Liberty\"]}"
+        }
+      ]
+    },
+    {
+      "match": "empire state building",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Empire State Building"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Empire State Building\", \"year\": 1931, \"height_m\": 443, \"sources\": [\"Empire State Building\"]}"
+        }
+      ]
+    },
+    {
+      "match": "burj khalifa",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Burj Khalifa"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Burj Khalifa\", \"year\": 2010, \"height_m\": 828, \"sources\": [\"Burj Khalifa\"]}"
+        }
+      ]
+    },
+    {
+      "match": "cn tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "CN Tower"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"CN Tower\", \"year\": 1976, \"height_m\": 553, \"sources\": [\"CN Tower\"]}"
+        }
+      ]
+    },
+    {
+      "match": "space needle",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Space Needle"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Space Needle\", \"year\": 1962, \"height_m\": 184, \"sources\": [\"Space Needle\"]}"
+        }
+      ]
+    },
+    {
+      "match": "willis tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Willis Tower"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Willis Tower\", \"year\": 1973, \"height_m\": 442, \"sources\": [\"Willis Tower\"]}"
+        }
+      ]
+    },
+    {
+      "match": "gateway arch",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Gateway Arch"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Gateway Arch\", \"year\": 1965, \"height_m\": 192, \"sources\": [\"Gateway Arch\"]}"
+        }
+      ]
+    },
+    {
+      "match": "washington monument",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Washington Monument"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Washington Monument\", \"year\": 1884, \"height_m\": 169, \"sources\": [\"Washington Monument\"]}"
+        }
+      ]
+    },
+    {
+      "match": "elizabeth tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Elizabeth Tower"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Elizabeth Tower\", \"year\": 1859, \"height_m\": 96, \"sources\": [\"Elizabeth Tower\"]}"
+        }
+      ]
+    },
+    {
+      "match": "leaning tower of pisa",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Leaning Tower of Pisa"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Leaning Tower of Pisa\", \"year\": 1372, \"height_m\": 57, \"sources\": [\"Leaning Tower of Pisa\"]}"
+        }
+      ]
+    },
+    {
+      "match": "christ the redeemer",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Christ the Redeemer"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Christ the Redeemer\", \"year\": 1931, \"height_m\": 30, \"sources\": [\"Christ the Redeemer\"]}"
+        }
+      ]
+    },
+    {
+      "match": "tokyo tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Tokyo Tower"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Tokyo Tower\", \"year\": 1958, \"height_m\": 333, \"sources\": [\"Tokyo Tower\"]}"
+        }
+      ]
+    },
+    {
+      "match": "petronas towers",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Petronas Towers"
+              }
+            }
+          ]
+        },
+        {
+          "content": "{\"name\": \"Petronas Towers\", \"year\": 1998, \"height_m\": 452, \"sources\": [\"Petronas Towers\"]}"
+        }
+      ]
+    }
+  ],
+  "default": {
+    "turns": [
+      {
+        "tool_calls": [
+          {
+            "name": "search",
+            "arguments": {
+              "query": "landmark record"
+            }
+          }
+        ]
+      },
+      {
+        "content": "{\"name\": \"Unknown\", \"year\": 0, \"height_m\": 0, \"sources\": [\"none\"]}"
+      }
+    ]
+  }
+}
