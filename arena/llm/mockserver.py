@@ -77,19 +77,24 @@ def _looks_like_react(req: dict[str, Any]) -> bool:
 
 
 def _build_react_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
-    """Render a scripted turn as ReAct text."""
+    """Render a scripted turn as ReAct text.
+
+    The prompt already ends with a dangling `Thought:`, so this is a
+    *continuation* of that line — re-emitting the `Thought:` label would double
+    it and the parser would not find the action.
+    """
     tool_calls = turn.get("tool_calls")
     if tool_calls:
         call = tool_calls[0]
         args = call.get("arguments", {})
         args_json = args if isinstance(args, str) else json.dumps(args)
         text = (
-            f"Thought: I should use the {call['name']} tool.\n"
+            f" I should use the {call['name']} tool.\n"
             f"Action: {call['name']}\n"
             f"Action Input: {args_json}"
         )
     else:
-        text = f"Thought: I now know the final answer\nFinal Answer: {turn.get('content', '')}"
+        text = f" I now know the final answer\nFinal Answer: {turn.get('content', '')}"
     return {"role": "assistant", "content": text}, "stop"
 
 
