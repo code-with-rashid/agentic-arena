@@ -1,12 +1,11 @@
 name: crewai-debug
 
-# Temporary: hands-on debugging of the crewai adapter on Python 3.12, which is
-# the only place its dependency tree installs. Delete once the adapter is green
-# and has a normal mock-smoke cell in ci.yml.
+# Hands-on debugging of the crewai adapter on Python 3.12 — the only version its
+# dependency tree installs on. Run it from the Actions tab; see
+# frameworks/crewai/README.md for what is known and what is still open.
+# Delete once crewai is green and has a normal mock-smoke cell in ci.yml.
 on:
   workflow_dispatch:
-  push:
-    branches: ["fix/crewai-verify"]
 
 jobs:
   crewai:
