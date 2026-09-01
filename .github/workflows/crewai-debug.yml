@@ -1,0 +1,45 @@
+name: crewai-debug
+
+# Temporary: hands-on debugging of the crewai adapter on Python 3.12, which is
+# the only place its dependency tree installs. Delete once the adapter is green
+# and has a normal mock-smoke cell in ci.yml.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["fix/crewai-verify"]
+
+jobs:
+  crewai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install -r frameworks/crewai/requirements.txt
+      - name: Versions
+        run: python -m pip freeze | grep -iE "crewai|litellm|^openai|chromadb" || true
+      - name: Run crewai against the mock LLM
+        run: python -m arena run --arena tool_use --framework crewai --mode mock --no-scorecard
+      - name: Dump the run record on failure
+        if: always()
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          runs = sorted(pathlib.Path("runs").glob("*__tool_use__mock.json"))
+          if not runs:
+              print("no run file"); raise SystemExit(0)
+          rec = json.loads(runs[-1].read_text())
+          fw = rec["frameworks"][0]
+          print("available:", fw.get("available"), "reason:", fw.get("reason"))
+          print("traceback:", fw.get("traceback", "")[:3000])
+          for it in fw.get("items", [])[:3]:
+              print("---", it["item_id"], "passed:", it["passed"])
+              print("  error :", it["error"])
+              print("  output:", repr(it["output_text"])[:400])
+              print("  tools :", it["tool_calls"])
+          PY
