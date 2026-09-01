@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import statistics
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,32 @@ def latest_run(arena_id: str, mode: str | None = None) -> dict[str, Any]:
     if not candidates:
         raise FileNotFoundError(f"no runs found for arena {arena_id!r} in {RUNS_DIR}")
     return json.loads(candidates[-1].read_text(encoding="utf-8"))
+
+
+def _stability(items: list[dict[str, Any]]) -> dict[str, Any]:
+    """Reliability across repeats.
+
+    A single run tells you almost nothing about a stochastic agent: the same item
+    can pass on one repeat and fail on the next. Methodology 6 tells people to use
+    `--repeat`, so the scorecard has to report what the repeats disagreed about,
+    otherwise the extra runs are silently averaged away.
+    """
+    by_repeat: dict[int, list[bool]] = {}
+    by_item: dict[str, list[bool]] = {}
+    for it in items:
+        by_repeat.setdefault(it.get("repeat", 0), []).append(bool(it["passed"]))
+        by_item.setdefault(it["item_id"], []).append(bool(it["passed"]))
+
+    rates = [sum(v) / len(v) for v in by_repeat.values() if v]
+    unstable = sorted(item_id for item_id, runs in by_item.items() if len(set(runs)) > 1)
+    return {
+        "repeats": len(by_repeat),
+        "pass_rate_by_repeat": [round(r, 3) for r in rates],
+        # Population stddev: these are all the repeats there were, not a sample.
+        "pass_rate_stddev": round(statistics.pstdev(rates), 4) if len(rates) > 1 else None,
+        "unstable_items": len(unstable),
+        "unstable_item_ids": unstable,
+    }
 
 
 def _aggregate(record: dict[str, Any]) -> list[dict[str, Any]]:
@@ -59,6 +86,7 @@ def _aggregate(record: dict[str, Any]) -> list[dict[str, Any]]:
                 "mean_tokens": round((pt + ct) / n, 1),
                 "mean_llm_calls": round(llm_calls / n, 2),
                 "est_cost_usd": round(pt / 1e6 * price_in + ct / 1e6 * price_out, 6),
+                **_stability(items),
             }
         )
     rows.sort(key=lambda r: (not r["available"], -(r.get("pass_rate") or 0)))
@@ -85,12 +113,36 @@ def _render_markdown(record: dict[str, Any], rows: list[dict[str, Any]]) -> str:
         if not r["available"]:
             lines.append(f"| `{r['framework']}` | — | _not available_ | — | — | — | — | — |")
             continue
+        rate = f"{r['pass_rate']:.0%} ({r['passed']}/{r['items']})"
+        if r.get("pass_rate_stddev") is not None:
+            rate += f" ±{r['pass_rate_stddev']:.1%}"
         lines.append(
             f"| `{r['framework']}` | {r['lib_version']} | "
-            f"{r['pass_rate']:.0%} ({r['passed']}/{r['items']}) | {r['errors']} | "
+            f"{rate} | {r['errors']} | "
             f"{r['mean_latency_s']:.3f}s | {r['mean_tokens']:.0f} | {r['mean_llm_calls']:.2f} | "
             f"${r['est_cost_usd']:.4f} |"
         )
+
+    if record.get("repeat", 1) > 1:
+        lines += [
+            "",
+            f"± is the population standard deviation of the per-repeat pass rate "
+            f"across {record['repeat']} repeats.",
+        ]
+        flaky = [r for r in rows if r.get("unstable_items")]
+        if flaky:
+            lines += [
+                "",
+                "**Unstable items** — passed on some repeats and failed on others. "
+                "Their contribution to the pass rates above is not reproducible:",
+                "",
+            ]
+            for r in flaky:
+                ids = ", ".join(f"`{i}`" for i in r["unstable_item_ids"])
+                lines.append(f"- `{r['framework']}` — {r['unstable_items']} item(s): {ids}")
+        else:
+            lines += ["", "Every item gave the same verdict on every repeat."]
+
     unavailable = [r for r in rows if not r["available"]]
     if unavailable:
         lines += ["", "**Not available this run:**", ""]
@@ -117,6 +169,9 @@ def _render_csv(rows: list[dict[str, Any]]) -> str:
         "mean_tokens",
         "mean_llm_calls",
         "est_cost_usd",
+        "repeats",
+        "pass_rate_stddev",
+        "unstable_items",
         "reason",
     ]
     writer = csv.DictWriter(buf, fieldnames=fields, extrasaction="ignore")

@@ -102,6 +102,22 @@ Per adapter, per arena:
 Run with `--repeat 10` for reliability/variance work; single-repeat numbers are
 directional only.
 
+### Reporting repeats
+
+Repeats are not averaged away silently. When `--repeat > 1` the scorecard also
+carries:
+
+| Metric | Meaning |
+|---|---|
+| `pass_rate_stddev` | population standard deviation of the per-repeat pass rate, shown as `±` next to the pass rate |
+| `pass_rate_by_repeat` | the individual per-repeat rates (json/csv) |
+| `unstable_items` | items that passed on some repeats and failed on others, listed by id |
+
+The distinction that matters: an item failing *every* repeat is reproducible and
+merely wrong; an item that flips between repeats makes its contribution to the
+headline pass rate irreproducible. Only the second kind is reported as unstable,
+and a scorecard with a non-zero count should be read as provisional.
+
 ## 7. Reproducing a published scorecard
 
 Every `results/<arena>/scorecard.md` records the model, harness version, Python
