@@ -31,6 +31,10 @@ with MockServer(arena.mock_script_path) as server:
         print("run raised:", type(exc).__name__, exc)
 
     print("requests seen     :", len(server.requests))
+    for n, r in enumerate(server.requests):
+        print(f"--- request {n} messages ---")
+        for m in r.get("messages", []):
+            print(f"  [{m.get('role')}] {str(m.get('content'))[:600]}")
     if server.requests:
         req = server.requests[0]
         print("advertised tools  :", [t["function"]["name"] for t in req.get("tools", []) or []])
