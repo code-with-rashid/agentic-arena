@@ -18,7 +18,7 @@ on:
         required: true
       frameworks:
         description: Space-separated adapter names, or "all"
-        default: "vanilla langgraph"
+        default: "vanilla langgraph pydantic_ai openai_agents microsoft_af"
         required: true
       repeat:
         description: Repeats per item

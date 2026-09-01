@@ -1,3 +1,8 @@
-# STUB adapter — package name/version unverified. Confirm on PyPI and pin exactly
-# when implementing this adapter (see .github/ISSUE_TEMPLATE/add-framework.md).
-agent-framework
+# Pinned so scorecards are reproducible. Bump deliberately, then refresh results/.
+#
+# Only the `-openai` client package is needed (it pulls `agent-framework-core`).
+# The `agent-framework` meta-package instead pulls `agent-framework-core[all]`
+# (azure, boto3, redis, qdrant, ollama, numpy, ...), none of which this adapter
+# uses.
+agent-framework-core==1.16.0
+agent-framework-openai==1.14.1

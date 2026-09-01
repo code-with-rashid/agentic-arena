@@ -72,8 +72,8 @@ ruff check . && ruff format --check .
 
 ## Adding an arena
 
-1. `arenas/<name>/arena.yaml` — id, description, which shared tools are available,
-   the system-prompt intent, and the list of check types the scorer needs.
+1. `arenas/<name>/arena.toml` — id, description, which shared tools are available,
+   and the system-prompt intent.
 2. `arenas/<name>/dataset.jsonl` — one JSON object per line:
    `{"id": "...", "input": "...", "checks": [{"type": "...", ...}]}`.
 3. `arenas/<name>/mock_script.json` — canned LLM turns so the arena runs in mock mode.
