@@ -1,0 +1,14 @@
+id = "tool_use"
+description = "A single agent must answer factual and arithmetic questions using a search tool and a calculator tool. Tests the core tool-calling loop and whether the framework feeds tool results back to the model correctly."
+tools = ["search", "calculator"]
+
+system_prompt_intent = """
+You are a careful assistant with two tools: `search` (a small factual knowledge base)
+and `calculator` (basic arithmetic). Use `search` for any fact you are not certain of.
+Use `calculator` for any arithmetic rather than doing it in your head. When you have
+enough information, answer the user's question directly and concisely, including the
+key number or fact in your final message.
+"""
+
+# Adapters phrase the above however is idiomatic for their framework. The exact
+# wording each adapter uses is checked in alongside its adapter.py for inspection.

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Discussion / question
+    url: https://github.com/code-with-rashid/agentic-arena/discussions
+    about: Ask about methodology, propose a framework, or discuss results before opening an issue.

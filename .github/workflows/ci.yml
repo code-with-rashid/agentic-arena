@@ -1,0 +1,72 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install harness + dev tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+      - name: Ruff
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Unit tests (offline)
+        run: pytest -q
+
+  mock-smoke:
+    # Proves a real framework adapter wires together against the mock LLM.
+    # Only frameworks whose adapter has been verified against the mock belong here.
+    # crewai is intentionally NOT included yet: its adapter is written but not yet
+    # smoke-verified (see STATUS.md / frameworks/crewai/README.md). Add a job for it
+    # once it passes locally on Python 3.12.
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.13"
+            framework: langgraph
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install harness + ${{ matrix.framework }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          python -m pip install -r frameworks/${{ matrix.framework }}/requirements.txt
+      - name: Run ${{ matrix.framework }} against the mock LLM
+        run: |
+          python -m arena run --arena tool_use --framework ${{ matrix.framework }} --mode mock
+      - name: Fail if the adapter was not actually exercised
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          runs = sorted(pathlib.Path("runs").glob("*__tool_use__mock.json"))
+          rec = json.loads(runs[-1].read_text())
+          fw = rec["frameworks"][0]
+          assert fw["available"], fw.get("reason")
+          passed = sum(1 for it in fw["items"] if it["passed"])
+          print(f"{fw['framework']}: {passed}/{len(fw['items'])} passed in mock mode")
+          assert passed == rec["dataset_size"], "mock smoke run must be fully green"
+          PY

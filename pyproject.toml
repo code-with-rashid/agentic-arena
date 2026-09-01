@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentic-arena"
+version = "0.1.0"
+description = "Compare, explore, and choose the right agentic framework — with numbers you can regenerate."
+readme = "README.md"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.11"
+authors = [{ name = "agentic-arena contributors" }]
+keywords = ["agents", "llm", "benchmark", "langgraph", "crewai", "comparison"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
+  "Intended Audience :: Developers",
+]
+# The harness core is intentionally dependency-free (stdlib only) so it installs
+# cleanly everywhere and runs in CI without a lockfile. Framework adapters bring
+# their own deps via frameworks/<name>/requirements.txt.
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["ruff>=0.6", "pytest>=8"]
+
+[project.scripts]
+arena = "arena.__main__:main"
+
+[project.urls]
+Homepage = "https://github.com/code-with-rashid/agentic-arena"
+Roadmap = "https://github.com/code-with-rashid/agentic-arena/blob/main/ROADMAP.md"
+
+[tool.setuptools.packages.find]
+include = ["arena*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

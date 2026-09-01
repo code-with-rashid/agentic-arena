@@ -1,0 +1,4 @@
+# Pinned so scorecards are reproducible. Bump deliberately, then refresh results/.
+langgraph==1.2.11
+langchain-core==1.6.1
+langchain-openai==1.6.0

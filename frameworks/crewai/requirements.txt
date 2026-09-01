@@ -1,0 +1,7 @@
+# CrewAI pulls a heavy transitive tree (chromadb -> onnxruntime, numpy, ...).
+# On Python 3.14 some of those have no wheels yet and try to build from source.
+# Known-good: Python 3.11 / 3.12. CI runs the crewai job on 3.12.
+#
+# Pin this to an exact version the first time a live run succeeds on 3.12, then
+# refresh results/. Until then a compatible range:
+crewai>=0.130,<1.0

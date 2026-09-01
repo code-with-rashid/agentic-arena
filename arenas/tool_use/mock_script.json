@@ -1,0 +1,117 @@
+{
+  "_comment": "Canned turns replayed by arena.llm.mockserver so tool_use runs offline. Scenario chosen by first case-insensitive substring of the first user message that matches `match`. Turn N is served after N assistant messages already exist in the request.",
+  "scenarios": [
+    {
+      "match": "17 * 23 + 4",
+      "turns": [
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "17 * 23 + 4"}}]},
+        {"content": "17 * 23 + 4 = 395."}
+      ]
+    },
+    {
+      "match": "144 / 12 - 5",
+      "turns": [
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "144 / 12 - 5"}}]},
+        {"content": "144 / 12 - 5 = 7."}
+      ]
+    },
+    {
+      "match": "2 to the power of 10",
+      "turns": [
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "2 ** 10"}}]},
+        {"content": "2 to the power of 10 is 1024."}
+      ]
+    },
+    {
+      "match": "15 percent of 240",
+      "turns": [
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "0.15 * 240"}}]},
+        {"content": "15 percent of 240 is 36."}
+      ]
+    },
+    {
+      "match": "eiffel tower completed",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Eiffel Tower completed year"}}]},
+        {"content": "The Eiffel Tower was completed in 1889."}
+      ]
+    },
+    {
+      "match": "how tall is mount everest in metres",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Mount Everest height metres"}}]},
+        {"content": "Mount Everest is 8849 metres tall."}
+      ]
+    },
+    {
+      "match": "first summited mount everest in 1953",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "first summit Mount Everest 1953 climbers"}}]},
+        {"content": "Edmund Hillary and Tenzing Norgay first reached the summit in 1953."}
+      ]
+    },
+    {
+      "match": "speed of light in a vacuum",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "speed of light vacuum metres per second"}}]},
+        {"content": "The speed of light in a vacuum is 299792458 metres per second."}
+      ]
+    },
+    {
+      "match": "when did the golden gate bridge open",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Golden Gate Bridge opening year"}}]},
+        {"content": "The Golden Gate Bridge opened in 1937."}
+      ]
+    },
+    {
+      "match": "apollo 11 land humans",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Apollo 11 Moon landing date"}}]},
+        {"content": "Apollo 11 landed humans on the Moon on 20 July 1969."}
+      ]
+    },
+    {
+      "match": "how tall is that in feet",
+      "turns": [
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "330 * 3.28084"}}]},
+        {"content": "330 metres is about 1082.7 feet."}
+      ]
+    },
+    {
+      "match": "taller is mount everest's summit",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Mount Everest summit height metres"}}]},
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "8849 - 227"}}]},
+        {"content": "Mount Everest's summit is 8622 metres higher than the bridge's towers."}
+      ]
+    },
+    {
+      "match": "great wall's best-known sections",
+      "turns": [
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "1644 - 1368"}}]},
+        {"content": "That span is 276 years."}
+      ]
+    },
+    {
+      "match": "python 3.0 arrived in 2008",
+      "turns": [
+        {"tool_calls": [{"name": "calculator", "arguments": {"expr": "2008 - 1991"}}]},
+        {"content": "The two releases were 17 years apart."}
+      ]
+    },
+    {
+      "match": "main span of the golden gate bridge",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Golden Gate Bridge main span length metres"}}]},
+        {"content": "The main span of the Golden Gate Bridge is 1280 metres long."}
+      ]
+    }
+  ],
+  "default": {
+    "turns": [
+      {"tool_calls": [{"name": "search", "arguments": {"query": "general knowledge"}}]},
+      {"content": "I could not find a confident answer."}
+    ]
+  }
+}

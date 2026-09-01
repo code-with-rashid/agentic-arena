@@ -1,0 +1,60 @@
+name: full-run
+
+# Manually triggered. Runs the arenas against a REAL model and uploads fresh
+# scorecards as a build artifact for review before they are committed.
+#
+# Requires repo secrets:
+#   OPENAI_API_KEY   - key for the gateway below
+# and optionally repo variables:
+#   ARENA_MODEL      - default: gpt-4.1-mini
+#   OPENAI_BASE_URL  - default: https://api.openai.com/v1
+
+on:
+  workflow_dispatch:
+    inputs:
+      arena:
+        description: Arena id to run
+        default: tool_use
+        required: true
+      frameworks:
+        description: Space-separated adapter names, or "all"
+        default: "vanilla langgraph"
+        required: true
+      repeat:
+        description: Repeats per item
+        default: "3"
+        required: true
+
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install harness + requested adapters
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          for fw in ${{ github.event.inputs.frameworks }}; do
+            [ -f "frameworks/$fw/requirements.txt" ] && python -m pip install -r "frameworks/$fw/requirements.txt" || true
+          done
+      - name: Run (live)
+        env:
+          ARENA_LLM_MODE: live
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL || 'https://api.openai.com/v1' }}
+          ARENA_MODEL: ${{ vars.ARENA_MODEL || 'gpt-4.1-mini' }}
+        run: |
+          FW_ARGS=""
+          for fw in ${{ github.event.inputs.frameworks }}; do FW_ARGS="$FW_ARGS --framework $fw"; done
+          python -m arena run --arena ${{ github.event.inputs.arena }} $FW_ARGS \
+            --mode live --repeat ${{ github.event.inputs.repeat }}
+      - name: Upload scorecards + raw run
+        uses: actions/upload-artifact@v4
+        with:
+          name: scorecards-${{ github.event.inputs.arena }}
+          path: |
+            results/**
+            runs/**

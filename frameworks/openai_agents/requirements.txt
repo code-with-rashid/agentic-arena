@@ -1,0 +1,3 @@
+# STUB adapter — package name/version unverified. Confirm on PyPI and pin exactly
+# when implementing this adapter (see .github/ISSUE_TEMPLATE/add-framework.md).
+openai-agents

@@ -1,0 +1,15 @@
+{"id": "tu-01", "input": "What is 17 * 23 + 4?", "checks": [{"type": "numeric_equals", "value": 395, "tol": 0}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-02", "input": "Compute 144 / 12 - 5.", "checks": [{"type": "numeric_equals", "value": 7, "tol": 0}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-03", "input": "What is 2 to the power of 10?", "checks": [{"type": "numeric_equals", "value": 1024, "tol": 0}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-04", "input": "What is 15 percent of 240?", "checks": [{"type": "numeric_equals", "value": 36, "tol": 0}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-05", "input": "In what year was the Eiffel Tower completed?", "checks": [{"type": "contains", "value": "1889"}, {"type": "tool_used", "name": "search"}]}
+{"id": "tu-06", "input": "How tall is Mount Everest in metres?", "checks": [{"type": "numeric_equals", "value": 8849, "tol": 1}, {"type": "tool_used", "name": "search"}]}
+{"id": "tu-07", "input": "Name one of the two climbers who first summited Mount Everest in 1953.", "checks": [{"type": "iregex", "value": "hillary|norgay|tenzing"}, {"type": "tool_used", "name": "search"}]}
+{"id": "tu-08", "input": "What is the speed of light in a vacuum, in metres per second?", "checks": [{"type": "numeric_equals", "value": 299792458, "tol": 1000}, {"type": "tool_used", "name": "search"}]}
+{"id": "tu-09", "input": "When did the Golden Gate Bridge open?", "checks": [{"type": "contains", "value": "1937"}, {"type": "tool_used", "name": "search"}]}
+{"id": "tu-10", "input": "On what date did Apollo 11 land humans on the Moon?", "checks": [{"type": "iregex", "value": "20 july 1969|july 20,? 1969"}, {"type": "tool_used", "name": "search"}]}
+{"id": "tu-11", "input": "The Eiffel Tower is 330 metres tall. How tall is that in feet? Use 1 metre = 3.28084 feet.", "checks": [{"type": "numeric_equals", "value": 1082.7, "tol": 3}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-12", "input": "How many metres taller is Mount Everest's summit than the Golden Gate Bridge's towers, which rise 227 metres above the water?", "checks": [{"type": "numeric_equals", "value": 8622, "tol": 2}, {"type": "tool_used", "name": "search"}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-13", "input": "The Great Wall's best-known sections were built by the Ming dynasty from 1368 to 1644. How many years does that span?", "checks": [{"type": "numeric_equals", "value": 276, "tol": 0}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-14", "input": "Python was first released in 1991 and Python 3.0 arrived in 2008. How many years apart were those two releases?", "checks": [{"type": "numeric_equals", "value": 17, "tol": 0}, {"type": "tool_used", "name": "calculator"}]}
+{"id": "tu-15", "input": "What is the length of the main span of the Golden Gate Bridge, in metres?", "checks": [{"type": "numeric_equals", "value": 1280, "tol": 1}, {"type": "tool_used", "name": "search"}]}

@@ -1,0 +1,42 @@
+[
+  {
+    "title": "Eiffel Tower",
+    "text": "The Eiffel Tower is a wrought-iron lattice tower in Paris, France. It was completed in 1889 and stands 330 metres tall including antennas. It was the tallest man-made structure in the world until 1930."
+  },
+  {
+    "title": "Mount Everest",
+    "text": "Mount Everest is Earth's highest mountain above sea level, located in the Himalayas. Its summit sits at 8849 metres. It was first summited in 1953 by Tenzing Norgay and Edmund Hillary."
+  },
+  {
+    "title": "Speed of light",
+    "text": "The speed of light in a vacuum is exactly 299792458 metres per second. It is a fundamental physical constant denoted c."
+  },
+  {
+    "title": "Great Wall of China",
+    "text": "The Great Wall of China is a series of fortifications built across the historical northern borders of China. Its best-known sections were built by the Ming dynasty between 1368 and 1644. Estimates of its total length reach about 21196 kilometres."
+  },
+  {
+    "title": "Golden Gate Bridge",
+    "text": "The Golden Gate Bridge is a suspension bridge spanning the Golden Gate strait in San Francisco. It opened in 1937. Its main span is 1280 metres long and its towers rise 227 metres above the water."
+  },
+  {
+    "title": "Apollo 11",
+    "text": "Apollo 11 was the spaceflight that first landed humans on the Moon, on 20 July 1969. Neil Armstrong and Buzz Aldrin spent about 21 hours on the lunar surface while Michael Collins orbited above."
+  },
+  {
+    "title": "Pacific Ocean",
+    "text": "The Pacific Ocean is the largest and deepest of Earth's oceans, covering about 165250000 square kilometres. Its deepest point, the Challenger Deep, is roughly 10935 metres below sea level."
+  },
+  {
+    "title": "Python programming language",
+    "text": "Python is a high-level programming language created by Guido van Rossum and first released in 1991. Version 3.0 was released in 2008. It emphasises readability and uses significant indentation."
+  },
+  {
+    "title": "Amazon River",
+    "text": "The Amazon River in South America is the largest river by discharge volume of water in the world. It is about 6400 kilometres long, making it either the longest or second-longest river depending on the measurement method."
+  },
+  {
+    "title": "Statue of Liberty",
+    "text": "The Statue of Liberty is a colossal neoclassical sculpture on Liberty Island in New York Harbor, dedicated in 1886. From ground level to the tip of the torch it measures 93 metres; the statue itself is 46 metres."
+  }
+]
