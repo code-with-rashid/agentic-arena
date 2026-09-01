@@ -29,6 +29,8 @@ jobs:
         run: |
           ruff check .
           ruff format --check .
+      - name: Validate arena specs / datasets / mock scripts
+        run: python -m arena validate
       - name: Unit tests (offline)
         run: pytest -q
 

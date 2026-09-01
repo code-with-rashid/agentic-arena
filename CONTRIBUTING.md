@@ -78,9 +78,14 @@ ruff check . && ruff format --check .
    `{"id": "...", "input": "...", "checks": [{"type": "...", ...}]}`.
 3. `arenas/<name>/mock_script.json` — canned LLM turns so the arena runs in mock mode.
    Keyed by a substring match against the first user message.
-4. If you need a new check type, add it to `arena/scorer.py` with a unit test in
-   `tests/test_scorer.py`.
-5. Document it in the arenas table in `README.md` and in `ROADMAP.md`.
+4. If you need a new check type, add it to `arena/scorer.py` — both the `_check`
+   body and the `CHECK_SPECS` registry — with a unit test in `tests/test_scorer.py`.
+   A check type in one and not the other fails the test suite.
+5. Run `python -m arena validate` (CI does too). It catches the mistakes that
+   otherwise surface as an unexplained 0/N: an item no mock scenario matches, an
+   unknown check type, a tool the arena never declared, duplicate item ids, a
+   scenario that ends on a tool call.
+6. Document it in the arenas table in `README.md` and in `ROADMAP.md`.
 
 ## Commit / PR conventions
 

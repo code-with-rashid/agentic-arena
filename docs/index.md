@@ -16,7 +16,8 @@ arena run --arena tool_use --framework langgraph --mode mock
    ├─ adapter.build(arena, config)         -> an AgentRunner
    ├─ for each dataset item (x repeat): runner.run(item) -> AgentResult
    ├─ scorer.score_item(item, result)      -> pass/fail per mechanical check
-   └─ scorecard.write_scorecard(record)    -> results/tool_use/scorecard.{md,csv,json}
+   └─ scorecard.write_scorecard(record)    -> live: results/tool_use/scorecard.{md,csv,json}
+                                              mock: runs/scorecards/tool_use/ (git-ignored)
 ```
 
 ## Repo map
