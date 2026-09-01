@@ -7,9 +7,9 @@ and this file becomes its reference notes.
 | Arena | Design | Implemented |
 |---|---|---|
 | `tool_use` | (shipped) | ✅ `arenas/tool_use/` |
+| `structured_output` | [structured_output.md](structured_output.md) | ✅ `arenas/structured_output/` |
 | `multi_agent` | [multi_agent.md](multi_agent.md) | ⬜ |
 | `rag` | [rag.md](rag.md) | ⬜ |
-| `structured_output` | [structured_output.md](structured_output.md) | ⬜ |
 | `human_in_the_loop` | [human_in_the_loop.md](human_in_the_loop.md) | ⬜ |
 | `durable_state` | [durable_state.md](durable_state.md) | ⬜ |
 

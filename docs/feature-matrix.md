@@ -8,16 +8,17 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Capability | vanilla | LangGraph | CrewAI | OpenAI Agents SDK | Claude Agent SDK | Pydantic AI | MS Agent Framework |
 |---|---|---|---|---|---|---|---|
 | Language | Python | Python | Python | Python | Python | Python | Python / .NET |
-| OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ❓ | ❓ | ❓ | ❓ |
+| OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ✅ | ❓ | ✅ | ✅ (Chat Completions client) |
 | Streaming tokens | ❌ | ✅ | 🟡 | ❓ | ❓ | ❓ | ❓ |
-| Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ❓ | ❓ | ❓ | ❓ |
-| Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ❓ | ❓ | ❓ | ❓ |
+| Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) |
+| Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) |
 | Built-in multi-agent | ❌ | ✅ (graph) | ✅ (crew) | 🟡 (handoffs) | 🟡 (subagents) | 🟡 | ✅ |
-| Human-in-the-loop / interrupts | ❌ | ✅ (`interrupt`) | ❓ | ❓ | ❓ | ❓ | ❓ |
+| Human-in-the-loop / interrupts | ❌ | ✅ (`interrupt`) | ❓ | ❓ | ❓ | 🟡 (deferred tools) | 🟡 (tool-approval middleware) |
 | Durable state / checkpointing | ❌ | ✅ (checkpointer) | ❓ | ❓ | ❓ | ❓ | ❓ |
-| Typed / schema-validated output | 🟡 | 🟡 | 🟡 | ❓ | ❓ | ✅ | ❓ |
-| Async API | ❌ | ✅ | 🟡 | ❓ | ❓ | ✅ | ✅ |
-| Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ❓ | ❓ | 🟡 (Logfire) | ✅ |
-| Licence | — | MIT | MIT | ❓ | ❓ | MIT | MIT |
+| Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 |
+| Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) |
+| Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) |
+| Licence | — | MIT | MIT | MIT | ❓ | MIT | MIT |
 
-> The ❓ cells are the backlog. Each one gets resolved when its adapter is written.
+> The ❓ cells are the backlog. Each one gets resolved when its adapter is written
+> or when an arena exercises that capability directly.

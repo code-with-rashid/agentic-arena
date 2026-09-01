@@ -15,26 +15,34 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 
 ## Phase 1 — Vertical slice ✅ / 🚧
 
-- ✅ Arena 1 `tool_use`: `arena.yaml` spec, `dataset.jsonl` (15 items), `mock_script.json`
-- ✅ Scorer: `contains`, `iregex`, `numeric_equals` (with tolerance), `tool_used`, `no_tool`
+- ✅ Arena 1 `tool_use`: `arena.toml` spec, `dataset.jsonl` (15 items), `mock_script.json`
+- ✅ Scorer: `contains`, `icontains`, `not_contains`, `iregex`, `numeric_equals`
+      (with tolerance), `tool_used`, `no_tool`, `min/max_tool_calls`, `json_valid`,
+      `json_schema`, `json_path_equals`
 - ✅ `vanilla` baseline adapter (stdlib agent loop) — runs green in mock mode
 - ✅ `langgraph` adapter
-- ✅ `crewai` adapter
-- 🚧 First **live** scorecard for `tool_use` across vanilla + langgraph + crewai
-      (needs an API key; run `python -m arena run --mode live` and commit `results/`)
+- ✅ `crewai` adapter (written; mock-verify still pending on Python 3.12)
+- 🚧 First **live** scorecard (needs an API key; run `python -m arena run --mode live`
+      and commit `results/`)
 
-## Phase 2 — Breadth of frameworks ⬜
+## Phase 2 — Breadth of frameworks ✅ / 🚧
 
-- ⬜ Fill adapters: OpenAI Agents SDK, Claude Agent SDK, Pydantic AI, Microsoft Agent Framework
+- ✅ `openai_agents`, `pydantic_ai`, `microsoft_af` adapters — mock-green on both arenas
+- 🚫 `claude_agent_sdk` — stays a stub; drives the `claude` CLI over the Anthropic
+      Messages API, so it can't use the shared OpenAI-compatible gateway
+      (see `frameworks/claude_agent_sdk/README.md`)
 - ⬜ Google ADK adapter (stretch)
-- ⬜ Complete `docs/feature-matrix.md` for all adapters
-- ⬜ Per-framework deep dives in `docs/frameworks/` (drafts already stubbed)
+- 🚧 `docs/feature-matrix.md` — filled for every built adapter; `❓` cells remain for
+      capabilities no arena exercises yet
+- ✅ Per-framework deep dives in `docs/frameworks/` for the built adapters
 - ⬜ `docs/decision-guide.md` "if you need X, pick Y" flowchart
 
-## Phase 3 — Breadth of arenas ⬜
+## Phase 3 — Breadth of arenas 🚧
 
-- ⬜ Implement arenas 2–6 (`multi_agent`, `rag`, `structured_output`,
-      `human_in_the_loop`, `durable_state`) across the adapter set
+- ✅ Arena 2 `structured_output`: schema-checked JSON record over the shared corpus
+- ⬜ Implement arenas 3–6 (`multi_agent`, `rag`, `human_in_the_loop`,
+      `durable_state`) across the adapter set — HITL and durable_state need a
+      harness resume/checkpoint API first
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
 - ⬜ Latency / token / cost charts generated into `results/charts/`
 
