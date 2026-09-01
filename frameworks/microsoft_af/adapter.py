@@ -41,6 +41,11 @@ def calculator(expr: str) -> str:
 
 class _Runner:
     def __init__(self, config: ArenaConfig) -> None:
+        # Import eagerly so a missing install degrades to "unavailable" at build
+        # time, like the other adapters, rather than erroring on every item.
+        import agent_framework  # noqa: F401
+        import agent_framework.openai  # noqa: F401
+
         self.config = config
 
     async def _run_async(self, prompt: str) -> AgentResult:
