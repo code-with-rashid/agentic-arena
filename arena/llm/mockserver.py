@@ -107,6 +107,10 @@ class _Handler(BaseHTTPRequestHandler):
             self._send_json({"error": {"message": "invalid JSON"}}, status=400)
             return
 
+        # Keep every request so tests can assert what an adapter actually put on
+        # the wire — which tools it advertised, what system prompt it sent.
+        self.server.requests.append(req)  # type: ignore[attr-defined]
+
         messages = req.get("messages", [])
         first_user = next(
             (str(m.get("content", "")) for m in messages if m.get("role") == "user"), ""
@@ -184,7 +188,13 @@ class MockServer:
         self.script = script if isinstance(script, MockScript) else MockScript.load(script)
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.script = self.script  # type: ignore[attr-defined]
+        self._httpd.requests = []  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
+
+    @property
+    def requests(self) -> list[dict[str, Any]]:
+        """Every chat-completions request body received, in order."""
+        return self._httpd.requests  # type: ignore[attr-defined,no-any-return]
 
     @property
     def port(self) -> int:

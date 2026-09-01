@@ -12,19 +12,12 @@ from typing import Any
 
 from arena.config import ArenaConfig
 from arena.tools import calculator as _calculator
+from arena.tools import names_for as _tool_names
 from arena.tools import search as _search
 from arena.types import AgentResult, ArenaSpec, EvalItem
 
-SYSTEM_PROMPT = (
-    "You are a careful assistant with two tools: `search` (a small factual knowledge "
-    "base) and `calculator` (basic arithmetic). Use `search` for any fact you are not "
-    "certain of and `calculator` for any arithmetic. When you have enough information, "
-    "answer directly and concisely, making sure the key number or fact appears in your "
-    "final message."
-)
 
-
-def _make_tools() -> list[Any]:
+def _make_tools(names: list[str]) -> list[Any]:
     from langchain_core.tools import tool
 
     @tool
@@ -37,15 +30,18 @@ def _make_tools() -> list[Any]:
         """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
         return _calculator(expr)
 
-    return [search, calculator]
+    available = {"search": search, "calculator": calculator}
+    return [available[name] for name in names if name in available]
 
 
 class _Runner:
-    def __init__(self, config: ArenaConfig) -> None:
+    def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
         from langchain_openai import ChatOpenAI
         from langgraph.prebuilt import create_react_agent
 
         self.config = config
+        # Task instruction comes from the arena spec, not from this file.
+        self.system_prompt = arena.system_prompt
         model = ChatOpenAI(
             model=config.model,
             base_url=config.base_url,
@@ -54,13 +50,13 @@ class _Runner:
             timeout=config.request_timeout_s,
             max_retries=1,
         )
-        self.agent = create_react_agent(model, _make_tools())
+        self.agent = create_react_agent(model, _make_tools(_tool_names(arena.tools)))
 
     def run(self, item: EvalItem) -> AgentResult:
         state = self.agent.invoke(
             {
                 "messages": [
-                    ("system", SYSTEM_PROMPT),
+                    ("system", self.system_prompt),
                     ("user", item.input),
                 ]
             },
@@ -104,4 +100,4 @@ class Adapter:
             return "langgraph (not installed)"
 
     def build(self, arena: ArenaSpec, config: ArenaConfig) -> _Runner:
-        return _Runner(config)
+        return _Runner(arena, config)

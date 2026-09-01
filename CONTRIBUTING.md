@@ -52,6 +52,14 @@ ruff check . && ruff format --check .
 
 3. Use the shared tools from `arena.tools` (`search(query)` and `calculator(expr)`).
    Register them with the framework's own tool mechanism — do not reimplement them.
+   Register **only the ones `arena.tools` declares** — `arena.tools.names_for(arena.tools)`
+   resolves the list for you.
+
+3b. Take the system prompt from `arena.system_prompt`. Do **not** hard-code a task
+   instruction: your adapter would then ask for the wrong thing on every other
+   arena, and mock mode would not catch it. `tests/test_adapters_contract.py`
+   asserts both of these against the request body the mock server actually
+   received, so a hard-coded prompt or an undeclared tool fails CI.
 
 4. Populate `AgentResult`: `output_text`, `tool_calls`, `prompt_tokens`,
    `completion_tokens`, `latency_s`, and `error` on failure. Token counts come back

@@ -15,19 +15,12 @@ from typing import Any
 
 from arena.config import ArenaConfig
 from arena.tools import calculator as _calculator
+from arena.tools import names_for as _tool_names
 from arena.tools import search as _search
 from arena.types import AgentResult, ArenaSpec, EvalItem
 
-INSTRUCTIONS = (
-    "You are a careful assistant with two tools: `search` (a small factual knowledge "
-    "base) and `calculator` (basic arithmetic). Use `search` for any fact you are not "
-    "certain of and `calculator` for any arithmetic. When you have enough information, "
-    "answer directly and concisely, making sure the key number or fact appears in your "
-    "final message."
-)
 
-
-def _make_tools() -> list[Any]:
+def _make_tools(names: list[str]) -> list[Any]:
     from agents import function_tool
 
     @function_tool
@@ -40,11 +33,12 @@ def _make_tools() -> list[Any]:
         """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
         return _calculator(expr)
 
-    return [search, calculator]
+    available = {"search": search, "calculator": calculator}
+    return [available[name] for name in names if name in available]
 
 
 class _Runner:
-    def __init__(self, config: ArenaConfig) -> None:
+    def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
         from agents import (
             Agent,
             AsyncOpenAI,
@@ -55,13 +49,15 @@ class _Runner:
 
         set_tracing_disabled(True)
         self.config = config
+        # Task instruction comes from the arena spec, not from this file.
+        self.system_prompt = arena.system_prompt
         client = AsyncOpenAI(base_url=config.base_url, api_key=config.api_key)
         self._agent = Agent(
             name="arena-agent",
-            instructions=INSTRUCTIONS,
+            instructions=self.system_prompt,
             model=OpenAIChatCompletionsModel(model=config.model, openai_client=client),
             model_settings=ModelSettings(temperature=0.0),
-            tools=_make_tools(),
+            tools=_make_tools(_tool_names(arena.tools)),
         )
 
     def run(self, item: EvalItem) -> AgentResult:
@@ -101,4 +97,4 @@ class Adapter:
             return "openai-agents (not installed)"
 
     def build(self, arena: ArenaSpec, config: ArenaConfig) -> _Runner:
-        return _Runner(config)
+        return _Runner(arena, config)

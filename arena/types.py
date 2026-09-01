@@ -40,6 +40,17 @@ class ArenaSpec:
     def tool_use_allowed(self) -> bool:
         return bool(self.tools)
 
+    @property
+    def system_prompt(self) -> str:
+        """The arena's task instruction, ready to hand to a model.
+
+        Adapters MUST build their system prompt from this rather than hard-coding
+        one, otherwise they send a prompt for the wrong task when the harness runs
+        them on a different arena (methodology 4). Framework-idiomatic framing may
+        be added around it; the task instruction itself comes from here.
+        """
+        return " ".join(self.system_prompt_intent.split())
+
 
 @dataclass
 class AgentResult:

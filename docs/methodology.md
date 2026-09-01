@@ -30,6 +30,11 @@ arithmetic evaluator. Adapters register these with their framework's own tool
 mechanism but **must not** change what they compute or add tools. Measuring
 framework overhead means holding the tools constant.
 
+Which of them are available is per-arena: `arena.toml`'s `tools` list. An adapter
+registers exactly those (`arena.tools.names_for` / `specs_for` resolve the list) —
+handing an agent a tool the arena did not declare lets one framework solve a task
+in a way another cannot, which is the same fairness break as swapping the model.
+
 ## 4. One task spec + eval set per arena
 
 `arenas/<id>/arena.toml` defines the task and `dataset.jsonl` the graded items. An
@@ -40,10 +45,20 @@ judge noise is not comparable across frameworks.
 
 ### System prompts
 
-Each adapter writes its own system prompt, in whatever style is idiomatic for the
-framework, guided by `arena.toml`'s `system_prompt_intent`. That difference is part
-of what is being compared, so every adapter's prompt is checked in next to its
-`adapter.py` for inspection. Prompts must not encode answers or item-specific hints.
+The task instruction comes from the arena, via `ArenaSpec.system_prompt` (derived
+from `arena.toml`'s `system_prompt_intent`). An adapter **must not hard-code one**:
+a hard-coded prompt asks for the wrong thing the moment the harness runs that
+adapter on a different arena, and mock mode cannot catch it, because the mock
+script replays correct turns no matter what the prompt said.
+
+Adapters may add framework-idiomatic framing around that instruction (a role, a
+backstory, a typed result model); that difference is part of what is being
+compared. Prompts must not encode answers or item-specific hints.
+
+`tests/test_adapters_contract.py` enforces both rules on the wire: it builds each
+adapter against a sentinel arena and asserts, from the request body the mock
+server actually received, that the arena's prompt reached the model and that only
+the arena's declared tools were advertised.
 
 ## 5. What mock mode does and does not tell you
 

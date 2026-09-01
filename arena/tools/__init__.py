@@ -13,7 +13,15 @@ from typing import Any
 from .calculator import calculator
 from .search import search
 
-__all__ = ["search", "calculator", "OPENAI_TOOL_SPECS", "dispatch", "TOOL_FUNCS"]
+__all__ = [
+    "search",
+    "calculator",
+    "OPENAI_TOOL_SPECS",
+    "dispatch",
+    "TOOL_FUNCS",
+    "specs_for",
+    "names_for",
+]
 
 TOOL_FUNCS = {
     "search": lambda args: search(str(args.get("query", "")), int(args.get("k", 3))),
@@ -51,6 +59,29 @@ OPENAI_TOOL_SPECS: list[dict[str, Any]] = [
         },
     },
 ]
+
+
+OPENAI_TOOL_SPECS_BY_NAME: dict[str, dict[str, Any]] = {
+    spec["function"]["name"]: spec for spec in OPENAI_TOOL_SPECS
+}
+
+
+def names_for(arena_tools: list[str] | None) -> list[str]:
+    """Resolve an arena's declared tool list to known tool names, in a stable order.
+
+    An arena that declares no tools gets all of them (older specs); an arena that
+    names tools gets exactly those. Adapters must register only these — handing an
+    agent a tool the arena did not declare breaks the "same fight for everyone"
+    rule, and lets one framework solve a task in a way another cannot.
+    """
+    if not arena_tools:
+        return list(OPENAI_TOOL_SPECS_BY_NAME)
+    return [name for name in OPENAI_TOOL_SPECS_BY_NAME if name in set(arena_tools)]
+
+
+def specs_for(arena_tools: list[str] | None) -> list[dict[str, Any]]:
+    """OpenAI-format tool specs for exactly the tools an arena declares."""
+    return [OPENAI_TOOL_SPECS_BY_NAME[name] for name in names_for(arena_tools)]
 
 
 def dispatch(name: str, arguments: Any) -> str:

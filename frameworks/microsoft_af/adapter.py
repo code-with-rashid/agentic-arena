@@ -17,16 +17,9 @@ from typing import Any
 
 from arena.config import ArenaConfig
 from arena.tools import calculator as _calculator
+from arena.tools import names_for as _tool_names
 from arena.tools import search as _search
 from arena.types import AgentResult, ArenaSpec, EvalItem
-
-INSTRUCTIONS = (
-    "You are a careful assistant with two tools: `search` (a small factual knowledge "
-    "base) and `calculator` (basic arithmetic). Use `search` for any fact you are not "
-    "certain of and `calculator` for any arithmetic. When you have enough information, "
-    "answer directly and concisely, making sure the key number or fact appears in your "
-    "final message."
-)
 
 
 def search(query: str, k: int = 3) -> str:
@@ -40,13 +33,17 @@ def calculator(expr: str) -> str:
 
 
 class _Runner:
-    def __init__(self, config: ArenaConfig) -> None:
+    def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
         # Import eagerly so a missing install degrades to "unavailable" at build
         # time, like the other adapters, rather than erroring on every item.
         import agent_framework  # noqa: F401
         import agent_framework.openai  # noqa: F401
 
         self.config = config
+        # Task instruction comes from the arena spec, not from this file.
+        self.system_prompt = arena.system_prompt
+        available = {"search": search, "calculator": calculator}
+        self.tools = [available[n] for n in _tool_names(arena.tools) if n in available]
 
     async def _run_async(self, prompt: str) -> AgentResult:
         from agent_framework import Agent, ChatOptions
@@ -59,8 +56,8 @@ class _Runner:
         )
         agent = Agent(
             client,
-            instructions=INSTRUCTIONS,
-            tools=[search, calculator],
+            instructions=self.system_prompt,
+            tools=self.tools,
             default_options=ChatOptions(temperature=0.0),
         )
         response = await agent.run(prompt)
@@ -100,4 +97,4 @@ class Adapter:
             return "agent-framework (not installed)"
 
     def build(self, arena: ArenaSpec, config: ArenaConfig) -> _Runner:
-        return _Runner(config)
+        return _Runner(arena, config)
