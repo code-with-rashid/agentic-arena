@@ -7,7 +7,7 @@ import pytest
 from arena.config import ArenaConfig
 from arena.registry import available_frameworks, load_arena, load_framework
 
-STUBS = {"openai_agents", "claude_agent_sdk", "pydantic_ai", "microsoft_af"}
+STUBS = {"claude_agent_sdk", "microsoft_af"}
 
 
 @pytest.mark.parametrize("name", available_frameworks())

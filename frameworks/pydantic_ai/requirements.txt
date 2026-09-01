@@ -1,3 +1,4 @@
-# STUB adapter — package name/version unverified. Confirm on PyPI and pin exactly
-# when implementing this adapter (see .github/ISSUE_TEMPLATE/add-framework.md).
-pydantic-ai
+# Pinned so scorecards are reproducible. Bump deliberately, then refresh results/.
+# `-slim` + the `openai` extra is all the adapter needs; the full `pydantic-ai`
+# meta-package adds provider SDKs we don't use.
+pydantic-ai-slim[openai]==2.37.0
