@@ -1,22 +1,85 @@
-"""Microsoft Agent Framework adapter for agentic-arena - STUB.
+"""Microsoft Agent Framework adapter for agentic-arena.
 
-Filling this in is one of the most useful contributions available right now.
-See CONTRIBUTING.md and .github/ISSUE_TEMPLATE/add-framework.md.
+A single `agent_framework.Agent` with the shared search / calculator tools.
 
-The finished adapter must:
-  * build its agent using `config.model`, `config.base_url`, `config.api_key`
-    (every one of these frameworks can target an OpenAI-compatible endpoint, which
-    is what lets the mock server stand in for a real provider);
-  * register `arena.tools.search` and `arena.tools.calculator` unchanged;
-  * return an `arena.types.AgentResult` with `output_text`, `tool_calls`, tokens.
+Notes specific to this framework:
+  * `OpenAIChatClient` defaults to the OpenAI *Responses* API (`/v1/responses`).
+    The arena gateway / mock server speaks Chat Completions, so this adapter uses
+    `OpenAIChatCompletionClient` explicitly.
+  * The framework is async-only. A fresh `AsyncOpenAI` client, agent, and event
+    loop are built per item so the httpx client never outlives its loop.
 """
 
 from __future__ import annotations
 
-from arena.config import ArenaConfig
-from arena.types import ArenaSpec
+import asyncio
+from typing import Any
 
-_PKG = "agent-framework"
+from arena.config import ArenaConfig
+from arena.tools import calculator as _calculator
+from arena.tools import search as _search
+from arena.types import AgentResult, ArenaSpec, EvalItem
+
+INSTRUCTIONS = (
+    "You are a careful assistant with two tools: `search` (a small factual knowledge "
+    "base) and `calculator` (basic arithmetic). Use `search` for any fact you are not "
+    "certain of and `calculator` for any arithmetic. When you have enough information, "
+    "answer directly and concisely, making sure the key number or fact appears in your "
+    "final message."
+)
+
+
+def search(query: str, k: int = 3) -> str:
+    """Search a small knowledge base of general facts."""
+    return _search(query, k)
+
+
+def calculator(expr: str) -> str:
+    """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+    return _calculator(expr)
+
+
+class _Runner:
+    def __init__(self, config: ArenaConfig) -> None:
+        self.config = config
+
+    async def _run_async(self, prompt: str) -> AgentResult:
+        from agent_framework import Agent, ChatOptions
+        from agent_framework.openai import OpenAIChatCompletionClient
+        from openai import AsyncOpenAI
+
+        client = OpenAIChatCompletionClient(
+            model=self.config.model,
+            async_client=AsyncOpenAI(base_url=self.config.base_url, api_key=self.config.api_key),
+        )
+        agent = Agent(
+            client,
+            instructions=INSTRUCTIONS,
+            tools=[search, calculator],
+            default_options=ChatOptions(temperature=0.0),
+        )
+        response = await agent.run(prompt)
+
+        tool_calls: list[dict[str, Any]] = []
+        llm_calls = 0
+        for message in response.messages:
+            if getattr(message, "role", None) == "assistant":
+                llm_calls += 1
+            for content in getattr(message, "contents", []):
+                if getattr(content, "type", None) == "function_call":
+                    tool_calls.append({"name": content.name, "arguments": content.arguments})
+
+        usage = getattr(response, "usage_details", None) or {}
+        return AgentResult(
+            output_text=response.text or "",
+            tool_calls=tool_calls,
+            prompt_tokens=int(usage.get("input_token_count", 0) or 0),
+            completion_tokens=int(usage.get("output_token_count", 0) or 0),
+            llm_calls=llm_calls,
+        )
+
+    def run(self, item: EvalItem) -> AgentResult:
+        return asyncio.run(self._run_async(item.input))
 
 
 class Adapter:
@@ -24,18 +87,12 @@ class Adapter:
 
     @property
     def lib_version(self) -> str:
+        from importlib.metadata import PackageNotFoundError, version
+
         try:
-            from importlib.metadata import PackageNotFoundError, version
+            return f"agent-framework-core {version('agent-framework-core')}"
+        except PackageNotFoundError:
+            return "agent-framework (not installed)"
 
-            try:
-                return f"{_PKG} {version(_PKG)}"
-            except PackageNotFoundError:
-                return f"{_PKG} (not installed)"
-        except Exception:  # noqa: BLE001
-            return f"{_PKG} (unknown)"
-
-    def build(self, arena: ArenaSpec, config: ArenaConfig):
-        raise NotImplementedError(
-            "microsoft_af adapter is a stub. See .github/ISSUE_TEMPLATE/add-framework.md "
-            "for how to implement it."
-        )
+    def build(self, arena: ArenaSpec, config: ArenaConfig) -> _Runner:
+        return _Runner(config)

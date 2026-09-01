@@ -1,14 +1,10 @@
-"""Claude Agent SDK adapter for agentic-arena - STUB.
+"""Claude Agent SDK adapter for agentic-arena - STUB (deliberately).
 
-Filling this in is one of the most useful contributions available right now.
-See CONTRIBUTING.md and .github/ISSUE_TEMPLATE/add-framework.md.
-
-The finished adapter must:
-  * build its agent using `config.model`, `config.base_url`, `config.api_key`
-    (every one of these frameworks can target an OpenAI-compatible endpoint, which
-    is what lets the mock server stand in for a real provider);
-  * register `arena.tools.search` and `arena.tools.calculator` unchanged;
-  * return an `arena.types.AgentResult` with `output_text`, `tool_calls`, tokens.
+`claude-agent-sdk` installs on 3.14 but does not fit the shared-gateway design:
+it drives the `claude` CLI (Node) as a subprocess and speaks the Anthropic
+Messages API, not one OpenAI-compatible `/chat/completions` endpoint, so it can't
+run against the mock server. See README.md in this directory for the blocker and
+the three ways a contributor could close it.
 """
 
 from __future__ import annotations
@@ -36,6 +32,7 @@ class Adapter:
 
     def build(self, arena: ArenaSpec, config: ArenaConfig):
         raise NotImplementedError(
-            "claude_agent_sdk adapter is a stub. See .github/ISSUE_TEMPLATE/add-framework.md "
-            "for how to implement it."
+            "claude_agent_sdk does not fit the shared OpenAI-compatible gateway "
+            "(CLI subprocess + Anthropic Messages API). See "
+            "frameworks/claude_agent_sdk/README.md."
         )
