@@ -34,6 +34,31 @@ jobs:
       - name: Unit tests (offline)
         run: pytest -q
 
+  resilience:
+    # The resilience arena is the one place where mock-mode results are a real
+    # comparative signal: the faults are scripted and identical for everyone, so
+    # any difference is the framework's own error handling. Frameworks are
+    # EXPECTED to score differently here, so this job reports the table rather
+    # than demanding a clean sweep. It fails only if the stdlib baseline breaks,
+    # which would mean the arena itself is broken.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Install harness + every verified adapter
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e .
+          for fw in langgraph pydantic_ai openai_agents microsoft_af; do
+            python -m pip install -r "frameworks/$fw/requirements.txt"
+          done
+      - name: Run the resilience arena
+        run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
+      - name: Report, and fail only if the baseline broke
+        run: python .github/scripts/check_resilience.py
+
   mock-smoke:
     # Proves a real framework adapter wires together against the mock LLM.
     # Only frameworks whose adapter has been verified against the mock belong here.

@@ -40,6 +40,8 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 ## Phase 3 — Breadth of arenas 🚧
 
 - ✅ Arena 2 `structured_output`: schema-checked JSON record over the shared corpus
+- ✅ Arena 3 `resilience`: scripted model/tool faults; the first arena that produces
+      differentiated results offline (see docs/methodology.md section 5)
 - ⬜ Implement arenas 3–6 (`multi_agent`, `rag`, `human_in_the_loop`,
       `durable_state`) across the adapter set — HITL and durable_state need a
       harness resume/checkpoint API first

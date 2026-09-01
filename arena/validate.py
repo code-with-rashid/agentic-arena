@@ -118,14 +118,20 @@ def _validate_mock(
         turns = scenario.get("turns", [])
         if not turns:
             report.errors.append(f"{where}: has no turns")
+
+        # A resilience arena scripts faults on purpose — an undeclared tool name
+        # or malformed arguments IS the test. Such scenarios opt out by saying so,
+        # which keeps the check strict everywhere else instead of loosening it.
+        fault = scenario.get("deliberate_fault")
         for j, turn in enumerate(turns):
             for call in turn.get("tool_calls", []) or []:
                 name = call.get("name", "")
-                if name not in tools:
-                    report.errors.append(
-                        f"{where}.turns[{j}]: calls tool {name!r}, "
-                        f"which the arena does not declare ({sorted(tools)})"
-                    )
+                if name in tools or fault:
+                    continue
+                report.errors.append(
+                    f"{where}.turns[{j}]: calls tool {name!r}, "
+                    f"which the arena does not declare ({sorted(tools)})"
+                )
         if turns and turns[-1].get("tool_calls"):
             report.errors.append(
                 f"{where}: last turn is a tool call, so the agent never gets a final "

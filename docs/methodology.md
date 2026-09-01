@@ -86,6 +86,22 @@ correctly. It is **not** a quality signal:
 Only `--mode live` runs produce numbers worth publishing. `results/` should only
 ever contain live scorecards.
 
+### The one exception: `resilience`
+
+The `resilience` arena is a deliberate exception, and it is worth being precise
+about why. Its mock script injects **scripted faults** — malformed tool
+arguments, a tool that does not exist, a required argument omitted. The fault is
+byte-identical for every framework and the mock is deterministic, so nothing
+about the *model* varies. Any difference in outcome is the framework's own error
+handling, which is exactly what is being measured.
+
+So mock-mode `resilience` results *are* comparable, while mock-mode `tool_use`
+and `structured_output` results are not. The distinction is not mock-vs-live; it
+is whether the thing that varies between adapters is the framework or the model.
+Frameworks are expected to score differently here, so CI reports the table rather
+than requiring a clean sweep — it fails only if the stdlib baseline stops
+recovering, which would mean the arena itself is broken.
+
 ## 6. Metrics
 
 Per adapter, per arena:
