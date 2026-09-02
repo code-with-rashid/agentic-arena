@@ -165,6 +165,30 @@ def _tool_round_trip(name):
         return server.requests
 
 
+def _decoded(text):
+    """Undo a framework's own encoding of the tool result, but nothing else.
+
+    Google ADK hands tool output back as `{"result": "<the text>"}`, so the
+    payload arrives JSON-escaped - an apostrophe becomes `\'` and a raw
+    containment check fails on a result that is in fact completely intact. That
+    is an encoding difference, like smolagents' "Observation:" prefix, not a
+    difference in what the model gets to see.
+
+    Only the *values* of a JSON object are unwrapped, and only when the whole
+    message parses. Truncation and summarisation still fail the check, because
+    the decoded payload is compared against the tool output in full.
+    """
+    try:
+        decoded = json.loads(text)
+    except (ValueError, TypeError):
+        return text
+    if isinstance(decoded, dict):
+        return "\n".join(str(v) for v in decoded.values())
+    if isinstance(decoded, str):
+        return decoded
+    return text
+
+
 def _tool_result_text(name, requests):
     """The tool output as the framework handed it back to the model.
 
@@ -189,6 +213,7 @@ def _tool_result_text(name, requests):
             text = "".join(part.get("text", "") for part in content if isinstance(part, dict))
         else:
             text = json.dumps(content)
+        text = _decoded(text)
         if truth in text or "Eiffel Tower" in text:
             return text
     roles = [m.get("role") for m in messages]

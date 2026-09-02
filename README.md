@@ -81,12 +81,14 @@ when its output satisfies every check for that item.
 | Pydantic AI | ✅ | Python | `pydantic-ai-slim`; typed, model-agnostic |
 | Microsoft Agent Framework | ✅ | Python | `agent-framework-openai` (merged AutoGen + Semantic Kernel) |
 | smolagents | ✅ | Python | `smolagents[openai]`; `ToolCallingAgent` — ends its loop by calling `final_answer` |
+| Google ADK | ✅ | Python | `google-adk` + `litellm` (required to leave Gemini); the only real loop cap out of the box |
 | Claude Agent SDK | 🚫 stub | Python | drives the `claude` CLI over the Anthropic Messages API — doesn't fit the shared OpenAI-compatible gateway ([why](frameworks/claude_agent_sdk/README.md)) |
 
-Six adapters run against the mock across seven arenas. `vanilla` and
+Seven adapters run against the mock across seven arenas. `vanilla` and
 `pydantic_ai` are green on all seven; `langgraph` and `openai_agents` are green on
-all but one `resilience` item each; `microsoft_af` and `smolagents` run five of
-seven and report *unsupported* on the two pause arenas rather than failing them.
+all but one `resilience` item each; `microsoft_af` pauses (12/12) but is *unsupported* on `durable_state`;
+`smolagents` and `google_adk` are *unsupported* on both pause arenas rather than
+failing them.
 The next contribution step is a live scorecard (needs an API key).
 
 ## How comparison stays fair

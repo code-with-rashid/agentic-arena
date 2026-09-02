@@ -30,10 +30,11 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   - `durable_state` — 8 items; the harness throws the runner away at the
     checkpoint and rebuilds it. All four resumable adapters 8/8, by four
     different mechanisms — see docs/feature-matrix.md
-- Six adapters run in mock mode:
+- Seven adapters run in mock mode:
   `vanilla`, `langgraph` (LangGraph 1.2.11), `pydantic_ai` (pydantic-ai-slim 2.37),
   `openai_agents` (openai-agents 0.22), `microsoft_af` (agent-framework 1.16),
-  `smolagents` (smolagents 1.26). `vanilla` and `pydantic_ai` are green on all
+  `smolagents` (smolagents 1.26), `google_adk` (google-adk 2.8 + litellm).
+  `vanilla` and `pydantic_ai` are green on all
   seven arenas; the others' misses are measured findings, not wiring bugs
   (`resilience` recovery, and pause support reported as *unsupported*).
 - `python -m arena run --arena <id> --framework all --mode mock` → the six above

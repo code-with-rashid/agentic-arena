@@ -1,0 +1,9 @@
+# Pinned so scorecards are reproducible. Bump deliberately, then refresh results/.
+#
+# ADK is Gemini-first. Reaching the shared OpenAI-compatible gateway goes through
+# its LiteLLM backend, so `litellm` is a hard requirement here rather than an
+# optional extra - and it is the heaviest dependency of any adapter in the repo
+# (it pulls boto3, tokenizers, huggingface-hub and tiktoken). That cost is a
+# finding about adopting ADK against a non-Google provider, not an accident.
+google-adk==2.8.0
+litellm==1.99.0
