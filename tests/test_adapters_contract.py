@@ -12,7 +12,7 @@ import pytest
 from arena.config import ArenaConfig
 from arena.llm.mockserver import MockScript, MockServer
 from arena.registry import available_frameworks, load_arena, load_framework
-from arena.tools import CONTROL_TOOLS, TOOL_FUNCS
+from arena.tools import CONTROL_TOOL_PREFIXES, CONTROL_TOOLS, TOOL_FUNCS, is_control_tool
 from arena.types import ArenaSpec, EvalItem
 
 STUBS = {"claude_agent_sdk"}
@@ -94,12 +94,13 @@ def test_adapter_advertises_only_the_tools_the_arena_declares(name):
     body = _wire_traffic(name, ["search"])
     advertised = sorted(t.get("function", {}).get("name", "") for t in body.get("tools", []) or [])
     # A framework may add tools that only drive its own loop - smolagents ends a
-    # run by calling `final_answer`. Those grant no arena capability, so exactly
-    # that named set is subtracted and nothing else.
-    task_tools = [t for t in advertised if t not in CONTROL_TOOLS]
+    # run by calling `final_answer`, and a handoff chain advertises
+    # `transfer_to_<agent>`. Those grant no arena capability, so exactly that set
+    # is subtracted and nothing else.
+    task_tools = [t for t in advertised if not is_control_tool(t)]
     assert task_tools == ["search"], (
         f"{name}: advertised {advertised}, but the arena declares only ['search'] "
-        f"(control tools {list(CONTROL_TOOLS)} are exempt)"
+        f"(exempt: {list(CONTROL_TOOLS)} and {list(CONTROL_TOOL_PREFIXES)}*)"
     )
 
 

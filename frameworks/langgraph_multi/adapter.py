@@ -33,6 +33,7 @@ from __future__ import annotations
 from typing import Any
 
 from arena.config import ArenaConfig
+from arena.tools import calculator as _calculator
 from arena.tools import names_for as _tool_names
 from arena.tools import search as _search
 from arena.types import AgentResult, ArenaSpec, EvalItem
@@ -65,7 +66,12 @@ def _make_tools(names: list[str]) -> list[Any]:
         """Search a small knowledge base of general facts."""
         return _search(query, k)
 
-    available = {"search": search}
+    @tool
+    def calculator(expr: str) -> str:
+        """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+        return _calculator(expr)
+
+    available = {"search": search, "calculator": calculator}
     return [available[name] for name in names if name in available]
 
 

@@ -21,8 +21,11 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
     `resume` method
   - `multi_agent` — 10 items; carries two real three-role pipelines
     (`vanilla_multi` hand-rolled, `langgraph_multi` a `StateGraph`) beside the
-    single-agent entries, which measures what delegation costs: 2x LLM calls,
-    ~2.5x prompt tokens, and the graph machinery itself adds nothing
+    single-agent entries, plus a model-decided handoff chain
+    (`openai_agents_multi`). Measures what delegation costs: 2x LLM calls,
+    ~2.5x prompt tokens, the graph machinery itself adds nothing, and a handoff
+    costs ~10% more again — 94% of it the `transfer_to_*` schemas on every
+    request rather than the transfers
   - `durable_state` — 8 items; the harness throws the runner away at the
     checkpoint and rebuilds it. All four resumable adapters 8/8, by four
     different mechanisms — see docs/feature-matrix.md
