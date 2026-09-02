@@ -538,11 +538,16 @@ class _Handler(BaseHTTPRequestHandler):
         )
 
         if req.get("stream"):
-            self._send_stream(response)
+            # A real provider sends usage on a streamed response only when the
+            # client asks for it, so the mock must too - otherwise an adapter
+            # that forgets `include_usage` looks correct here and reports zero
+            # tokens against a real one.
+            include_usage = bool((req.get("stream_options") or {}).get("include_usage"))
+            self._send_stream(response, include_usage=include_usage)
         else:
             self._send_json(response)
 
-    def _send_stream(self, response: dict[str, Any]) -> None:
+    def _send_stream(self, response: dict[str, Any], include_usage: bool = False) -> None:
         self.send_response(200)
         self.send_header("Content-Type", "text/event-stream")
         self.end_headers()
@@ -573,6 +578,11 @@ class _Handler(BaseHTTPRequestHandler):
         self._write_chunk(
             {**base, "choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason}]}
         )
+        if include_usage:
+            # OpenAI's shape: one final chunk with an empty `choices` list and
+            # the usage for the whole response. Same numbers the non-streaming
+            # path bills, so `served_usage` means the same thing either way.
+            self._write_chunk({**base, "choices": [], "usage": response["usage"]})
         self.wfile.write(b"data: [DONE]\n\n")
 
     def _write_chunk(self, obj: dict[str, Any]) -> None:

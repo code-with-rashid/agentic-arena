@@ -85,6 +85,38 @@ and Agent Framework's tool loop is uncapped unless you set
 points each adapter at a mock that never stops requesting tools and counts the
 requests that reach the wire. Adapters that exceed the budget fail CI.
 
+## 3c. One request timeout
+
+`ArenaConfig.request_timeout_s` is the same kind of control and was getting the
+same kind of treatment: five of the seven adapters never passed it to their
+client and inherited the library default instead — ten minutes, for anything on
+the official OpenAI client. A hung provider would then have held a worker for ten
+minutes on a configured budget of sixty seconds, and the `latency_s` column would
+have been reporting library defaults rather than the arena's configuration.
+
+Every adapter now threads it through, by a different route in each library (see
+[decision-guide.md §4](decision-guide.md#4-gotchas-worth-knowing-before-you-adopt)).
+`tests/test_transport_faults.py` holds them to it against a mock that accepts the
+request and answers nothing, and checks that *doubling* the budget doubles the
+wait — without that second half, any hard-coded short timeout would pass.
+
+Note what the knob bounds: **one attempt**, not one item. A framework that retries
+twice can spend three times it.
+
+## 3d. Streaming, if it ever happens
+
+No adapter streams today, measured rather than assumed. That matters because a
+real OpenAI-compatible provider returns **no `usage`** on a streamed response
+unless the client sets `stream_options: {"include_usage": true}` — so an adapter
+that turned streaming on without it would report zero tokens while every
+correctness check stayed green, and §5's cost checks would be comparing zero
+against zero.
+
+Both sides of that contract are pinned. The mock sends the usage chunk only when
+it was asked for (`tests/test_mockserver.py`), and an adapter may stream only if
+it asks (`tests/test_adapters_contract.py`). Streaming is not banned; streaming
+blind is.
+
 ## 4. One task spec + eval set per arena
 
 `arenas/<id>/arena.toml` defines the task and `dataset.jsonl` the graded items. An

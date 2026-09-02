@@ -404,10 +404,29 @@ latency, token and cost numbers — all four of which the scorecard publishes.
 **Google ADK's `RunConfig(max_llm_calls=N)` is the only one that meant N out of
 the box.**
 
+**Five adapters were ignoring the shared request timeout.** `request_timeout_s`
+has existed since the first commit and only `vanilla` and `langgraph` ever passed
+it to their client. The other five inherited their library's default — ten
+minutes, on the official OpenAI client — and answered happily through a
+20-second hang on a one-second budget. Same shape as the iteration-budget bug: a
+latency column would have been reporting library defaults rather than the arena's
+configuration. Measurable only because the mock learned to *hang* rather than
+fail. → [transport.md](transport.md#a-hung-provider-is-a-different-failure-and-five-adapters-were-deaf-to-it)
+
+**The mock's streaming path would have zeroed every token count.** A real
+OpenAI-compatible provider sends **no `usage`** on a streamed response unless the
+client asks with `stream_options: {"include_usage": true}`. The mock sent none
+either way, so the first adapter to turn streaming on would have reported zero
+prompt and completion tokens with every correctness check still green — the
+answer is unaffected. Latent rather than live: **no adapter here streams**, which
+is itself worth recording, since the usual assumption is that agent frameworks
+stream by default and none of these does unless asked. The mock now honours the
+option, and the contract test permits streaming only alongside it.
+
 → [methodology.md §3b](methodology.md#3b-one-iteration-budget)
 
 ```bash
-python -m pytest tests/test_usage_accounting.py tests/test_adapters_contract.py -q
+python -m pytest tests/test_usage_accounting.py tests/test_adapters_contract.py tests/test_mockserver.py -q
 ```
 
 ---
