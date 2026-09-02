@@ -62,7 +62,7 @@ when its output satisfies every check for that item.
 | 1 | `tool_use` — single agent with web-search + calculator tools | tool-calling loop, baseline DX | ✅ spec + dataset + scorer |
 | 2 | `structured_output` — look up a landmark, return a schema-checked JSON record | output validation, typing | ✅ spec + dataset + scorer |
 | 3 | `resilience` — the model misbehaves on purpose; the agent must recover | error handling, graceful degradation | ✅ spec + dataset + scorer |
-| 4 | `multi_agent` — researcher → writer → editor pipeline | orchestration, handoffs | 🚧 spec drafted |
+| 4 | `multi_agent` — researcher → writer → editor pipeline | orchestration, handoffs | ✅ spec + dataset + scorer (single-agent baseline) |
 | 5 | `rag` — agent over a fixed local corpus | retrieval integration | 🚧 spec drafted |
 | 6 | `human_in_the_loop` — approval gate, pause + resume | interrupts, HITL | 🚧 spec drafted |
 | 7 | `durable_state` — resume after a crash | checkpointing, durability | 🚧 spec drafted |

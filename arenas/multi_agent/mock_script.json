@@ -1,0 +1,75 @@
+{
+  "_comment": "Canned turns replayed by arena.llm.mockserver so multi_agent runs offline. Scenario is chosen by the first case-insensitive substring of the first user message that matches `match`. Turn N is served after N assistant messages already exist. Each scenario is one `search` turn (the researcher) then the finished brief (writer + editor). A real multi-agent adapter makes more assistant turns than a single-agent one; the extra turns just re-serve the last (the brief), which is harmless.",
+  "scenarios": [
+    {
+      "match": "eiffel tower",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Eiffel Tower"}}]},
+        {"content": "The Eiffel Tower is a wrought-iron lattice tower on the Champ de Mars in Paris, France. It was completed in 1889 as the entrance arch to the World Fair. It stands 330 metres tall including its antennas."}
+      ]
+    },
+    {
+      "match": "statue of liberty",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Statue of Liberty"}}]},
+        {"content": "The Statue of Liberty is a colossal neoclassical sculpture on Liberty Island in New York Harbor. It was dedicated in 1886 as a gift from the people of France. From the ground to the tip of the torch it measures 93 metres."}
+      ]
+    },
+    {
+      "match": "burj khalifa",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Burj Khalifa"}}]},
+        {"content": "The Burj Khalifa is a mixed-use supertall skyscraper in Dubai, United Arab Emirates. It opened in 2010 and remains the tallest structure in the world. It reaches 828 metres in height across more than 160 storeys."}
+      ]
+    },
+    {
+      "match": "cn tower",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "CN Tower"}}]},
+        {"content": "The CN Tower is a concrete communications and observation tower in Toronto, Canada. It was completed in 1976 and held the record for the world's tallest free-standing structure for over thirty years. It stands 553 metres tall."}
+      ]
+    },
+    {
+      "match": "space needle",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Space Needle"}}]},
+        {"content": "The Space Needle is an observation tower in Seattle, Washington. It was built for the 1962 World Fair and has become a symbol of the city. It is 184 metres tall and engineered to withstand high winds and earthquakes."}
+      ]
+    },
+    {
+      "match": "gateway arch",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Gateway Arch"}}]},
+        {"content": "The Gateway Arch is a stainless-steel monument on the Mississippi riverfront in Missouri, shaped as a weighted catenary curve. It was completed in 1965 to commemorate the westward expansion of the United States. It stands 192 metres tall, matching its span at ground level."}
+      ]
+    },
+    {
+      "match": "tokyo tower",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Tokyo Tower"}}]},
+        {"content": "Tokyo Tower is a communications and observation tower in the Shiba-koen district of Tokyo, Japan. It was completed in 1958 and is painted white and international orange to satisfy air-safety rules. It is 333 metres tall, slightly taller than the tower that inspired it."}
+      ]
+    },
+    {
+      "match": "the shard",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "The Shard"}}]},
+        {"content": "The Shard is a pyramid-shaped skyscraper in Southwark, London, designed by the architect Renzo Piano. It was completed in 2012 and is the tallest building in the United Kingdom. It stands 310 metres tall."}
+      ]
+    },
+    {
+      "match": "taipei 101",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Taipei 101"}}]},
+        {"content": "Taipei 101 is a supertall skyscraper in the Xinyi district of Taipei, Taiwan. It was completed in 2004 and briefly held the title of world's tallest building. It rises 508 metres to its architectural top."}
+      ]
+    },
+    {
+      "match": "golden gate bridge",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Golden Gate Bridge"}}]},
+        {"content": "The Golden Gate Bridge is a suspension bridge spanning the strait between San Francisco Bay and the Pacific Ocean. It opened in 1937 after roughly four years of construction. Its towers rise 227 metres above the water."}
+      ]
+    }
+  ]
+}

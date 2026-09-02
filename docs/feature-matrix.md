@@ -26,5 +26,10 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 The two `Recovers from ...` rows are measured, not judged — see the `resilience`
 arena and the comparison CI prints on every run.
 
+The `Built-in multi-agent` row is still judged, not measured: the `multi_agent`
+arena runs today with single-agent role-play entries only. It starts measuring
+this row once `<fw>-multi` entries land that use each framework's real
+graph/crew/handoff mechanism, compared on token and LLM-call cost.
+
 > The ❓ cells are the backlog. Each one gets resolved when its adapter is written
 > or when an arena exercises that capability directly.

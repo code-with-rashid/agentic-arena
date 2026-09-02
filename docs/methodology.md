@@ -69,6 +69,19 @@ Adapters may add framework-idiomatic framing around that instruction (a role, a
 backstory, a typed result model); that difference is part of what is being
 compared. Prompts must not encode answers or item-specific hints.
 
+### One task, many shapes of implementation
+
+Some arenas name an architecture in the task — `multi_agent` asks for a
+researcher → writer → editor pipeline. The eval stays mechanical and
+shape-based (does the brief carry the right year and measurement, in three to
+five sentences), so a framework may satisfy it with a real multi-agent
+mechanism *or* a single agent that role-plays the roles. Both are valid
+entries: the task, the tool set and the checks are identical, and the
+difference — token count, LLM calls, how the orchestration reads — is the
+finding. A single-agent entry on such an arena is named `<fw>` as usual; a
+real-orchestration entry is named `<fw>-multi` so the two can be compared
+directly.
+
 `tests/test_adapters_contract.py` enforces both rules on the wire: it builds each
 adapter against a sentinel arena and asserts, from the request body the mock
 server actually received, that the arena's prompt reached the model and that only
