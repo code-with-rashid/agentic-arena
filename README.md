@@ -98,6 +98,11 @@ See [docs/methodology.md](docs/methodology.md) for the full rules. In short:
    not a quality signal — they only prove the adapter wires everything together.
    Only `--mode live` numbers go in published scorecards.
 
+Two things mock mode *can* compare honestly, because the model is held identical
+and only the framework varies: the `resilience` arena's recovery rates, and
+[how much each framework puts on the wire](docs/overhead.md) for the same task
+(a ~1.15× spread, driven by tool-schema serialisation). CI prints both on every run.
+
 ## Repo layout
 
 ```

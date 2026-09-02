@@ -34,13 +34,19 @@ jobs:
       - name: Unit tests (offline)
         run: pytest -q
 
-  resilience:
-    # The resilience arena is the one place where mock-mode results are a real
-    # comparative signal: the faults are scripted and identical for everyone, so
-    # any difference is the framework's own error handling. Frameworks are
-    # EXPECTED to score differently here, so this job reports the table rather
-    # than demanding a clean sweep. It fails only if the stdlib baseline breaks,
-    # which would mean the arena itself is broken.
+  comparison:
+    # The two places where mock mode produces a real comparative signal, rather
+    # than the ~100%-by-construction pass rate that mock mode gives everywhere
+    # else. Both are report-only: frameworks are EXPECTED to differ, and the
+    # difference is the measurement.
+    #
+    #   resilience — the faults are scripted and byte-identical for everyone, so
+    #     any difference in outcome is the framework's own error handling. Fails
+    #     only if the stdlib baseline stops recovering (the arena is broken).
+    #   overhead   — every framework gets the same prompt and the same two tool
+    #     definitions and the mock replays identical turns, so the prompt size
+    #     each one puts on the wire is its own serialisation cost. Fails only if
+    #     the baseline is missing.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -56,8 +62,12 @@ jobs:
           done
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
-      - name: Report, and fail only if the baseline broke
+      - name: Report recovery, and fail only if the baseline broke
         run: python .github/scripts/check_resilience.py
+      - name: Run tool_use for the overhead comparison
+        run: python -m arena run --arena tool_use --framework all --mode mock --no-scorecard
+      - name: Report per-framework prompt overhead
+        run: python .github/scripts/report_overhead.py tool_use
 
   mock-smoke:
     # Proves a real framework adapter wires together against the mock LLM.
