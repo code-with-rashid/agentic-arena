@@ -13,6 +13,9 @@
 - [When the gateway fails](transport.md) — retry and backoff behaviour when the
   provider returns 429/500/400. The one dimension where the hand-rolled baseline
   loses outright.
+- [Structured output](structured-output.md) — which frameworks ask the provider
+  for a schema (none), what they do with a record that violates one (nothing),
+  and what that means for what the arena is grading.
 - [Dependencies](dependencies.md) — the pinning policy, why the harness has zero
   runtime deps, and the deprecation register.
 - Per-framework deep dives: [`frameworks/`](frameworks/)

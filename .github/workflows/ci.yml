@@ -119,6 +119,14 @@ jobs:
         run: pytest tests/test_prompt_growth.py -q
       - name: Report retry behaviour per framework
         run: python .github/scripts/report_transport.py
+      - name: What each framework does with a record that violates the schema
+        # Gates the instrument, not the frameworks: no adapter validates its own
+        # output, so the scorer is the only thing rejecting a malformed record.
+        # That nobody uses a native mechanism is a finding in
+        # docs/structured-output.md.
+        run: |
+          pytest tests/test_structured_output_contract.py -q
+          python .github/scripts/report_structured_output.py
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
       - name: Report recovery, and fail only if the baseline broke
