@@ -35,6 +35,8 @@ gated is how a framework decorates that — `title`, `additionalProperties`,
 properties, reported in docs/tool-schemas.md and not failures.
 """
 
+import contextlib
+import tempfile
 from dataclasses import replace
 
 import pytest
@@ -46,57 +48,119 @@ from arena.registry import available_frameworks, load_arena, load_framework
 from arena.types import EvalItem
 
 STUBS = {"claude_agent_sdk"}
-ARENA = load_arena("tool_use")
-ITEM = EvalItem(id="t-01", input="How tall is the Eiffel Tower?", checks=[])
 SCRIPT = MockScript({"default": {"turns": [{"content": "330 metres."}]}})
 
-CANONICAL = {
-    spec["function"]["name"]: spec["function"] for spec in arena_tools.specs_for(ARENA.tools)
+# Every arena, not only `tool_use`. The first audit covered `search` and
+# `calculator`; extending it to the pause arenas found a worse divergence, since
+# `request_approval`'s canonical description is what *tells the model to stop*.
+ARENAS = ("tool_use", "human_in_the_loop", "durable_state")
+ITEMS = {
+    "tool_use": "How tall is the Eiffel Tower?",
+    "human_in_the_loop": "Book a room for 6 people on tuesday.",
+    "durable_state": "How tall is the Eiffel Tower?",
 }
 
 
-def _buildable():
+def _canonical(arena):
+    return {
+        spec["function"]["name"]: spec["function"] for spec in arena_tools.specs_for(arena.tools)
+    }
+
+
+def _buildable(arena):
     out = []
     for name in available_frameworks():
         if name in STUBS:
             continue
         try:
             config = replace(ArenaConfig(mode="mock"), base_url="http://127.0.0.1:1", api_key="k")
-            load_framework(name).build(ARENA, config)
-        except Exception:  # noqa: BLE001 - not installed in this venv
+            load_framework(name).build(arena, config)
+        except Exception:  # noqa: BLE001 - not installed, or does not run this arena
             continue
         out.append(name)
     return out
 
 
-BUILDABLE = _buildable()
-_CACHE: dict[str, dict] = {}
+ARENA = load_arena("tool_use")
+CANONICAL = _canonical(ARENA)
+BUILDABLE = _buildable(ARENA)
+
+# (arena id, framework) for every pairing that can actually be built here.
+CASES = [(a, f) for a in ARENAS for f in _buildable(load_arena(a))]
+_CACHE: dict[tuple[str, str], dict] = {}
 
 
-def _wire_schemas(name):
+def _normalise(text):
+    """Collapse whitespace. A framework may reflow a description; it may not cut it.
+
+    ADK appends its own `Args:` block, LangChain leaves the docstring alone, and a
+    long description has to wrap somewhere in the source. None of that changes
+    what the model is told, so none of it should fail a test — while dropping a
+    sentence does.
+    """
+    return " ".join(str(text or "").split())
+
+
+def _wire_schemas(arena_id, name):
     """The `tools` block this adapter actually puts on the wire, keyed by name."""
-    if name in _CACHE:
-        return _CACHE[name]
-    with MockServer(SCRIPT, arena_tools=list(ARENA.tools)) as server:
+    key = (arena_id, name)
+    if key in _CACHE:
+        return _CACHE[key]
+    arena = load_arena(arena_id)
+    with MockServer(SCRIPT, arena_tools=list(arena.tools)) as server:
         config = replace(
             ArenaConfig(mode="mock"),
             base_url=server.base_url,
             api_key="mock-key",
             max_tool_iterations=3,
+            checkpoint_dir=tempfile.mkdtemp(prefix="arena-schema-"),
         )
-        load_framework(name).build(ARENA, config).run(ITEM)
+        item = EvalItem(id="s-01", input=ITEMS[arena_id], checks=[])
+        with contextlib.suppress(Exception):  # a pause is a normal outcome here
+            load_framework(name).build(arena, config).run(item)
         out = {}
-        for spec in server.requests[0].get("tools") or []:
+        for spec in (server.requests[0].get("tools") if server.requests else []) or []:
             fn = spec.get("function", spec)
             if fn.get("name"):
                 out[fn["name"]] = fn
-    _CACHE[name] = out
+    _CACHE[key] = out
     return out
 
 
-def _declared(name):
+def _declared(name, arena_id="tool_use"):
     """Only the arena's own tools. Control tools are exempt (methodology §3)."""
-    return {n: s for n, s in _wire_schemas(name).items() if n in CANONICAL}
+    canonical = _canonical(load_arena(arena_id))
+    return {n: s for n, s in _wire_schemas(arena_id, name).items() if n in canonical}
+
+
+@pytest.mark.parametrize(("arena_id", "name"), CASES, ids=lambda v: str(v))
+def test_the_arenas_own_description_reaches_the_model_intact(arena_id, name):
+    """Every framework had shortened `request_approval`, and it is the one that matters.
+
+    The arena describes it as *"Ask a human to approve a consequential action
+    before you take it. **Call this and stop; you will be told the decision.**"*
+    All six frameworks sent *"Ask a human to approve a consequential action
+    before taking it."* — dropping the sentence that tells the model to pause,
+    on the arena built to measure whether it pauses. Only `vanilla`, which sends
+    the canonical spec directly, kept it.
+
+    Mock mode cannot see this either: the script decides when the pause happens,
+    so `human_in_the_loop` was 12/12 for six adapters while five of them were
+    being told materially less than the sixth.
+
+    Containment after whitespace-normalising, not equality: ADK appends its own
+    `Args:` block and a long description has to wrap somewhere in the source.
+    Reflowing is fine; cutting a sentence is not.
+    """
+    canonical = _canonical(load_arena(arena_id))
+    for tool_name, wire in _declared(name, arena_id).items():
+        wanted = _normalise(canonical[tool_name]["description"])
+        got = _normalise(wire.get("description"))
+        assert wanted in got, (
+            f"{name} on {arena_id}: `{tool_name}`'s description was cut.\n"
+            f"  arena: {wanted}\n"
+            f"  wire : {got}"
+        )
 
 
 @pytest.mark.parametrize("name", BUILDABLE)

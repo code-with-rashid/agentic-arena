@@ -65,12 +65,15 @@ def calculator(expr: Annotated[str, Field(description="Arithmetic expression.")]
     return _calculator(expr)
 
 
-def search_rooms(capacity: int, day: str) -> str:
+def search_rooms(
+    capacity: Annotated[int, Field(description="People to seat.")],
+    day: Annotated[str, Field(description="Day of the week, e.g. 'tuesday'.")],
+) -> str:
     """List meeting rooms that seat at least `capacity` and are free on `day`."""
     return arena_tools.search_rooms(capacity, day)
 
 
-def book_room(room_id: str) -> str:
+def book_room(room_id: Annotated[str, Field(description="Room id, e.g. 'R3'.")]) -> str:
     """Book a meeting room by id. Only call this after approval."""
     return arena_tools.book_room(room_id)
 
@@ -126,13 +129,23 @@ class _Runner:
         # `approval_mode="always_require"` is the native pause: the middleware
         # queues the call and surfaces it instead of executing the body.
         @af_tool(approval_mode="always_require")
-        def request_approval(summary: str) -> str:
-            """Ask a human to approve a consequential action before taking it."""
+        def request_approval(
+            summary: Annotated[str, Field(description="What you want approved.")],
+        ) -> str:
+            """Ask a human to approve a consequential action before you take it.
+
+            Call this and stop; you will be told the decision.
+            """
             return f"Approved: {summary}"
 
         @af_tool(approval_mode="always_require")
-        def save_progress(note: str) -> str:
-            """Checkpoint what you have gathered so far, then stop."""
+        def save_progress(
+            note: Annotated[str, Field(description="What you have established so far.")],
+        ) -> str:
+            """Checkpoint what you have gathered so far, then stop.
+
+            You will be resumed and can carry on from where you left off.
+            """
             return f"Checkpointed: {note}"
 
         available = {

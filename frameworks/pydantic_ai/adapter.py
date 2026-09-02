@@ -100,22 +100,30 @@ class _Runner:
         if "search_rooms" in names:
 
             @self._agent.tool_plain
-            def search_rooms(capacity: int, day: str) -> str:
+            def search_rooms(
+                capacity: Annotated[int, Field(description="People to seat.")],
+                day: Annotated[str, Field(description="Day of the week, e.g. 'tuesday'.")],
+            ) -> str:
                 """List meeting rooms that seat at least `capacity` and are free on `day`."""
                 return arena_tools.search_rooms(capacity, day)
 
         if "book_room" in names:
 
             @self._agent.tool_plain
-            def book_room(room_id: str) -> str:
+            def book_room(room_id: Annotated[str, Field(description="Room id, e.g. 'R3'.")]) -> str:
                 """Book a meeting room by id. Only call this after approval."""
                 return arena_tools.book_room(room_id)
 
         if "request_approval" in names:
 
             @self._agent.tool_plain
-            def request_approval(summary: str) -> str:
-                """Ask a human to approve a consequential action before taking it."""
+            def request_approval(
+                summary: Annotated[str, Field(description="What you want approved.")],
+            ) -> str:
+                """Ask a human to approve a consequential action before you take it.
+
+                Call this and stop; you will be told the decision.
+                """
                 # The native pause. Raising CallDeferred makes the run finish with a
                 # DeferredToolRequests output instead of executing this body.
                 raise CallDeferred
@@ -123,8 +131,13 @@ class _Runner:
         if "save_progress" in names:
 
             @self._agent.tool_plain
-            def save_progress(note: str) -> str:
-                """Checkpoint what you have gathered so far, then stop."""
+            def save_progress(
+                note: Annotated[str, Field(description="What you have established so far.")],
+            ) -> str:
+                """Checkpoint what you have gathered so far, then stop.
+
+                You will be resumed and can carry on from where you left off.
+                """
                 raise CallDeferred
 
     def _result(self, result: Any, seen: int) -> AgentResult:

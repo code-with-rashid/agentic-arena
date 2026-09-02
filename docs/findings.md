@@ -409,7 +409,14 @@ advantage was four missing descriptions, and the corrected claim is the duller
 one: no framework is leaner than the hand-rolled loop, and the band is 1.00×–1.14×
 rather than 0.91×–1.05×. The second correction to that claim, having already
 replaced an earlier hypothesis that the baseline *would* be cheapest.
-→ [tool-schemas.md](tool-schemas.md)
+
+**And on the pause arenas it was worse.** The arena describes its pause tool as
+*"…**Call this and stop; you will be told the decision.**"* **All six frameworks
+were sending the first sentence only** — dropping the instruction to pause, on
+the arena built to measure whether it pauses. Only `vanilla` kept it. Mock mode
+is blind for a sharper reason here: the *script* decides when the pause happens,
+so `human_in_the_loop` read 12/12 for six adapters while five were being told
+materially less than the sixth. → [tool-schemas.md](tool-schemas.md)
 
 **One of the probes on this page was contaminated by its own corpus.** The
 batched-call measurement in §2b originally counted the word "observation" in the

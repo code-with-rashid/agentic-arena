@@ -64,7 +64,7 @@ def search_rooms(capacity: int, day: str) -> str:
     """List meeting rooms that seat at least `capacity` and are free on `day`.
 
     Args:
-        capacity: How many people the room must seat.
+        capacity: People to seat.
         day: Day of the week, e.g. 'tuesday'.
     """
     return arena_tools.search_rooms(capacity, day)
@@ -74,13 +74,15 @@ def book_room(room_id: str) -> str:
     """Book a meeting room by id. Only call this after approval.
 
     Args:
-        room_id: The room id, e.g. 'R3'.
+        room_id: Room id, e.g. 'R3'.
     """
     return arena_tools.book_room(room_id)
 
 
 def request_approval(summary: str) -> dict[str, str]:
-    """Ask a human to approve a consequential action before taking it.
+    """Ask a human to approve a consequential action before you take it.
+
+    Call this and stop; you will be told the decision.
 
     Args:
         summary: What you want approved.
@@ -92,6 +94,8 @@ def request_approval(summary: str) -> dict[str, str]:
 
 def save_progress(note: str) -> dict[str, str]:
     """Checkpoint what you have gathered so far, then stop.
+
+    You will be resumed and can carry on from where you left off.
 
     Args:
         note: What you have established so far.

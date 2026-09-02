@@ -62,7 +62,7 @@ def _make_tools(names: list[str]) -> list[Any]:
         """List meeting rooms that seat at least `capacity` and are free on `day`.
 
         Args:
-            capacity: How many people the room must seat.
+            capacity: People to seat.
             day: Day of the week, e.g. 'tuesday'.
         """
         return arena_tools.search_rooms(capacity, day)
@@ -72,7 +72,7 @@ def _make_tools(names: list[str]) -> list[Any]:
         """Book a meeting room by id. Only call this after approval.
 
         Args:
-            room_id: The room id, e.g. 'R3'.
+            room_id: Room id, e.g. 'R3'.
         """
         return arena_tools.book_room(room_id)
 

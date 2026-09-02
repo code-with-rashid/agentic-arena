@@ -32,6 +32,48 @@ Same class of unfairness as an unwired
 [request timeout](methodology.md#3c-one-request-timeout) — a control the arena
 owns, silently not reaching one adapter.
 
+## The same audit on the pause arenas, where it matters more
+
+`tool_use` declares two tools. Extending the audit to `human_in_the_loop` and
+`durable_state` turned up a worse case, on the arena least able to absorb it.
+
+The arena describes its pause tool as:
+
+> Ask a human to approve a consequential action before you take it. **Call this
+> and stop; you will be told the decision.**
+
+Every one of the six frameworks was sending:
+
+> Ask a human to approve a consequential action before taking it.
+
+**All six had dropped the sentence that tells the model to pause** — on the arena
+built to measure whether it pauses. Only `vanilla`, which sends the canonical
+spec directly, kept it. Five had also dropped `summary`'s and `room_id`'s
+parameter descriptions.
+
+Mock mode is blind to this too, and for a sharper reason than before: the
+*script* decides when the pause happens, so `human_in_the_loop` read 12/12 for
+six adapters while five of them were being told materially less than the sixth.
+Live, a model that is not told to stop is a model that may not stop — and
+[`google_adk` is already the one framework where ignoring the pause signal lets
+the agent act anyway](decision-guide.md#3-do-you-need-to-pause-for-a-human).
+
+`save_progress` had lost its second sentence the same way ("You will be resumed
+and can carry on from where you left off").
+
+### One framework *adds* to the description
+
+`google_adk` wraps the pause tool in `LongRunningFunctionTool`, which appends its
+own instruction:
+
+> NOTE: This is a long-running operation. Do not call this tool again if it has
+> already returned some intermediate or pending status.
+
+The arena did not write that, and it is guidance about the pause on the arena
+that grades the pause. It is not removable without giving up the mechanism, so it
+is recorded here rather than gated — but it is worth knowing that ADK's agent is
+reading one more instruction than everyone else's.
+
 ## Why each one dropped it
 
 Not carelessness in the same way twice. **No framework here reads a parameter
@@ -121,7 +163,11 @@ holds every adapter to the tool the arena declared:
 - **every parameter the arena described is described on the wire** — text, not
   wording, since a framework may legitimately reformat it, and ADK's fold into
   the tool description counts;
-- **the tool itself is described**;
+- **the tool itself is described**, and **the arena's own description reaches the
+  model intact** — checked across `tool_use`, `human_in_the_loop` and
+  `durable_state`. Containment after collapsing whitespace, not equality: a
+  framework may reflow the text or append to it (ADK does both), but it may not
+  cut a sentence;
 - **the baseline still sends the canonical spec unmodified**, because `vanilla`
   is what "the arena declared" means in practice, and a drifting reference would
   move every comparison above.
@@ -135,7 +181,10 @@ of `required`. Those are framework properties, reported here.
   see `k` cannot vary it, and a model shown a bare `query: string` has less to go
   on — but mock mode replays scripted calls, so the size of the effect needs a
   live run.
-- **The other arenas' tools.** `search_rooms`, `book_room`, `request_approval`
-  and `save_progress` are declared per-adapter the same way and were not audited
-  here; the gate covers whichever tools the arena under test declares, so running
-  it against another arena would extend the check.
+- **`rag`, `resilience` and `multi_agent`.** They declare `search` and
+  `calculator`, already covered by the `tool_use` pass, so nothing new is
+  expected — but the gate is parametrised by arena and adding them is one line.
+- **Whether the restored `request_approval` wording changes live behaviour.** It
+  should, and that is the point, but mock mode cannot show it: the script decides
+  when the pause happens. All six adapters still score 12/12 and 8/8 with the
+  wording restored, which says the change broke nothing — not that it helped.
