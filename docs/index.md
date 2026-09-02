@@ -1,7 +1,8 @@
 # agentic-arena docs
 
 - [Methodology](methodology.md) — the fairness and reproducibility rules. Read first.
-- [Decision guide](decision-guide.md) — how to pick a framework (skeleton, fills in with evidence).
+- [Decision guide](decision-guide.md) — how to pick a framework. Every claim tagged
+  [measured] or [claimed]; nothing about answer quality until a live run exists.
 - [Feature matrix](feature-matrix.md) — capabilities that aren't scorecard numbers.
 - [Framework overhead](overhead.md) — what each library adds to the wire for an
   identical task. One of only two things mock mode can compare honestly.
