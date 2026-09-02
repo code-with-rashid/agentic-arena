@@ -35,10 +35,28 @@ identical call until the step budget is gone. Faults that get as far as running
 the tool come back as observations and it recovers from all of them. See
 [smolagents.md](frameworks/smolagents.md#resilience-48-split-exactly-along-one-line).
 
-The `Built-in multi-agent` row is still judged, not measured: the `multi_agent`
-arena runs today with single-agent role-play entries only. It starts measuring
-this row once `<fw>-multi` entries land that use each framework's real
-graph/crew/handoff mechanism, compared on token and LLM-call cost.
+The `Built-in multi-agent` row is now **partly measured**. `multi_agent` carries
+two real three-role pipelines alongside the single-agent entries:
+
+| comparison | prompt | LLM calls |
+|---|--:|--:|
+| `vanilla` -> `vanilla_multi` (hand-rolled pipeline) | 2.50x | 2.00x |
+| `langgraph` -> `langgraph_multi` (`StateGraph`) | 2.62x | 2.00x |
+| `vanilla_multi` -> `langgraph_multi` (graph machinery alone) | **0.97x** | **1.00x** |
+
+The cost of multi-agent is the structure, not the framework: three roles double
+the LLM calls and ~2.5x the prompt tokens whether you build them with a graph
+library or a `for` loop, and LangGraph's orchestration adds nothing on top (the
+0.97x is the tool-schema difference from [overhead.md](overhead.md), unchanged).
+
+This measures cost with benefit held at zero — the mock scripts identical turns,
+so all four entries return the same brief. Whether delegation improves the answer
+needs a live run. See [multi-agent.md](multi-agent.md).
+
+Still judged for the rest: handoff-style mechanisms (OpenAI Agents SDK, smolagents,
+CrewAI) let the *model* decide to delegate, which a scripted mock will not do
+spontaneously. Those cells stay claims until the mock renders a scripted step as a
+delegation call, the same accommodation already made for text-ReAct clients.
 
 The `Human-in-the-loop / interrupts` row is now **measured for four adapters**.
 `human_in_the_loop` observes the pause in the harness rather than trusting the

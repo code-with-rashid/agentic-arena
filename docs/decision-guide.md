@@ -133,12 +133,13 @@ ollama that none of this needs.
 ## 5. Shape of the work
 
 Still largely **[claimed]** — these map to arenas that exist but have no live
-numbers, and `multi_agent` currently runs single-agent role-play entries only.
+numbers. `multi_agent` now carries two real pipelines, so the *cost* of
+delegation is measured even though its benefit is not.
 
 | If the core need is... | Look first at... | Arena that tests it |
 |---|---|---|
 | Deterministic, auditable, resumable workflows | LangGraph — the only one that pauses via a real checkpointer | `human_in_the_loop` ✅, `durable_state` ✅ |
-| Fastest path to a multi-agent prototype | CrewAI | `multi_agent` (no real multi-agent entries yet) |
+| Fastest path to a multi-agent prototype | CrewAI | `multi_agent` (structural pipelines measured; handoffs not yet) |
 | Conversational multi-agent / event-driven | Microsoft Agent Framework | `multi_agent` |
 | Minimal wrapper around one provider's models | OpenAI Agents SDK / Claude Agent SDK | `tool_use` |
 | Type-safe outputs, model-agnostic | Pydantic AI | `structured_output` |

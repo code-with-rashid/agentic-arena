@@ -1,0 +1,6 @@
+# Same library, different wiring: langgraph_multi is the three-role pipeline
+# contrast entry for the single-agent `langgraph` adapter. It deliberately does
+# NOT carry its own pins — a second copy of the same versions would drift from
+# the first, and then the two entries would no longer be comparable, which is the
+# only reason this entry exists.
+-r ../langgraph/requirements.txt

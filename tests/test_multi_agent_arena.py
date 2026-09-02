@@ -8,9 +8,11 @@ whether they can clear the bar.
 """
 
 import json
+from dataclasses import replace
 
 from arena.config import REPO_ROOT, ArenaConfig
-from arena.registry import load_arena
+from arena.llm.mockserver import MockScript, MockServer
+from arena.registry import frameworks_for_arena, load_arena, load_framework
 from arena.runner import run
 
 SCRIPT = json.loads(
@@ -41,3 +43,58 @@ def test_baseline_passes_every_item():
     failed = [it["item_id"] for it in fw["items"] if not it["passed"]]
     assert not failed, f"baseline failed: {failed}"
     assert len(fw["items"]) == len(arena.dataset) == 10
+
+
+def test_pipeline_entry_is_really_three_roles_and_costs_more():
+    """The whole point of `vanilla_multi` is that it delegates. Prove it does.
+
+    Nothing in the scorecard can tell a real pipeline from one agent called four
+    times — the brief is scripted and identical either way. So the structure is
+    asserted directly: three distinct role prompts, in order, and only the
+    researcher holding tools. Without this the entry could silently degrade into
+    an expensive single agent and still post 10/10.
+    """
+    arena = load_arena("multi_agent")
+    script = MockScript.load(arena.mock_script_path)
+    with MockServer(script) as server:
+        config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        result = load_framework("vanilla_multi").build(arena, config).run(arena.dataset[0])
+        requests = server.requests
+
+    stages = []
+    for req in requests:
+        system = next(m["content"] for m in req["messages"] if m["role"] == "system")
+        stages.append(next(r for r in ("researcher", "writer", "editor") if f"the {r}" in system))
+    assert stages == ["researcher", "researcher", "writer", "editor"], stages
+
+    # Only the researcher gets tools; the other two would be researchers if they did.
+    tools_per_stage = [len(req.get("tools") or []) for req in requests]
+    assert tools_per_stage == [1, 1, 0, 0], tools_per_stage
+
+    # Every stage carries the arena's task prompt, not just a role line.
+    for req in requests:
+        system = next(m["content"] for m in req["messages"] if m["role"] == "system")
+        assert arena.system_prompt in system
+
+    # And it really is more expensive than the single-agent entry it contrasts with.
+    with MockServer(script) as server:
+        config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        single = load_framework("vanilla").build(arena, config).run(arena.dataset[0])
+    assert result.llm_calls == 2 * single.llm_calls == 4
+    assert result.prompt_tokens > single.prompt_tokens
+    assert result.output_text == single.output_text, "same scripted answer, different cost"
+
+
+def test_variant_entries_are_scoped_to_their_arena():
+    """`--framework all` must not drop a pipeline into a single-agent comparison.
+
+    `vanilla_multi` on `tool_use` would sit in the middle of the per-framework
+    overhead table at ~2.5x and read as a framework being wasteful, when it is a
+    different structure being measured. Naming it explicitly still runs it.
+    """
+    assert "vanilla_multi" in frameworks_for_arena("multi_agent")
+    assert "vanilla_multi" not in frameworks_for_arena("tool_use")
+    assert "vanilla" in frameworks_for_arena("tool_use")
+    # Unscoped adapters stay in every arena.
+    for arena_id in ("tool_use", "multi_agent", "rag"):
+        assert "vanilla" in frameworks_for_arena(arena_id)

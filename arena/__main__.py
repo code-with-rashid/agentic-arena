@@ -6,7 +6,7 @@ import argparse
 import sys
 
 from .config import ArenaConfig
-from .registry import available_arenas, available_frameworks
+from .registry import available_arenas, available_frameworks, frameworks_for_arena
 from .runner import run as run_arena
 from .scorecard import latest_run, write_scorecard
 
@@ -21,9 +21,11 @@ def _cmd_list(_args: argparse.Namespace) -> int:
     return 0
 
 
-def _resolve_frameworks(values: list[str]) -> list[str]:
+def _resolve_frameworks(values: list[str], arena_id: str | None = None) -> list[str]:
     if not values or "all" in values:
-        return available_frameworks()
+        # `all` skips variant entries that do not belong to this arena; naming one
+        # explicitly still runs it. See registry.frameworks_for_arena.
+        return frameworks_for_arena(arena_id) if arena_id else available_frameworks()
     unknown = sorted(set(values) - set(available_frameworks()))
     if unknown:
         raise SystemExit(f"unknown framework(s): {', '.join(unknown)}")
@@ -31,7 +33,7 @@ def _resolve_frameworks(values: list[str]) -> list[str]:
 
 
 def _cmd_run(args: argparse.Namespace) -> int:
-    frameworks = _resolve_frameworks(args.framework)
+    frameworks = _resolve_frameworks(args.framework, args.arena)
     config = ArenaConfig.from_env(mode=args.mode, repeat=args.repeat)
     if config.mode == "live" and config.api_key in ("", "mock-key"):
         print(

@@ -109,6 +109,23 @@ def _resilience(records, names, out) -> None:
     out.append("")
 
 
+def _is_variant(name: str) -> bool:
+    """Is this a contrast entry scoped to one arena rather than a framework?
+
+    Declared by the adapter as `arenas = (...)`. Looked up defensively: the
+    summary reads run records, which may name an adapter this checkout no longer
+    has.
+    """
+    from .registry import available_frameworks, load_framework
+
+    if name not in available_frameworks():
+        return False
+    try:
+        return bool(getattr(load_framework(name), "arenas", None))
+    except Exception:  # noqa: BLE001 - a summary must never fail on a bad adapter
+        return False
+
+
 def _overhead(records, names, out) -> None:
     out.append("## Comparable: prompt size on the wire\n")
     out.append(
@@ -141,12 +158,26 @@ def _overhead(records, names, out) -> None:
         ratio = (
             f"{sum(row[a] for a in shared) / sum(base[a] for a in shared):.2f}×" if shared else "—"
         )
-        out.append(f"| `{name}` | " + " | ".join(cells) + f" | {ratio} |")
+        # A variant entry is a different *structure*, not a different
+        # serialisation of the same one. Left unmarked, `vanilla_multi` reads in
+        # this table as a framework that wastes 2.5x the tokens, when what it
+        # measures is the cost of splitting one agent into three.
+        mark = " †" if _is_variant(name) else ""
+        out.append(f"| `{name}`{mark} | " + " | ".join(cells) + f" | {ratio} |")
     out.append("")
     out.append(
         f"`vs baseline` is against `{BASELINE}` over **only the arenas both ran**, so an "
-        "adapter that sits out an arena is not credited for skipping it.\n"
+        "adapter that sits out an arena is not credited for skipping it."
     )
+    if any(_is_variant(name) for name in means):
+        out.append(
+            "\n† A multi-agent **contrast entry**, not a framework comparison: its ratio is "
+            "the cost of running three roles instead of one, which is a different structure "
+            "rather than a heavier serialisation of the same one. Read those rows in "
+            "`docs/multi-agent.md`, not against the frameworks above them.\n"
+        )
+    else:
+        out.append("")
 
 
 def _pause_cell(record: dict[str, Any] | None, name: str) -> str:
