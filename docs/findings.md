@@ -378,6 +378,26 @@ python -m arena run --arena durable_state --framework all --mode mock --no-score
 Two findings that are about the benchmark rather than about any framework. Both
 came from asking what nothing was checking.
 
+**`durable_state` could be passed by cheating, and now cannot.** The arena's
+claim is that the runner is thrown away at the pause. The harness enforced that
+by rebuilding the runner and JSON round-tripping the state — both **inside one
+interpreter**, which a module-level cache keyed by item id survives. Measured
+rather than supposed: a wrapper doing exactly that scores **8/8**, with
+`['search', 'search', 'calculator']` and one suspend, indistinguishable in the
+scorecard from the honest baseline it wraps.
+
+Durability now runs its two legs in **two processes**, with nothing between them
+but a JSON file and `checkpoint_dir`. All five resumable adapters pass — a
+negative result, and the reason the published 8/8s mean what they say — while the
+cheat raises `KeyError`. The cheat ships as a test fixture so a green file cannot
+come to mean "the probe ran and asserted nothing".
+
+It also settles the stateless-resume / real-checkpointer split by measurement
+rather than by reading the source: `langgraph` writes `langgraph.sqlite` and
+`google_adk` writes `adk_sessions.sqlite`; `vanilla`, `pydantic_ai` and
+`openai_agents` write **nothing** and carry the whole conversation in
+`resume_state`. → [methodology.md §7](methodology.md#durable-arenas-the-runner-is-thrown-away)
+
 **Nothing was verifying that adapters report cost honestly** — every published
 comparison on this page assumed it. A gate holding each `AgentResult` against
 what the mock server actually served found a real bug immediately: `langgraph`
