@@ -16,7 +16,7 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) |
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) |
 | Built-in multi-agent | ❌ | ✅ (graph) | ✅ (crew) | 🟡 (handoffs) | 🟡 (subagents) | 🟡 | ✅ |
-| Human-in-the-loop / interrupts | ❌ | ✅ (`interrupt`) | ❓ | ❓ | ❓ | 🟡 (deferred tools) | 🟡 (tool-approval middleware) |
+| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`) | ❓ | ❓ | ❓ | 🟡 (deferred tools) | 🟡 (tool-approval middleware) |
 | Durable state / checkpointing | ❌ | ✅ (checkpointer) | ❓ | ❓ | ❓ | ❓ | ❓ |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 |
 | Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) |
@@ -30,6 +30,14 @@ The `Built-in multi-agent` row is still judged, not measured: the `multi_agent`
 arena runs today with single-agent role-play entries only. It starts measuring
 this row once `<fw>-multi` entries land that use each framework's real
 graph/crew/handoff mechanism, compared on token and LLM-call cost.
+
+The `Human-in-the-loop / interrupts` row is half measured. `human_in_the_loop`
+observes the pause in the harness rather than trusting the agent's prose, and
+`vanilla` scores 12/12 there — by emulation, carrying the transcript back in
+rather than checkpointing, which is why it is 🟡 and not ✅. The other four
+adapters have no `resume` method yet, so they report *unsupported* on that arena.
+Read their cells as unmeasured claims from upstream docs, not as results: two of
+them ship real interrupt mechanisms that nobody has wired up here yet.
 
 > The ❓ cells are the backlog. Each one gets resolved when its adapter is written
 > or when an arena exercises that capability directly.

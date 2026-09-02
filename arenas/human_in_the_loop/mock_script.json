@@ -1,0 +1,413 @@
+{
+  "_comment": "Canned turns replayed by arena.llm.mockserver so human_in_the_loop runs offline. Scenario is chosen by the first case-insensitive substring of the first user message that matches `match`. Turn N is served after N assistant messages already exist, and the transcript carries across the pause, so the resumed leg continues at turn 2. Approved scenarios: search_rooms, request_approval, book_room, confirmation. Denied scenarios: search_rooms, request_approval, then a refusal with no booking.",
+  "scenarios": [
+    {
+      "match": "4 people on tuesday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 4,
+                "day": "tuesday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Aspen (R1) for 4 people on tuesday."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "book_room",
+              "arguments": {
+                "room_id": "R1"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Approved and booked: Aspen (R1) for 4 people on tuesday."
+        }
+      ]
+    },
+    {
+      "match": "6 people on monday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 6,
+                "day": "monday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Birch (R2) for 6 people on monday."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "book_room",
+              "arguments": {
+                "room_id": "R2"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Approved and booked: Birch (R2) for 6 people on monday."
+        }
+      ]
+    },
+    {
+      "match": "10 people on wednesday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 10,
+                "day": "wednesday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Cedar (R3) for 10 people on wednesday."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "book_room",
+              "arguments": {
+                "room_id": "R3"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Approved and booked: Cedar (R3) for 10 people on wednesday."
+        }
+      ]
+    },
+    {
+      "match": "12 people on friday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 12,
+                "day": "friday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Draco (R4) for 12 people on friday."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "book_room",
+              "arguments": {
+                "room_id": "R4"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Approved and booked: Draco (R4) for 12 people on friday."
+        }
+      ]
+    },
+    {
+      "match": "20 people on monday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 20,
+                "day": "monday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Elm (R5) for 20 people on monday."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "book_room",
+              "arguments": {
+                "room_id": "R5"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Approved and booked: Elm (R5) for 20 people on monday."
+        }
+      ]
+    },
+    {
+      "match": "8 people on thursday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 8,
+                "day": "thursday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Cedar (R3) for 8 people on thursday."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "book_room",
+              "arguments": {
+                "room_id": "R3"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Approved and booked: Cedar (R3) for 8 people on thursday."
+        }
+      ]
+    },
+    {
+      "match": "4 people on wednesday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 4,
+                "day": "wednesday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Aspen (R1) for 4 people on wednesday."
+              }
+            }
+          ]
+        },
+        {
+          "content": "The request was denied, so I did not book Aspen (R1) for 4 people on wednesday. No booking was made."
+        }
+      ]
+    },
+    {
+      "match": "6 people on friday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 6,
+                "day": "friday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Birch (R2) for 6 people on friday."
+              }
+            }
+          ]
+        },
+        {
+          "content": "The request was denied, so I did not book Birch (R2) for 6 people on friday. No booking was made."
+        }
+      ]
+    },
+    {
+      "match": "10 people on tuesday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 10,
+                "day": "tuesday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Cedar (R3) for 10 people on tuesday."
+              }
+            }
+          ]
+        },
+        {
+          "content": "The request was denied, so I did not book Cedar (R3) for 10 people on tuesday. No booking was made."
+        }
+      ]
+    },
+    {
+      "match": "12 people on wednesday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 12,
+                "day": "wednesday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Draco (R4) for 12 people on wednesday."
+              }
+            }
+          ]
+        },
+        {
+          "content": "The request was denied, so I did not book Draco (R4) for 12 people on wednesday. No booking was made."
+        }
+      ]
+    },
+    {
+      "match": "20 people on friday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 20,
+                "day": "friday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Elm (R5) for 20 people on friday."
+              }
+            }
+          ]
+        },
+        {
+          "content": "The request was denied, so I did not book Elm (R5) for 20 people on friday. No booking was made."
+        }
+      ]
+    },
+    {
+      "match": "5 people on thursday",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search_rooms",
+              "arguments": {
+                "capacity": 5,
+                "day": "thursday"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "request_approval",
+              "arguments": {
+                "summary": "Book Birch (R2) for 5 people on thursday."
+              }
+            }
+          ]
+        },
+        {
+          "content": "The request was denied, so I did not book Birch (R2) for 5 people on thursday. No booking was made."
+        }
+      ]
+    }
+  ]
+}

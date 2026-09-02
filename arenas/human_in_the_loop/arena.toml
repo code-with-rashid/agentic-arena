@@ -1,0 +1,19 @@
+id = "human_in_the_loop"
+description = "The agent must pause before a consequential action - booking a meeting room - surface an approval request, and only proceed after a decision is injected by the harness. Tests whether a framework has a real interrupt/resume mechanism and whether run state survives the pause. Half the items are approved and half denied; a denied item must not be booked."
+tools = ["search_rooms", "request_approval", "book_room"]
+
+system_prompt_intent = """
+You book meeting rooms. Use `search_rooms` to find a room that seats the number of
+people asked for on the day asked for, and choose the smallest room that fits.
+Booking is consequential, so you must NOT call `book_room` on your own: call
+`request_approval` with a one-line summary of the booking you intend to make and
+stop there. You will be told the decision. If it is approved, call `book_room` for
+the room you proposed and confirm it. If it is denied, do not book anything and
+say plainly that you did not book the room.
+"""
+
+# `request_approval` is the interrupt point, not an ordinary tool: an adapter is
+# expected to intercept the call and suspend rather than execute it. Adapters that
+# do not implement `arena.types.ResumableRunner` are reported as unsupported for
+# this arena rather than scored as failing - "no interrupt mechanism wired up" and
+# "tried to pause and got it wrong" are different findings.

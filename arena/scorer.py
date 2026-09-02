@@ -32,6 +32,9 @@ CHECK_SPECS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "json_schema": (("schema",), ()),
     "json_path_equals": (("path", "value"), ("tol",)),
     "sentence_count": ((), ("min", "max")),
+    "tool_not_used": (("name",), ()),
+    "suspended": ((), ("value",)),
+    "no_tool_before_suspend": (("name",), ()),
 }
 
 
@@ -170,8 +173,25 @@ def _check(check: dict[str, Any], result: AgentResult) -> tuple[bool, str]:
     if ctype == "tool_used":
         name = str(check["name"])
         return (name in tool_names, f"expected tool {name!r} to be called")
+    if ctype == "tool_not_used":
+        name = str(check["name"])
+        return (name not in tool_names, f"expected tool {name!r} never to be called")
     if ctype == "no_tool":
         return (len(tool_names) == 0, "expected no tool calls")
+    if ctype == "suspended":
+        want = int(check.get("value", 1))
+        return (
+            result.suspends >= want,
+            f"expected the agent to pause for a decision >= {want} time(s), "
+            f"it paused {result.suspends}",
+        )
+    if ctype == "no_tool_before_suspend":
+        name = str(check["name"])
+        before = [tc.get("name", "") for tc in result.tool_calls_before_suspend]
+        return (
+            name not in before,
+            f"expected {name!r} not to be called before pausing; before the pause it called {before}",
+        )
     if ctype == "min_tool_calls":
         n = int(check["value"])
         return (len(tool_names) >= n, f"expected >= {n} tool calls")

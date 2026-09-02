@@ -46,9 +46,17 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       bounded factual brief; single-agent role-play is a valid contrast entry
 - ✅ Arena 5 `rag`: agentic retrieval over the shared corpus — single-hop,
       multi-hop, and unanswerable items that trap parametric-memory answers
-- ⬜ Implement arenas 6–7 (`human_in_the_loop`, `durable_state`) — both need a
-      harness resume/checkpoint API first; `multi_agent` still needs real
-      multi-agent adapter entries (`<fw>-multi`)
+- ✅ Harness suspend/resume API (`arena.types.ResumableRunner`,
+      `EvalItem.resume_with`, leg merging in the runner) — methodology §7
+- ✅ Arena 6 `human_in_the_loop`: the pause is observed by the harness, not
+      claimed by the agent. `vanilla` 12/12 (emulated); other adapters report
+      unsupported until they implement `resume`
+- ⬜ Wire native interrupts for `langgraph` (`interrupt` + checkpointer) and
+      `microsoft_af` (tool-approval middleware) — turns the HITL feature-matrix
+      row from judged into measured
+- ⬜ Arena 7 `durable_state` — needs a checkpoint API that survives a process
+      restart, which the emulated pause deliberately does not
+- ⬜ `multi_agent` still needs real multi-agent adapter entries (`<fw>-multi`)
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
 - ⬜ Latency / token / cost charts generated into `results/charts/`
 
