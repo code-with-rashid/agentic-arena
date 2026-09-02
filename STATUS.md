@@ -15,12 +15,12 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   - `rag` — 15 items over the shared corpus: single-hop, multi-hop, and
     unanswerable questions that trap answers taken from parametric memory
   - `human_in_the_loop` — 12 items, the agent must pause for approval before
-    booking. `langgraph` 12/12 (native interrupt), `pydantic_ai` 12/12 (native
-    deferred tools) and `vanilla` 12/12 (emulated); `openai_agents` and
-    `microsoft_af` report unsupported because they have no `resume` method
+    booking. `langgraph` (native interrupt), `openai_agents` (`needs_approval`),
+    `pydantic_ai` (deferred tools) and `vanilla` (emulated) all 12/12;
+    `microsoft_af` reports unsupported because it has no `resume` method
   - `durable_state` — 8 items; the harness throws the runner away at the
-    checkpoint and rebuilds it. `langgraph` 8/8 via an on-disk SqliteSaver;
-    `pydantic_ai` and `vanilla` 8/8 via stateless resume
+    checkpoint and rebuilds it. All four resumable adapters 8/8, by four
+    different mechanisms — see docs/feature-matrix.md
 - Five adapters run green in mock mode on every arena:
   `vanilla`, `langgraph` (LangGraph 1.2.11), `pydantic_ai` (pydantic-ai-slim 2.37),
   `openai_agents` (openai-agents 0.22), `microsoft_af` (agent-framework 1.16).
@@ -43,7 +43,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | `frameworks/crewai/adapter.py` | written, **not mock-verified** — CrewAI's transitive tree (chromadb/onnxruntime) has no Python 3.14 wheels, and a first 3.12 CI attempt scored 0/15 (telemetry prompt + an internal `'list' object has no attribute 'rstrip'`). Kept out of the required matrix. | debug on a 3.12 venv, pin the exact version, add its CI cell, refresh results |
 | `frameworks/claude_agent_sdk` | deliberate stub — drives the `claude` CLI (Node) over the Anthropic Messages API, not one OpenAI-compatible endpoint | see `frameworks/claude_agent_sdk/README.md` for the three ways to close it |
 | Real multi-agent entries for `multi_agent` | only single-agent role-play entries exist | add `<fw>-multi` adapters using each framework's own graph/crew/handoff mechanism, compared on token and LLM-call cost |
-| Pause support for `microsoft_af` and `openai_agents` | Agent Framework ships `ToolApprovalMiddleware` (needs an `AgentSession`); OpenAI Agents SDK unexplored | implement `resume` — see `frameworks/langgraph/adapter.py` (checkpointer) or `frameworks/pydantic_ai/adapter.py` (deferred tools) for the two patterns |
+| Pause support for `microsoft_af` | ships `ToolApprovalMiddleware`, which needs an `AgentSession` and session state | implement `resume` — three worked patterns now exist in `frameworks/{langgraph,openai_agents,pydantic_ai}/adapter.py` |
 | `multi_agent` real orchestration | only the single-agent role-play entry exists | add `<fw>-multi` adapter entries that use each framework's own graph/crew/handoff mechanism; compare tokens + LLM calls against the single-agent run |
 | `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |
 | Docs site | plain markdown in `docs/` | MkDocs Material + GitHub Pages (Phase 4) |
