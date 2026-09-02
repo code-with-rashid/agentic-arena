@@ -153,13 +153,20 @@ outright — on prompt size it is mid-pack, on `resilience` joint best, on
 delegation exactly as expensive as a graph library.
 
 **smolagents is the only one that survives three consecutive 429s — by sleeping
-for minutes on one item** (measured at 139 s, 160 s and 225 s, so heavily
+for minutes on one item** (measured five times at 139–225 s, so heavily
 jittered). Nothing in the scorecard shows it: the item passes. In a batch that is
 throughput quietly collapsing. Everyone else fails fast in ~1.3 s and hands you
 the error. Both are defensible; neither is documented.
 
 **LangGraph retries once where the others retry twice**, and everyone correctly
 refuses to retry a 400.
+
+**Every framework that retries honours `Retry-After` exactly** — 3.01 s for a
+header of 3, 9.02 s for 9. But smolagents' long sleep is **not** shortened by it:
+there are two retry layers, and only the inner one (the OpenAI client) listens.
+The outer one is `smolagents.models.Retrying`, whose first backoff is
+`RETRY_WAIT(60) × 2 × (1 + random())` — 120 to 240 s, bracketing every
+measurement, and it never consults the header.
 
 → [transport.md](transport.md)
 

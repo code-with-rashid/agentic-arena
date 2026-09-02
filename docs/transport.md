@@ -64,12 +64,40 @@ the others make 3. Against a provider that rate-limits in short bursts, that is
 the difference between a blip and a lost item. It is not a bug; it is a default,
 and one worth knowing before you rely on it.
 
+### Every framework that retries honours `Retry-After`
+
+Given a `Retry-After: 3` header on the 429, all six wait 3.01–3.02 s; given
+`Retry-After: 9`, all six wait 9.01–9.03 s. Without the header they fall back to
+their own ~0.5 s exponential backoff. That uniformity is why it is a **gate**
+here rather than a finding: a library that ignored a server-directed delay would
+hammer a rate-limited endpoint.
+
+`vanilla` is unaffected — it never retries, so there is no delay to honour.
+
 ### smolagents keeps going, and blocks for over two minutes
 
 It is the only entry that eventually **succeeds** through three consecutive
-429s — after sleeping for **minutes** on a single item. Measured three times at
-139 s, 160 s and 225 s, so the delay is heavily jittered and the range, not a
-point estimate, is the honest number.
+429s — after sleeping for **minutes** on a single item. Measured five times at
+139 s, 160 s, 213 s, 220 s and 225 s, so the delay is heavily jittered and the
+range, not a point estimate, is the honest number.
+
+**And a `Retry-After` header does not shorten it.** With `Retry-After: 2` the
+first two gaps drop to exactly 2.0 s — and the third is still 213 s. There are
+**two retry layers** here and only the inner one listens to the provider:
+
+| layer | attempts | backoff | honours `Retry-After`? |
+|---|---|---|---|
+| the OpenAI client | 2 retries | ~0.5 s, ~0.8 s exponential | **yes**, up to a 2-minute cap |
+| `smolagents.models.Retrying` | `RETRY_MAX_ATTEMPTS = 3` | `delay *= base × (1 + random())` from `RETRY_WAIT = 60` | **no** |
+
+The outer layer's first sleep is therefore `60 × 2 × (1 + random())` — **120 to
+240 seconds** — which brackets all five measurements above, and nothing in that
+path consults the header. So a provider that says "retry in 2 seconds" cannot
+shorten a wait of minutes.
+
+`tests/test_transport_faults.py` asserts those constants against the installed
+module rather than re-measuring the sleep, so if upstream lowers `RETRY_WAIT`
+this page gets corrected instead of silently going stale.
 
 Nothing in the scorecard would ever show this. The item *passes*. Pass rate,
 correctness, token count: all fine. What you would notice in production is
@@ -80,8 +108,8 @@ It is the opposite trade-off from everyone else's, and both are defensible:
 - **fail fast** (everyone else) — you get the error in ~1.3 s and decide what to
   do about it;
 - **keep trying** (smolagents) — the item completes without you writing any
-  retry code, and you pay in minutes of latency you did not choose and cannot
-  predict.
+  retry code, and you pay in minutes of latency you did not choose, cannot
+  predict, and cannot shorten by configuring the provider.
 
 The second is the wrong default for a batch job and arguably the right one for
 an interactive script. Neither is visible from the documentation.
@@ -107,6 +135,10 @@ Gated in `tests/test_transport_faults.py`:
   happened;
 - the baseline still has no retry, pinned, because the whole comparison above
   rests on that control;
+- a framework that retries **honours `Retry-After`** to within a tenth of a
+  second (uniform across all six, so a regression would be unambiguous);
+- smolagents' outer-layer constants still predict a 120-240 s first sleep,
+  read from the installed module rather than re-measured;
 - a faulted attempt consumes no scripted turn, which is the instrument checking
   itself: if it did, a retrying framework would be served the *next* turn and
   every row above would be comparing different conversations.
@@ -118,9 +150,9 @@ tightly anyway.
 
 ## Not measured
 
-- **`Retry-After`.** The mock sends no such header, so every backoff above is the
-  client's own choice. A provider that asks for a specific delay might change all
-  of these, and the frameworks may not agree on whether to honour it.
+- **`Retry-After` on the *outer* layers.** Measured for the one framework that
+  has a second retry layer; the others have only their client's, which honours it.
+  A framework that added its own wrapper could regress here unnoticed.
 - **Timeouts and connection failures.** A hung connection is a different failure
   from a fast 500, and `request_timeout_s` exists in `ArenaConfig` but nothing
   exercises it.
