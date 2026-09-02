@@ -138,15 +138,30 @@ class _Runner:
         with contextlib.suppress(Exception):
             self._stack.close()
 
-    def _result(self, state: dict[str, Any], cfg: dict[str, Any], seen: int) -> AgentResult:
-        """Build a result from the messages added since `seen`.
+    def _result(
+        self, state: dict[str, Any], cfg: dict[str, Any], counted: list[str]
+    ) -> AgentResult:
+        """Build a result from the messages not already counted on an earlier leg.
 
-        Slicing matters: a resumed `invoke` returns the *whole* thread, and the
-        harness sums cost across legs, so counting from zero twice would double
-        every token on any item that paused.
+        The harness sums cost across legs, so each message must be counted once
+        and only once. What `invoke` hands back is **not the same shape in both
+        pause arenas**, which is why this counts by message id rather than by
+        position:
+
+          * `human_in_the_loop` (in-memory saver, same runner) returns the *whole
+            thread* — counting from zero twice would double every token.
+          * `durable_state` (on-disk saver, runner rebuilt) returns only the
+            *new* messages — and an index-based `seen` slice then discarded all
+            of leg two, under-reporting the run by a whole LLM call while every
+            correctness check still passed.
+
+        Message ids are stable across a resume and unique within a thread, so the
+        set of already-counted ids is exact for both shapes. A message with no id
+        is counted rather than dropped: over-reporting cost is the safer error.
         """
         all_messages = state.get("messages", [])
-        messages = all_messages[seen:]
+        already = set(counted)
+        messages = [m for m in all_messages if (getattr(m, "id", None) or "") not in already]
 
         tool_calls: list[dict[str, Any]] = []
         prompt_tokens = completion_tokens = llm_calls = 0
@@ -182,7 +197,12 @@ class _Runner:
         request = payload.get("request", "") if isinstance(payload, dict) else str(payload)
         result.suspended = True
         result.suspend_request = str(request)
-        result.resume_state = {"config": cfg, "seen": len(all_messages)}
+        # Every id seen so far, so the next leg counts only what it adds. Plain
+        # JSON on purpose: `durable_state` round-trips this through json.dumps.
+        result.resume_state = {
+            "config": cfg,
+            "counted": [str(getattr(m, "id", "") or "") for m in all_messages],
+        }
         return result
 
     def run(self, item: EvalItem) -> AgentResult:
@@ -191,7 +211,7 @@ class _Runner:
             {"messages": [("system", self.system_prompt), ("user", item.input)]},
             config=cfg,
         )
-        return self._result(state, cfg, seen=0)
+        return self._result(state, cfg, counted=[])
 
     def resume(self, item: EvalItem, state: Any, decision: str) -> AgentResult:
         from langgraph.types import Command
@@ -200,7 +220,7 @@ class _Runner:
             return AgentResult(error=f"cannot resume: unusable state {type(state).__name__}")
         cfg = state["config"]
         new_state = self.agent.invoke(Command(resume=decision), config=cfg)
-        return self._result(new_state, cfg, seen=int(state.get("seen", 0)))
+        return self._result(new_state, cfg, counted=list(state.get("counted", [])))
 
 
 class Adapter:

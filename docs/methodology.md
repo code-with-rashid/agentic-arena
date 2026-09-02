@@ -187,6 +187,25 @@ thing that differed.
 Completion tokens and LLM-call counts in mock mode are scripted, so they are
 identical by construction and carry no signal at all.
 
+### Cost numbers are checked, not trusted
+
+Every comparison in this repo is built on adapters reporting their own token and
+LLM-call usage. That is a claim by the framework, and an adapter that under-reports
+posts better overhead and cost numbers than it earned **while every correctness
+check still passes** — the scorecard stays green and the comparison quietly lies.
+
+So the mock server records what it actually served, and
+`tests/test_usage_accounting.py` holds each adapter's `AgentResult` against it.
+The suspend/resume path is tested separately, because that is where this class of
+bug lives: the harness sums cost across legs, so a leg counted twice doubles an
+item and a leg sliced away vanishes from it.
+
+Three real bugs of exactly this shape have been found here — `openai_agents`
+reporting usage cumulatively after a resume, `smolagents` resetting its usage
+monitor inside `run()`, and `langgraph` slicing counted messages by index, which
+is correct for `human_in_the_loop` and dropped all of leg two on `durable_state`.
+None of them affected a single pass/fail result.
+
 ## 6. Metrics
 
 Per adapter, per arena:

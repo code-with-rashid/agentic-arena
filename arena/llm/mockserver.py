@@ -292,6 +292,15 @@ class _Handler(BaseHTTPRequestHandler):
             },
         }
 
+        # Ground truth for usage. Every published comparison rests on adapters
+        # reporting their own cost honestly, and nothing was checking that: an
+        # adapter that under-reports posts a better number and still passes every
+        # item. `MockServer.served_usage` is what the wire actually carried, so a
+        # framework's self-report can be held against it.
+        self.server.served.append(  # type: ignore[attr-defined]
+            {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}
+        )
+
         if req.get("stream"):
             self._send_stream(response)
         else:
@@ -342,12 +351,27 @@ class MockServer:
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.script = self.script  # type: ignore[attr-defined]
         self._httpd.requests = []  # type: ignore[attr-defined]
+        self._httpd.served = []  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
 
     @property
     def requests(self) -> list[dict[str, Any]]:
         """Every chat-completions request body received, in order."""
         return self._httpd.requests  # type: ignore[attr-defined,no-any-return]
+
+    @property
+    def served_usage(self) -> dict[str, int]:
+        """What this server actually billed, summed over every response.
+
+        The ground truth for `tests/test_usage_accounting.py`. An adapter's own
+        `AgentResult` numbers are a *claim*; this is what went over the wire.
+        """
+        served = self._httpd.served  # type: ignore[attr-defined]
+        return {
+            "prompt_tokens": sum(s["prompt_tokens"] for s in served),
+            "completion_tokens": sum(s["completion_tokens"] for s in served),
+            "llm_calls": len(served),
+        }
 
     @property
     def port(self) -> int:
