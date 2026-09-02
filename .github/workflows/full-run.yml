@@ -29,8 +29,8 @@ jobs:
   live:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install harness + requested adapters
@@ -52,7 +52,7 @@ jobs:
           python -m arena run --arena ${{ github.event.inputs.arena }} $FW_ARGS \
             --mode live --repeat ${{ github.event.inputs.repeat }}
       - name: Upload scorecards + raw run
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: scorecards-${{ github.event.inputs.arena }}
           path: |
