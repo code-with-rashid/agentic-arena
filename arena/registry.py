@@ -22,6 +22,42 @@ def available_frameworks() -> list[str]:
     return sorted(p.name for p in FRAMEWORKS_DIR.iterdir() if (p / "adapter.py").exists())
 
 
+def frameworks_for_arena(arena_id: str) -> list[str]:
+    """Adapters that `--framework all` should run on `arena_id`.
+
+    Most adapters answer every arena. A *variant* entry does not: `vanilla_multi`
+    and `langgraph_multi` are three-role pipelines that exist to be contrasted
+    with their single-agent namesakes on `multi_agent`, and running them on
+    `tool_use` would put a pipeline in the middle of a per-framework overhead
+    table it is not comparable with. Such an adapter declares `arenas = (...)`
+    and is skipped elsewhere.
+
+    Naming an adapter explicitly on the command line always runs it - this only
+    changes what `all` expands to.
+    """
+    out = []
+    for name in available_frameworks():
+        declared = _declared_arenas(name)
+        if declared is None or arena_id in declared:
+            out.append(name)
+    return out
+
+
+def _declared_arenas(name: str) -> tuple[str, ...] | None:
+    """`Adapter.arenas`, read without importing the adapter's dependencies.
+
+    Reading the attribute needs the class, and building the class needs only the
+    module - not the framework library, which is imported lazily inside `build`.
+    An adapter that cannot even be imported is left to fail later, where the
+    runner reports it as unavailable with a real reason.
+    """
+    try:
+        declared = getattr(load_framework(name), "arenas", None)
+    except Exception:  # noqa: BLE001 - unavailable adapters are reported by the runner
+        return None
+    return tuple(declared) if declared else None
+
+
 def load_arena(arena_id: str) -> ArenaSpec:
     base = ARENAS_DIR / arena_id
     spec_path = base / "arena.toml"

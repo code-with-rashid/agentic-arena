@@ -46,6 +46,9 @@ jobs:
     #     any difference in outcome is the framework's own error handling.
     #     Report-only; fails only if the stdlib baseline stops recovering, which
     #     would mean the arena is broken.
+    #   delegation — the same 10 items run as one agent and as a three-role
+    #     pipeline, hand-rolled and in a graph library, which separates the cost
+    #     of the structure from the cost of the framework. Report-only.
     #   overhead   — every framework gets the same prompt and the same two tool
     #     definitions and the mock replays identical turns, so the prompt size
     #     each one puts on the wire is its own serialisation cost. Report-only;
@@ -85,9 +88,15 @@ jobs:
         # rather than failing items, so this step is a capability census, not a
         # gate. It turns red only if the run itself breaks.
         run: python -m arena run --arena human_in_the_loop --framework all --mode mock --no-scorecard
+      - name: What a three-role pipeline costs against one agent
+        # Report-only. The pipelines are *expected* to cost more - that is the
+        # measurement. Fails only if a pairing is missing or an entry reports zero.
+        run: |
+          python -m arena run --arena multi_agent --framework all --mode mock --no-scorecard
+          python .github/scripts/report_delegation.py
       - name: Run the remaining arenas so the summary is complete
         run: |
-          for a in structured_output rag multi_agent durable_state; do
+          for a in structured_output rag durable_state; do
             python -m arena run --arena "$a" --framework all --mode mock --no-scorecard
           done
       - name: Cross-arena summary
