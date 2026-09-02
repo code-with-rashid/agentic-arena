@@ -1,0 +1,113 @@
+{
+  "_comment": "Canned turns replayed by arena.llm.mockserver so rag runs offline. Scenario is chosen by the first case-insensitive substring of the first user message that matches `match`. Turn N is served after N assistant messages already exist. Single-hop scenarios are one search then the answer; multi-hop scenarios are two searches then the answer (the second query is built from what the first result revealed); unanswerable scenarios search once and then refuse without naming the real-world answer.",
+  "scenarios": [
+    {
+      "match": "cn tower",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "CN Tower height"}}]},
+        {"content": "According to the corpus, the CN Tower stands 553 metres tall."}
+      ]
+    },
+    {
+      "match": "space needle",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Space Needle"}}]},
+        {"content": "The Space Needle was built for the World Fair held in 1962."}
+      ]
+    },
+    {
+      "match": "challenger deep",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Challenger Deep Pacific Ocean depth"}}]},
+        {"content": "The Challenger Deep lies roughly 10935 metres below sea level."}
+      ]
+    },
+    {
+      "match": "amazon river",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Amazon River length"}}]},
+        {"content": "The Amazon River is about 6400 kilometres long."}
+      ]
+    },
+    {
+      "match": "python programming language",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Python programming language first released"}}]},
+        {"content": "Python was first released in 1991."}
+      ]
+    },
+    {
+      "match": "leaning tower of pisa",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Leaning Tower of Pisa height"}}]},
+        {"content": "The Leaning Tower of Pisa is about 57 metres tall on its high side."}
+      ]
+    },
+    {
+      "match": "christ the redeemer",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Christ the Redeemer statue height"}}]},
+        {"content": "Excluding its pedestal, the Christ the Redeemer statue is 30 metres tall."}
+      ]
+    },
+    {
+      "match": "gateway arch",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Gateway Arch height"}}]},
+        {"content": "The Gateway Arch stands 192 metres tall."}
+      ]
+    },
+    {
+      "match": "sydney opera house",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Sydney Opera House opened"}}]},
+        {"content": "The Sydney Opera House was formally opened in 1973."}
+      ]
+    },
+    {
+      "match": "inspired tokyo tower",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Tokyo Tower"}}]},
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Eiffel Tower height"}}]},
+        {"content": "Tokyo Tower was inspired by the Eiffel Tower, which stands 330 metres tall including its antennas."}
+      ]
+    },
+    {
+      "match": "taipei 101",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Taipei 101 tallest building title"}}]},
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Burj Khalifa opened"}}]},
+        {"content": "The title passed to the Burj Khalifa, which opened in 2010."}
+      ]
+    },
+    {
+      "match": "chrysler building",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Chrysler Building tallest building"}}]},
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Empire State Building height"}}]},
+        {"content": "The Empire State Building overtook it, and it is 443 metres tall to the tip of its antenna."}
+      ]
+    },
+    {
+      "match": "gustave eiffel",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Gustave Eiffel engineer born"}}]},
+        {"content": "The corpus describes the Eiffel Tower but does not mention Gustave Eiffel's year of birth, so I cannot answer that from the available sources."}
+      ]
+    },
+    {
+      "match": "designed the statue of liberty",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Statue of Liberty sculptor designer"}}]},
+        {"content": "The corpus passage on the Statue of Liberty does not name its sculptor, so I cannot say who designed it."}
+      ]
+    },
+    {
+      "match": "golden gate bridge begin",
+      "turns": [
+        {"tool_calls": [{"name": "search", "arguments": {"query": "Golden Gate Bridge construction start"}}]},
+        {"content": "The corpus gives the bridge's opening year but does not state when construction began, so I cannot answer that."}
+      ]
+    }
+  ]
+}

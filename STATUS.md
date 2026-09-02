@@ -6,12 +6,14 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 ## What works right now
 
 - `pip install -e ".[dev]"` on Python 3.11–3.14, **zero runtime deps** for the core.
-- Four arenas run offline against the stdlib mock LLM:
+- Five arenas run offline against the stdlib mock LLM:
   - `tool_use` — 15 items, search + calculator
   - `structured_output` — 15 items, search + a schema-checked JSON record
   - `resilience` — 8 scripted model/tool faults; the agent must recover
   - `multi_agent` — 10 items, a researcher → writer → editor brief (single-agent
     role-play for now; real multi-agent entries pending)
+  - `rag` — 15 items over the shared corpus: single-hop, multi-hop, and
+    unanswerable questions that trap answers taken from parametric memory
 - Five adapters run green in mock mode on every arena:
   `vanilla`, `langgraph` (LangGraph 1.2.11), `pydantic_ai` (pydantic-ai-slim 2.37),
   `openai_agents` (openai-agents 0.22), `microsoft_af` (agent-framework 1.16).
@@ -31,7 +33,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | First **live** scorecard | none — no API key wired in; `results/` holds only a mock `tool_use` sample | add repo secret `OPENAI_API_KEY`, run the `full-run` workflow, commit `results/` |
 | `frameworks/crewai/adapter.py` | written, **not mock-verified** — CrewAI's transitive tree (chromadb/onnxruntime) has no Python 3.14 wheels, and a first 3.12 CI attempt scored 0/15 (telemetry prompt + an internal `'list' object has no attribute 'rstrip'`). Kept out of the required matrix. | debug on a 3.12 venv, pin the exact version, add its CI cell, refresh results |
 | `frameworks/claude_agent_sdk` | deliberate stub — drives the `claude` CLI (Node) over the Anthropic Messages API, not one OpenAI-compatible endpoint | see `frameworks/claude_agent_sdk/README.md` for the three ways to close it |
-| Arenas `rag`, `human_in_the_loop`, `durable_state` | design docs only, in `docs/arenas/` | promote to `arenas/<id>/`; HITL + durable_state need a harness resume/checkpoint API first |
+| Arenas `human_in_the_loop`, `durable_state` | design docs only, in `docs/arenas/` | promote to `arenas/<id>/`; both need a harness resume/checkpoint API first |
 | `multi_agent` real orchestration | only the single-agent role-play entry exists | add `<fw>-multi` adapter entries that use each framework's own graph/crew/handoff mechanism; compare tokens + LLM calls against the single-agent run |
 | `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |
 | Docs site | plain markdown in `docs/` | MkDocs Material + GitHub Pages (Phase 4) |

@@ -44,9 +44,11 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       differentiated results offline (see docs/methodology.md section 5)
 - ✅ Arena 4 `multi_agent`: researcher → writer → editor pipeline produces a
       bounded factual brief; single-agent role-play is a valid contrast entry
-- ⬜ Implement arenas 5–6 (`rag`, `human_in_the_loop`, `durable_state`) across the
-      adapter set — HITL and durable_state need a harness resume/checkpoint API
-      first; `multi_agent` still needs real multi-agent adapter entries (`<fw>-multi`)
+- ✅ Arena 5 `rag`: agentic retrieval over the shared corpus — single-hop,
+      multi-hop, and unanswerable items that trap parametric-memory answers
+- ⬜ Implement arenas 6–7 (`human_in_the_loop`, `durable_state`) — both need a
+      harness resume/checkpoint API first; `multi_agent` still needs real
+      multi-agent adapter entries (`<fw>-multi`)
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
 - ⬜ Latency / token / cost charts generated into `results/charts/`
 

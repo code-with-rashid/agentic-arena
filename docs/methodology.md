@@ -87,6 +87,21 @@ adapter against a sentinel arena and asserts, from the request body the mock
 server actually received, that the arena's prompt reached the model and that only
 the arena's declared tools were advertised.
 
+### Testing grounding without a judge
+
+"Did the agent answer from the corpus or from the model's memory?" sounds like
+it needs an LLM judge. It does not. The `rag` arena's unanswerable items ask
+about a fact the corpus genuinely lacks but the model almost certainly knows —
+Gustave Eiffel's year of birth, the Statue of Liberty's sculptor — and pair a
+refusal `iregex` with a `not_contains` on the **real-world answer**. An agent
+that grounds itself refuses and passes; an agent that falls back on parametric
+memory produces a factually correct answer and fails.
+
+The trap has to be kept honest, because a check that nothing can fail is worse
+than no check at all: `tests/test_rag_arena.py` scores a deliberately
+hallucinated answer against each of those items and asserts it fails on the
+`not_contains`, not merely on the refusal phrasing.
+
 ## 5. What mock mode does and does not tell you
 
 Mock mode proves an adapter wires the model, the tools, and the loop together
