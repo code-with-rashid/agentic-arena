@@ -16,8 +16,9 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
     unanswerable questions that trap answers taken from parametric memory
   - `human_in_the_loop` — 12 items, the agent must pause for approval before
     booking. `langgraph` (native interrupt), `openai_agents` (`needs_approval`),
-    `pydantic_ai` (deferred tools) and `vanilla` (emulated) all 12/12;
-    `microsoft_af` and `smolagents` report unsupported because they have no
+    `pydantic_ai` (deferred tools), `microsoft_af` (`approval_mode` +
+    `ToolApprovalMiddleware`) and `vanilla` (emulated) all 12/12 — five distinct
+    mechanisms; `smolagents` reports unsupported because it has no
     `resume` method
   - `multi_agent` — 10 items; carries two real three-role pipelines
     (`vanilla_multi` hand-rolled, `langgraph_multi` a `StateGraph`) beside the
@@ -57,7 +58,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | `frameworks/crewai/adapter.py` | written, **not mock-verified** — CrewAI's transitive tree (chromadb/onnxruntime) has no Python 3.14 wheels, and a first 3.12 CI attempt scored 0/15 (telemetry prompt + an internal `'list' object has no attribute 'rstrip'`). Kept out of the required matrix. | debug on a 3.12 venv, pin the exact version, add its CI cell, refresh results |
 | `frameworks/claude_agent_sdk` | deliberate stub — drives the `claude` CLI (Node) over the Anthropic Messages API, not one OpenAI-compatible endpoint | see `frameworks/claude_agent_sdk/README.md` for the three ways to close it |
 | Real multi-agent entries for `multi_agent` | only single-agent role-play entries exist | add `<fw>-multi` adapters using each framework's own graph/crew/handoff mechanism, compared on token and LLM-call cost |
-| Pause support for `microsoft_af` | ships `ToolApprovalMiddleware`, which needs an `AgentSession` and session state | implement `resume` — three worked patterns now exist in `frameworks/{langgraph,openai_agents,pydantic_ai}/adapter.py` |
+| Durable pause for `microsoft_af` | its `AgentSession` message store does not survive a JSON round trip, and restoring approval state re-queues the request | needs a real session store (`FileSessionStore`) wired to the harness checkpoint dir |
 | `smolagents` `CodeAgent` | only `ToolCallingAgent` is measured; `CodeAgent` answers by executing Python, a genuinely different execution model | give it its own adapter entry rather than swapping it inside this one |
 | `multi_agent` real orchestration | only the single-agent role-play entry exists | add `<fw>-multi` adapter entries that use each framework's own graph/crew/handoff mechanism; compare tokens + LLM calls against the single-agent run |
 | `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |
