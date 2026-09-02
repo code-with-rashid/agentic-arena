@@ -56,8 +56,10 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       `Command`) — the HITL feature-matrix row is now measured, not judged
 - ✅ Native deferred tools for `pydantic_ai` (`CallDeferred` +
       `deferred_tool_results`), passing both pause arenas
+- ✅ Native approval interruptions for `openai_agents` (`needs_approval` +
+      `RunState.to_json`), passing both pause arenas
 - ⬜ Pause support for `microsoft_af` (tool-approval middleware, needs an
-      `AgentSession`) and `openai_agents`
+      `AgentSession`)
 - ✅ Arena 7 `durable_state` — the harness discards the runner at the pause and
       JSON round-trips the resume state, so only a real checkpoint or a
       serialised transcript survives. `langgraph` (SqliteSaver) + `vanilla` 8/8

@@ -65,11 +65,11 @@ and books the room anyway fails. **[measured]**
 
 | framework | pauses | survives a crash | mechanism |
 |---|---|---|---|
-| `langgraph` | ✅ 12/12 | ✅ 8/8 | **native** — `interrupt()`, with an on-disk `SqliteSaver` for the durable case |
-| `pydantic_ai` | ✅ 12/12 | 🟡 8/8 | **native** — the tool raises `CallDeferred`, the run returns `DeferredToolRequests`, resume passes `deferred_tool_results`. Durability is stateless: the conversation is serialised and replayed as `message_history` |
-| `vanilla` | 🟡 12/12 | 🟡 8/8 | **stateless resume** — the whole transcript is serialised into the resume state |
-| `microsoft_af` | not wired | not wired | ships `ToolApprovalMiddleware`, but it requires an `AgentSession` and session state — a different shape from the two wired up here **[claimed]** |
-| `openai_agents` | not wired | not wired | — |
+| `langgraph` | ✅ 12/12 | ✅ 8/8 | `interrupt()` + an on-disk `SqliteSaver`; the graph itself is checkpointed |
+| `openai_agents` | ✅ 12/12 | ✅ 8/8 | `needs_approval=True` on the tool; `RunState.to_json()`/`from_json()` serialise the whole run |
+| `pydantic_ai` | ✅ 12/12 | 🟡 8/8 | tool raises `CallDeferred`; durability is stateless — the conversation is serialised and replayed as `message_history` |
+| `vanilla` | 🟡 12/12 | 🟡 8/8 | stateless resume — the whole transcript is serialised into the resume state |
+| `microsoft_af` | not wired | not wired | ships `ToolApprovalMiddleware`, but it needs an `AgentSession` and session state — a different shape again **[claimed]** |
 
 The `durable_state` arena is the stricter test: the harness throws the runner
 away at the pause and rebuilds it, so only a real checkpoint or a serialised
@@ -77,14 +77,20 @@ transcript gets across. Both pass — serialising the transcript yourself is a
 legitimate way to be durable — but only LangGraph does it with a checkpointer,
 which is what you want once the state stops fitting in a message list.
 
-If durable human-in-the-loop is a hard requirement, LangGraph and Pydantic AI are
-both demonstrated end-to-end. They differ in *how*: LangGraph checkpoints the
-graph to disk, Pydantic AI hands you back the conversation to persist yourself.
-The first keeps working when state outgrows a message list; the second is simpler
-and leaves the storage decision to you.
+Four adapters now clear this bar and **no two use the same mechanism**, which is
+the useful part:
 
-`microsoft_af` and `openai_agents` report *unsupported* rather than failing, which
-means "nobody has wired it up", not "it can't".
+- **LangGraph** checkpoints the graph itself to disk. Keeps working when state
+  outgrows a message list.
+- **OpenAI Agents SDK** serialises the whole run (`RunState`), not just the
+  messages, and gives you `approve`/`reject` on the interruption directly.
+- **Pydantic AI** hands you back the conversation and leaves persistence to you.
+  Simplest; you own the storage decision.
+- **`vanilla`** shows the floor: serialising your own transcript is ~40 lines.
+
+All four produce an identical trace to the scorer, so pick on the mechanism, not
+the score. `microsoft_af` reports *unsupported* rather than failing, which means
+"nobody has wired it up", not "it can't".
 
 ## 4. Gotchas worth knowing before you adopt
 

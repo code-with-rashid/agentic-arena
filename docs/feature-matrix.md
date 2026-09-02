@@ -16,8 +16,8 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) |
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) |
 | Built-in multi-agent | ❌ | ✅ (graph) | ✅ (crew) | 🟡 (handoffs) | 🟡 (subagents) | 🟡 | ✅ |
-| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ❓ | ❓ | ✅ (deferred tools, measured) | 🟡 (tool-approval middleware) |
-| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ❓ | ❓ | 🟡 (stateless resume, measured) | ❓ |
+| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | 🟡 (tool-approval middleware) |
+| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❓ |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 |
 | Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) |
 | Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) |
@@ -31,13 +31,14 @@ arena runs today with single-agent role-play entries only. It starts measuring
 this row once `<fw>-multi` entries land that use each framework's real
 graph/crew/handoff mechanism, compared on token and LLM-call cost.
 
-The `Human-in-the-loop / interrupts` row is now **measured for three adapters**.
+The `Human-in-the-loop / interrupts` row is now **measured for four adapters**.
 `human_in_the_loop` observes the pause in the harness rather than trusting the
 agent's prose:
 
 | adapter | result | mechanism |
 |---|---|---|
 | `langgraph` | 12/12 | native — `interrupt()` + `MemorySaver`, resumed with `Command(resume=...)` |
+| `openai_agents` | 12/12 | native — the tool is `needs_approval=True`, the run stops with a `ToolApprovalItem`, `resume` calls `approve`/`reject` |
 | `pydantic_ai` | 12/12 | native — the tool raises `CallDeferred`, the run returns `DeferredToolRequests`, `resume` passes `deferred_tool_results` |
 | `vanilla` | 12/12 | emulated — transcript carried back in, no checkpoint (hence 🟡, not ✅) |
 
@@ -51,6 +52,7 @@ transcript can get across:
 | adapter | result | mechanism |
 |---|---|---|
 | `langgraph` | 8/8 | `SqliteSaver` writing to the harness-owned checkpoint dir; a fresh runner reopens the same thread |
+| `openai_agents` | 8/8 | `RunState.to_json()` / `from_json()` — the SDK serialises the whole run, not just the messages |
 | `pydantic_ai` | 8/8 | stateless resume — the conversation is serialised with `ModelMessagesTypeAdapter` and replayed as `message_history` |
 | `vanilla` | 8/8 | stateless resume — the whole transcript is serialised into `resume_state`. Durable, but it is not a checkpointer, hence 🟡 |
 
@@ -58,11 +60,11 @@ An adapter patched to restart from scratch instead of resuming drops to **0/8**:
 it reaches the right answer by redoing both lookups, and the `call_counts` check
 catches the duplicated work.
 
-`crewai`, `openai_agents` and `microsoft_af` have no `resume` method yet and
-report *unsupported* on both arenas. Read their cells as unmeasured claims from
-upstream docs, not as results — Agent Framework in particular ships
-`ToolApprovalMiddleware`, but it requires an `AgentSession` and session state,
-which is a different shape from the two mechanisms wired up so far.
+`crewai` and `microsoft_af` have no `resume` method yet and report *unsupported*
+on both arenas. Read their cells as unmeasured claims from upstream docs, not as
+results — Agent Framework ships `ToolApprovalMiddleware`, but it requires an
+`AgentSession` and session state, a different shape again from the three
+mechanisms wired up so far.
 
 > The ❓ cells are the backlog. Each one gets resolved when its adapter is written
 > or when an arena exercises that capability directly.
