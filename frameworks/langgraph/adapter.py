@@ -18,7 +18,7 @@ import contextlib
 import tempfile
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig
@@ -29,32 +29,49 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 
 def _make_tools(names: list[str]) -> list[Any]:
+    """Signatures, wording and parameter descriptions track `arena.tools.specs_for`.
+
+    They are not this adapter's to choose. LangChain reads a parameter
+    description only from `Annotated`, not from the docstring, so without the
+    annotations below this adapter sent bare types where the arena had described
+    every argument - part of why it measured leanest on the wire. See
+    docs/tool-schemas.md.
+    """
     from langchain_core.tools import tool
     from langgraph.types import interrupt
 
     @tool
-    def search(query: str, k: int = 3) -> str:
-        """Search a small knowledge base of general facts."""
+    def search(
+        query: Annotated[str, "What to look up."],
+        k: Annotated[int, "How many snippets."] = 3,
+    ) -> str:
+        """Search a knowledge base of general facts. Returns up to k text snippets."""
         return _search(query, k)
 
     @tool
-    def calculator(expr: str) -> str:
-        """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+    def calculator(expr: Annotated[str, "Arithmetic expression."]) -> str:
+        """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
         return _calculator(expr)
 
     @tool
-    def search_rooms(capacity: int, day: str) -> str:
+    def search_rooms(
+        capacity: Annotated[int, "People to seat."],
+        day: Annotated[str, "Day of the week, e.g. 'tuesday'."],
+    ) -> str:
         """List meeting rooms that seat at least `capacity` and are free on `day`."""
         return arena_tools.search_rooms(capacity, day)
 
     @tool
-    def book_room(room_id: str) -> str:
+    def book_room(room_id: Annotated[str, "Room id, e.g. 'R3'."]) -> str:
         """Book a meeting room by id. Only call this after approval."""
         return arena_tools.book_room(room_id)
 
     @tool
-    def request_approval(summary: str) -> str:
-        """Ask a human to approve a consequential action before taking it."""
+    def request_approval(summary: Annotated[str, "What you want approved."]) -> str:
+        """Ask a human to approve a consequential action before you take it.
+
+        Call this and stop; you will be told the decision.
+        """
         # The native pause: LangGraph checkpoints the graph here and `invoke`
         # returns with `__interrupt__` set. On resume, this call returns the
         # decision the harness injected and the graph carries on from this point.
@@ -62,8 +79,11 @@ def _make_tools(names: list[str]) -> list[Any]:
         return f"Decision: {decision}."
 
     @tool
-    def save_progress(note: str) -> str:
-        """Checkpoint what you have gathered so far, then stop."""
+    def save_progress(note: Annotated[str, "What you have established so far."]) -> str:
+        """Checkpoint what you have gathered so far, then stop.
+
+        You will be resumed and can carry on from where you left off.
+        """
         # Same primitive, different arena. In `durable_state` the harness throws
         # the runner away here, so the checkpoint has to be on disk for the graph
         # to still exist when a fresh runner reconnects to the same thread.

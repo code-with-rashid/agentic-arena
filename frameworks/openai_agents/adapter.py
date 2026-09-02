@@ -19,7 +19,16 @@ runner and only JSON survives.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
+
+# Guarded: every framework here depends on pydantic, but the harness itself has
+# zero runtime deps and CI's lint job installs none of them - an adapter module
+# must still import cleanly there. The annotation below is only evaluated when a
+# runner is built, by which point the framework (and pydantic) is present.
+try:
+    from pydantic import Field
+except ImportError:  # pragma: no cover - adapter is unbuildable without it anyway
+    Field = None  # type: ignore[assignment]
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig
@@ -30,38 +39,60 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 
 def _make_tools(names: list[str]) -> list[Any]:
+    """Signatures, wording and parameter descriptions track `arena.tools.specs_for`.
+
+    The SDK emits `strict: true`, which forces *every* property into `required`
+    even where the arena gave one a default. That is a framework property rather
+    than an adapter choice, and it is a finding in docs/tool-schemas.md.
+    """
     from agents import function_tool
 
     @function_tool
-    def search(query: str, k: int = 3) -> str:
-        """Search a small knowledge base of general facts."""
+    def search(
+        query: Annotated[str, Field(description="What to look up.")],
+        k: Annotated[int, Field(description="How many snippets.")] = 3,
+    ) -> str:
+        """Search a knowledge base of general facts. Returns up to k text snippets."""
         return _search(query, k)
 
     @function_tool
-    def calculator(expr: str) -> str:
-        """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+    def calculator(expr: Annotated[str, Field(description="Arithmetic expression.")]) -> str:
+        """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
         return _calculator(expr)
 
     @function_tool
-    def search_rooms(capacity: int, day: str) -> str:
+    def search_rooms(
+        capacity: Annotated[int, Field(description="People to seat.")],
+        day: Annotated[str, Field(description="Day of the week, e.g. 'tuesday'.")],
+    ) -> str:
         """List meeting rooms that seat at least `capacity` and are free on `day`."""
         return arena_tools.search_rooms(capacity, day)
 
     @function_tool
-    def book_room(room_id: str) -> str:
+    def book_room(room_id: Annotated[str, Field(description="Room id, e.g. 'R3'.")]) -> str:
         """Book a meeting room by id. Only call this after approval."""
         return arena_tools.book_room(room_id)
 
     # `needs_approval` is the native pause: the SDK stops the run and surfaces a
     # ToolApprovalItem instead of executing the body.
     @function_tool(needs_approval=True)
-    def request_approval(summary: str) -> str:
-        """Ask a human to approve a consequential action before taking it."""
+    def request_approval(
+        summary: Annotated[str, Field(description="What you want approved.")],
+    ) -> str:
+        """Ask a human to approve a consequential action before you take it.
+
+        Call this and stop; you will be told the decision.
+        """
         return f"Approved: {summary}"
 
     @function_tool(needs_approval=True)
-    def save_progress(note: str) -> str:
-        """Checkpoint what you have gathered so far, then stop."""
+    def save_progress(
+        note: Annotated[str, Field(description="What you have established so far.")],
+    ) -> str:
+        """Checkpoint what you have gathered so far, then stop.
+
+        You will be resumed and can carry on from where you left off.
+        """
         return f"Checkpointed: {note}"
 
     available = {

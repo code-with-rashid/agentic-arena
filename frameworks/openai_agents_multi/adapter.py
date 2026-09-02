@@ -35,7 +35,16 @@ Fairness notes, same as the other pipeline entries:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
+
+# Guarded: every framework here depends on pydantic, but the harness itself has
+# zero runtime deps and CI's lint job installs none of them - an adapter module
+# must still import cleanly there. The annotation below is only evaluated when a
+# runner is built, by which point the framework (and pydantic) is present.
+try:
+    from pydantic import Field
+except ImportError:  # pragma: no cover - adapter is unbuildable without it anyway
+    Field = None  # type: ignore[assignment]
 
 from arena.config import ArenaConfig
 from arena.tools import calculator as _calculator
@@ -66,13 +75,16 @@ def _make_tools(names: list[str]) -> list[Any]:
     from agents import function_tool
 
     @function_tool
-    def search(query: str, k: int = 3) -> str:
-        """Search a small knowledge base of general facts."""
+    def search(
+        query: Annotated[str, Field(description="What to look up.")],
+        k: Annotated[int, Field(description="How many snippets.")] = 3,
+    ) -> str:
+        """Search a knowledge base of general facts. Returns up to k text snippets."""
         return _search(query, k)
 
     @function_tool
-    def calculator(expr: str) -> str:
-        """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+    def calculator(expr: Annotated[str, Field(description="Arithmetic expression.")]) -> str:
+        """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
         return _calculator(expr)
 
     available = {"search": search, "calculator": calculator}

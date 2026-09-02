@@ -118,7 +118,7 @@ See [docs/methodology.md](docs/methodology.md) for the full rules. In short:
 Three things mock mode *can* compare honestly, because the model is held identical
 and only the framework varies: the `resilience` arena's recovery rates,
 [how much each framework puts on the wire](docs/overhead.md) for the same task
-(a ~1.15× spread among five, and **3.77×** for smolagents), and whether an adapter
+(a ~1.15× spread among six, and **3.90×** for smolagents), and whether an adapter
 can genuinely pause for a human. CI prints all three on every run, and
 `python -m arena summary` collects them.
 
@@ -127,9 +127,11 @@ can genuinely pause for a human. CI prints all three on every run, and
 No live scorecard exists yet, so **nothing here is about answer quality**. What
 *is* measured, offline and reproducibly:
 
-- The hand-rolled baseline is **not** the cheapest on the wire — three of five
-  frameworks serialise the same tool schemas more compactly.
-- Prompt overhead is a 1.15× band for five frameworks, and **3.77×** for
+- The hand-rolled baseline **is** the floor on the wire, and `langgraph` ties it
+  byte for byte. This page said the opposite for fifteen iterations, until the
+  tool schemas were compared for *content* rather than size and it turned out the
+  cheaper frameworks were sending less — see [tool-schemas.md](docs/tool-schemas.md).
+- Prompt overhead is a 1.15× band for six frameworks, and **3.90×** for
   smolagents, whose templated system prompt is resent on every request and
   re-describes the tools it has already sent as a schema.
 - Under eight scripted faults, LangGraph and the OpenAI Agents SDK each lose one

@@ -15,7 +15,16 @@ the harness discards the runner there, so nothing in memory survives.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
+
+# Guarded: every framework here depends on pydantic, but the harness itself has
+# zero runtime deps and CI's lint job installs none of them - an adapter module
+# must still import cleanly there. The annotation below is only evaluated when a
+# runner is built, by which point the framework (and pydantic) is present.
+try:
+    from pydantic import Field
+except ImportError:  # pragma: no cover - adapter is unbuildable without it anyway
+    Field = None  # type: ignore[assignment]
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig
@@ -68,38 +77,53 @@ class _Runner:
         self._limits = UsageLimits(request_limit=config.max_tool_iterations)
 
         if "search" in names:
-
+            # Signatures, wording and parameter descriptions track
+            # `arena.tools.specs_for`. Pydantic AI reads a parameter description
+            # from `Field`, not from the docstring - see docs/tool-schemas.md.
             @self._agent.tool_plain
-            def search(query: str, k: int = 3) -> str:
-                """Search a small knowledge base of general facts."""
+            def search(
+                query: Annotated[str, Field(description="What to look up.")],
+                k: Annotated[int, Field(description="How many snippets.")] = 3,
+            ) -> str:
+                """Search a knowledge base of general facts. Returns up to k text snippets."""
                 return _search(query, k)
 
         if "calculator" in names:
 
             @self._agent.tool_plain
-            def calculator(expr: str) -> str:
-                """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+            def calculator(
+                expr: Annotated[str, Field(description="Arithmetic expression.")],
+            ) -> str:
+                """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
                 return _calculator(expr)
 
         if "search_rooms" in names:
 
             @self._agent.tool_plain
-            def search_rooms(capacity: int, day: str) -> str:
+            def search_rooms(
+                capacity: Annotated[int, Field(description="People to seat.")],
+                day: Annotated[str, Field(description="Day of the week, e.g. 'tuesday'.")],
+            ) -> str:
                 """List meeting rooms that seat at least `capacity` and are free on `day`."""
                 return arena_tools.search_rooms(capacity, day)
 
         if "book_room" in names:
 
             @self._agent.tool_plain
-            def book_room(room_id: str) -> str:
+            def book_room(room_id: Annotated[str, Field(description="Room id, e.g. 'R3'.")]) -> str:
                 """Book a meeting room by id. Only call this after approval."""
                 return arena_tools.book_room(room_id)
 
         if "request_approval" in names:
 
             @self._agent.tool_plain
-            def request_approval(summary: str) -> str:
-                """Ask a human to approve a consequential action before taking it."""
+            def request_approval(
+                summary: Annotated[str, Field(description="What you want approved.")],
+            ) -> str:
+                """Ask a human to approve a consequential action before you take it.
+
+                Call this and stop; you will be told the decision.
+                """
                 # The native pause. Raising CallDeferred makes the run finish with a
                 # DeferredToolRequests output instead of executing this body.
                 raise CallDeferred
@@ -107,8 +131,13 @@ class _Runner:
         if "save_progress" in names:
 
             @self._agent.tool_plain
-            def save_progress(note: str) -> str:
-                """Checkpoint what you have gathered so far, then stop."""
+            def save_progress(
+                note: Annotated[str, Field(description="What you have established so far.")],
+            ) -> str:
+                """Checkpoint what you have gathered so far, then stop.
+
+                You will be resumed and can carry on from where you left off.
+                """
                 raise CallDeferred
 
     def _result(self, result: Any, seen: int) -> AgentResult:

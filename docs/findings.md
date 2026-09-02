@@ -32,34 +32,37 @@ locally.
 
 ## 1. What a framework costs you on the wire
 
-**Six of seven frameworks sit inside a 1.15× band; one sits at 3.77×.**
+**Six of seven frameworks sit inside a 1.15× band; one sits at 3.90×.**
 Mean prompt tokens per item on `tool_use`, 15 items:
 
 | framework | prompt tokens | vs baseline |
 |---|---:|---:|
-| langgraph | 683 | 0.91× |
-| pydantic_ai | 724 | 0.96× |
-| microsoft_af | 732 | 0.97× |
-| `vanilla` (stdlib baseline) | 754 | 1.00× |
-| openai_agents | 787 | 1.04× |
-| google_adk | 791 | 1.05× |
-| smolagents | 2845 | **3.77×** |
+| `vanilla` (stdlib baseline) | 753.5 | 1.00× |
+| langgraph | 753.5 | 1.00× |
+| pydantic_ai | 794.0 | 1.05× |
+| microsoft_af | 802.0 | 1.06× |
+| google_adk | 836.1 | 1.11× |
+| openai_agents | 856.9 | 1.14× |
+| smolagents | 2935.5 | **3.90×** |
 
-**The hand-rolled baseline is not the leanest.** Three of the four in-band
-frameworks serialise the same two tool schemas more compactly than the by-hand
-version. This contradicted the guide's own prior hypothesis, which was corrected
-rather than quietly dropped. Within the band, the entire spread is the `tools`
-block — the `messages` are byte-identical at 472 characters.
+**No framework is leaner on the wire than the hand-rolled loop** — and this page
+said the opposite until it was checked properly. See §5: the frameworks that
+measured cheaper were *sending less*, and with the tool schemas equalised
+`langgraph` ties the baseline byte for byte. Within the band the entire spread is
+still the `tools` block — the `messages` are byte-identical at 472 characters —
+but what separates the others from the floor is decoration (`title`,
+`additionalProperties`, `strict: true`), not tighter serialisation.
 
-**smolagents' 3.77× is a system prompt, not tool serialisation.** A 3,932-char
-template goes out on every request where the arena asked for 384, and 591 of
+**smolagents' 3.90× is a system prompt, not tool serialisation.** A 4,207-char
+template goes out on every request where the arena asked for 384, and 1,159 of
 those characters are a *prose restatement of the same tools already sent as an
 OpenAI schema* — the tools are transmitted twice and billed twice. It is doing
 real work (driving models that cannot natively tool-call), but paired with a
-model that tool-calls well it is ~3.5 KB per request of scaffolding you do not
+model that tool-calls well it is ~3.8 KB per request of scaffolding you do not
 need.
 
-→ [overhead.md](overhead.md) · [smolagents.md](frameworks/smolagents.md)
+→ [overhead.md](overhead.md) · [tool-schemas.md](tool-schemas.md) ·
+[smolagents.md](frameworks/smolagents.md)
 
 ```bash
 python -m arena run --arena tool_use --framework all --mode mock --no-scorecard && python .github/scripts/report_overhead.py tool_use
@@ -87,7 +90,7 @@ loop is `max_tool_iterations` — the harness's knob, not the library's.
 Those two facts explain the decay: a per-request constant is linear in turns,
 the conversation it is divided by is quadratic, so any fixed overhead decays as
 `1/n`. `vanilla` spends 9,901 estimated prompt tokens on a 10-turn item and
-71,745 on a 30-turn one — 3× the turns, 7× the bill. Read 3.77× as an upper bound
+71,745 on a 30-turn one — 3× the turns, 7× the bill. Read 3.90× as an upper bound
 on short items, not a tax on every item.
 
 → [overhead.md](overhead.md#what-happens-when-the-loop-gets-long)
@@ -279,7 +282,7 @@ price.** smolagents' `managed_agents` advertises a sub-agent as an ordinary tool
 rather than as a transfer that swaps the speaker. Offering one, with no
 delegation happening at all, costs **~875 characters on every request** (linear
 after a ~385-char one-off preamble), against the OpenAI Agents SDK's 262-char
-`transfer_to_writer` schema. The reason is the same one behind smolagents' 3.77×
+`transfer_to_writer` schema. The reason is the same one behind smolagents' 3.90×
 in §1: each sub-agent is described **twice**, once as a JSON schema and once in
 prose. Both frameworks bill you for options rather than actions; they do not bill
 the same amount.
@@ -383,6 +386,37 @@ leg. Correctness was never affected (8/8 before and after), which is precisely
 why it survived. The same gate then caught a second, different accounting bug in
 the very next adapter written against it. Every other adapter verified honest —
 a negative result, and the thing that makes §1 and §3 worth reading.
+
+**The frameworks were not describing the same tool.** §1 said for fifteen
+iterations that the hand-rolled baseline is *not* the leanest — that three of
+four frameworks serialise the same tools more compactly. Nothing had compared
+what those bytes **say**, only what they cost. Against the canonical spec in
+`arena/tools/__init__.py`:
+
+- `google_adk` and `smolagents` declared `search(query)` where the arena declares
+  `search(query, k=3)` — **a parameter the model was never offered**;
+- `langgraph`, `pydantic_ai`, `openai_agents` and `microsoft_af` sent **bare
+  types**, no parameter descriptions, because none of these libraries reads one
+  from the docstring and each wants it somewhere different.
+
+Mock mode is structurally blind to this: scripted calls are replayed whatever the
+schema said, so every arena stayed green. Live it would have read as a quality
+difference and been blamed on the framework.
+
+With the tools equalised, **`langgraph` ties the baseline exactly** — 753.5
+tokens against 753.5, `tools` block 637 chars against 637. Its whole 0.91×
+advantage was four missing descriptions, and the corrected claim is the duller
+one: no framework is leaner than the hand-rolled loop, and the band is 1.00×–1.14×
+rather than 0.91×–1.05×. The second correction to that claim, having already
+replaced an earlier hypothesis that the baseline *would* be cheapest.
+
+**And on the pause arenas it was worse.** The arena describes its pause tool as
+*"…**Call this and stop; you will be told the decision.**"* **All six frameworks
+were sending the first sentence only** — dropping the instruction to pause, on
+the arena built to measure whether it pauses. Only `vanilla` kept it. Mock mode
+is blind for a sharper reason here: the *script* decides when the pause happens,
+so `human_in_the_loop` read 12/12 for six adapters while five were being told
+materially less than the sixth. → [tool-schemas.md](tool-schemas.md)
 
 **One of the probes on this page was contaminated by its own corpus.** The
 batched-call measurement in §2b originally counted the word "observation" in the

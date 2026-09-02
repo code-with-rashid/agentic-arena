@@ -33,22 +33,29 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 # ADK builds each tool's schema from the signature and the Google-style
 # docstring, so the `Args:` blocks below are load-bearing, not decoration.
+#
+# Signatures and wording track `arena.tools.specs_for` exactly. They are not this
+# adapter's to choose: the arena declares the tools, and a framework offered a
+# narrower one is being handed a different task. This file used to declare
+# `search(query)`, silently withholding the `k` parameter the arena grants
+# everyone else - see docs/tool-schemas.md.
 
 
-def search(query: str) -> str:
-    """Search a small knowledge base of general facts.
+def search(query: str, k: int = 3) -> str:
+    """Search a knowledge base of general facts. Returns up to k text snippets.
 
     Args:
         query: What to look up.
+        k: How many snippets.
     """
-    return _search(query)
+    return _search(query, k)
 
 
 def calculator(expr: str) -> str:
-    """Evaluate a basic arithmetic expression such as '330 / 0.3048'.
+    """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'.
 
     Args:
-        expr: The arithmetic expression to evaluate.
+        expr: Arithmetic expression.
     """
     return _calculator(expr)
 
@@ -57,7 +64,7 @@ def search_rooms(capacity: int, day: str) -> str:
     """List meeting rooms that seat at least `capacity` and are free on `day`.
 
     Args:
-        capacity: How many people the room must seat.
+        capacity: People to seat.
         day: Day of the week, e.g. 'tuesday'.
     """
     return arena_tools.search_rooms(capacity, day)
@@ -67,13 +74,15 @@ def book_room(room_id: str) -> str:
     """Book a meeting room by id. Only call this after approval.
 
     Args:
-        room_id: The room id, e.g. 'R3'.
+        room_id: Room id, e.g. 'R3'.
     """
     return arena_tools.book_room(room_id)
 
 
 def request_approval(summary: str) -> dict[str, str]:
-    """Ask a human to approve a consequential action before taking it.
+    """Ask a human to approve a consequential action before you take it.
+
+    Call this and stop; you will be told the decision.
 
     Args:
         summary: What you want approved.
@@ -85,6 +94,8 @@ def request_approval(summary: str) -> dict[str, str]:
 
 def save_progress(note: str) -> dict[str, str]:
     """Checkpoint what you have gathered so far, then stop.
+
+    You will be resumed and can carry on from where you left off.
 
     Args:
         note: What you have established so far.

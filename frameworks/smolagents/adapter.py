@@ -29,23 +29,31 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 
 def _make_tools(names: list[str]) -> list[Any]:
+    """Signatures and wording track `arena.tools.specs_for` exactly.
+
+    They are not this adapter's to choose. The arena declares the tools, and a
+    framework offered a narrower one is being handed a different task - this file
+    used to declare `search(query)`, silently withholding the `k` parameter the
+    arena grants. See docs/tool-schemas.md.
+    """
     from smolagents import tool
 
     @tool
-    def search(query: str) -> str:
-        """Search a small knowledge base of general facts.
+    def search(query: str, k: int = 3) -> str:
+        """Search a knowledge base of general facts. Returns up to k text snippets.
 
         Args:
             query: What to look up.
+            k: How many snippets.
         """
-        return _search(query)
+        return _search(query, k)
 
     @tool
     def calculator(expr: str) -> str:
-        """Evaluate a basic arithmetic expression such as '330 / 0.3048'.
+        """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'.
 
         Args:
-            expr: The arithmetic expression to evaluate.
+            expr: Arithmetic expression.
         """
         return _calculator(expr)
 
@@ -54,7 +62,7 @@ def _make_tools(names: list[str]) -> list[Any]:
         """List meeting rooms that seat at least `capacity` and are free on `day`.
 
         Args:
-            capacity: How many people the room must seat.
+            capacity: People to seat.
             day: Day of the week, e.g. 'tuesday'.
         """
         return arena_tools.search_rooms(capacity, day)
@@ -64,7 +72,7 @@ def _make_tools(names: list[str]) -> list[Any]:
         """Book a meeting room by id. Only call this after approval.
 
         Args:
-            room_id: The room id, e.g. 'R3'.
+            room_id: Room id, e.g. 'R3'.
         """
         return arena_tools.book_room(room_id)
 

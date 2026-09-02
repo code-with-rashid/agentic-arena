@@ -69,7 +69,7 @@ columns that do compare honestly are marked.
 
 | Arena | Mode | Pass rate | Note |
 |---|---|--:|---|
-| `tool_use` | mock | 15/15 | 683 prompt tok/item — leanest of the five, see [overhead.md](../overhead.md) *(comparable)* |
+| `tool_use` | mock | 15/15 | 754 prompt tok/item — ties the hand-rolled baseline byte for byte, see [overhead.md](../overhead.md) *(comparable)* |
 | `structured_output` | mock | 15/15 | |
 | `rag` | mock | 15/15 | |
 | `multi_agent` | mock | 10/10 | single-agent role-play entry |

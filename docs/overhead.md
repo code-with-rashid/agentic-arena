@@ -18,18 +18,26 @@ A local run on `tool_use`, 15 items, mean per item:
 
 | framework | prompt tokens | vs baseline |
 |---|---:|---:|
-| langgraph | 683 | 0.91× |
-| pydantic_ai | 724 | 0.96× |
-| microsoft_af | 732 | 0.97× |
-| `vanilla` (stdlib baseline) | 754 | 1.00× |
-| openai_agents | 787 | 1.04× |
-| google_adk | 791 | 1.05× |
-| smolagents | 2845 | **3.77×** |
+| `vanilla` (stdlib baseline) | 753.5 | 1.00× |
+| langgraph | 753.5 | 1.00× |
+| pydantic_ai | 794.0 | 1.05× |
+| microsoft_af | 802.0 | 1.06× |
+| google_adk | 836.1 | 1.11× |
+| openai_agents | 856.9 | 1.14× |
+| smolagents | 2935.5 | **3.90×** |
 
-Completion tokens and LLM calls are identical across the first five (45.1 and
+Completion tokens and LLM calls are identical across the first six (45.1 and
 2.07), which is the point: the mock scripts the same turns for everyone, so the
 only thing that varies is the request. `smolagents` matches on LLM calls (2.07)
 but not on completion tokens (74.7) — see below.
+
+> **These numbers changed once, for a reason worth knowing.** An earlier version
+> of this table had `langgraph` at 0.91×, and this page said prominently that the
+> hand-rolled baseline was *not* the leanest. It was — the frameworks that
+> measured cheaper were **sending less**: two dropped a parameter the arena
+> declared, four dropped every parameter description.
+> [tool-schemas.md](tool-schemas.md) has the audit and the correction. With the
+> tools genuinely equalised, `langgraph` ties the baseline byte for byte.
 
 ## What drives it
 
@@ -38,58 +46,56 @@ right outside it. They are two different stories, so take them separately.
 
 ### The 1.15× band
 
-The conversation is identical — those five send exactly the same 472 characters
+The conversation is identical — those six send exactly the same 472 characters
 of `messages` on the first turn, which is what PR #3's wire-level contract tests
 enforce. The whole spread comes from the tool block: the same two tools,
-described in the same OpenAI schema format, come out at
+described in the same OpenAI schema format and now carrying the same
+*information*, come out at
 
-| framework | `tools` block |
-|---|---:|
-| langgraph | 501 chars |
-| pydantic_ai | 579 chars |
-| microsoft_af | 604 chars |
-| `vanilla` | 637 chars |
-| openai_agents | 701 chars |
+| framework | `tools` block | what the extra bytes are |
+|---|---:|---|
+| `vanilla` | 637 chars | the canonical spec, nothing added |
+| langgraph | 637 chars | byte-identical to the baseline |
+| pydantic_ai | 715 chars | `additionalProperties: false` |
+| google_adk | 735 chars | `title` on every property, `Args:` folded into the description |
+| microsoft_af | 740 chars | `title` on every property and the object |
+| openai_agents | 837 chars | `title`, `additionalProperties`, and `strict: true` |
 
-a 1.4× spread on its own. Frameworks also differ in which control fields they
-send (`openai_agents` omits `stream`, `langgraph` omits `tool_choice`), but those
-are not billed and are excluded from the count.
+Frameworks also differ in which control fields they send (`openai_agents` omits
+`stream`, `langgraph` omits `tool_choice`), but those are not billed and are
+excluded from the count.
 
-Worth stating plainly: the hand-rolled stdlib baseline is **not** the leanest.
-Three of the four frameworks serialise these tools more compactly than the
-by-hand version does. Whatever a framework costs you, on this axis it is not
-obviously wasteful.
+Worth stating plainly, now that it is measured on equal terms: **no framework is
+leaner on the wire than the hand-rolled loop.** The baseline is the floor, and
+what separates the others from it is decoration — titles, `additionalProperties`,
+strict mode — rather than tighter serialisation. `langgraph` adds none of it and
+lands exactly on the floor.
 
-### smolagents: 3.77×, and it is all system prompt
+That is a duller claim than the one it replaces, and it is the one the
+measurement supports.
+
+### smolagents: 3.90×, and it is all system prompt
 
 `smolagents` is the exception that shows what the band is actually measuring.
 Its extra cost is **not** the tool schema — it is a templated system prompt that
 the framework prepends to whatever the arena asked for. The arena's own
 instruction is still in there verbatim (the contract tests check that), but it is
-under 10% of what goes out:
+**under 10%** of the 4,207 characters that go out, against `vanilla`'s 384 — the
+arena's prompt and nothing else. That is ~3,800 extra characters resent on every
+request, and at 2.07 requests per item it accounts for essentially the whole gap.
 
-| section of the system prompt | chars |
-|---|---:|
-| framework preamble ("you are an expert assistant...") | 1065 |
-| two worked ReAct-style examples | 1361 |
-| **the same tools, re-described in prose** | 591 |
-| the arena's own system prompt | **384** |
-| trailing rules | 531 |
-| total | 3932 |
+Two details are worth pulling out:
 
-against `vanilla`'s 384 — the arena's prompt and nothing else. That is 3548 extra
-characters, resent on every request, and at 2.07 requests per item it accounts
-for essentially the entire gap (~1966 of the 2091 estimated-token difference).
-
-Two details in that table are worth pulling out:
-
-- **The tools are transmitted twice.** Every request carries both the 831-char
-  OpenAI `tools` schema *and* a 591-char prose restatement of the same three
+- **The tools are transmitted twice.** Every request carries both the 919-char
+  OpenAI `tools` schema *and* a 1,159-char prose restatement of the same three
   tools inside the system prompt. Nothing reconciles them; a provider bills for
-  both.
+  both. This is also the reason `smolagents` moved *up* when the schemas were
+  equalised: it pays for a restored parameter description in two places at once,
+  which is why its multiple went from 3.77× to 3.90× while everyone else's
+  moved by less.
 - **`final_answer` is a real cost.** `smolagents` ends its loop by calling a tool
   rather than by replying, so it must advertise a third tool the arena never
-  declared. That is why its `tools` block is 831 chars against `vanilla`'s 637,
+  declared. That is why its `tools` block is 919 chars against `vanilla`'s 637,
   and it is why its completion tokens are 74.7 against everyone else's 45.1 —
   the final answer goes out as a JSON tool call instead of as plain content.
   Methodology §3 exempts control tools from the fairness rule; it does not exempt
@@ -166,11 +172,11 @@ Concretely, `vanilla` spends 9,901 estimated prompt tokens on a 10-turn item and
 
 ### What that means for the headline number
 
-`smolagents`' 3.77× is real, and it is a two-call number. Read it as an upper
+`smolagents`' 3.90× is real, and it is a two-call number. Read it as an upper
 bound rather than a tax:
 
 - on short, high-volume items — classification, extraction, one-shot RAG — the
-  multiple is close to the full 3.77× and worth caring about;
+  multiple is close to the full 3.90× and worth caring about;
 - on a long agentic loop it converges toward 1×, and by turn 30 the framework you
   picked is a rounding error next to the number of turns you took.
 
