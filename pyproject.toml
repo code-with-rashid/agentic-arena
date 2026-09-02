@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=84.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -22,7 +22,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["ruff>=0.6", "pytest>=8"]
+dev = ["ruff>=0.16.5", "pytest>=9.1.1"]
 
 [project.scripts]
 arena = "arena.__main__:main"
