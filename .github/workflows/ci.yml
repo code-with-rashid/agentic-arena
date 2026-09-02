@@ -80,6 +80,11 @@ jobs:
         run: python -m arena run --arena tool_use --framework all --mode mock --no-scorecard
       - name: Report per-framework prompt overhead
         run: python .github/scripts/report_overhead.py tool_use
+      - name: Which frameworks support a human-in-the-loop pause
+        # Adapters without a `resume` method report themselves unsupported here
+        # rather than failing items, so this step is a capability census, not a
+        # gate. It turns red only if the run itself breaks.
+        run: python -m arena run --arena human_in_the_loop --framework all --mode mock --no-scorecard
 
   mock-smoke:
     # Proves a real framework adapter wires together against the mock LLM.

@@ -15,13 +15,59 @@ from .config import REPO_ROOT, ArenaConfig
 from .llm.mockserver import MockServer
 from .registry import load_arena, load_framework
 from .scorer import score_item
-from .types import AgentResult, ArenaSpec
+from .tools import SUSPEND_TOOL
+from .types import AgentResult, ArenaSpec, EvalItem
 
 RUNS_DIR = REPO_ROOT / "runs"
+
+# A suspend/resume cycle that never terminates would hang the whole run. Real
+# arenas need one pause; the cap only exists so a broken adapter fails loudly.
+MAX_RESUMES = 3
 
 
 def _now_iso() -> str:
     return datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _merge_legs(legs: list[AgentResult]) -> AgentResult:
+    """Fold a suspended run's legs into the single result the scorer sees.
+
+    Cost is summed across legs — a framework that pauses and resumes pays for
+    the whole conversation, and hiding the first leg's tokens would make an
+    interrupting framework look cheaper than one that runs straight through.
+    """
+    last = legs[-1]
+    if len(legs) == 1:
+        return last
+    return replace(
+        last,
+        tool_calls=[tc for leg in legs for tc in leg.tool_calls],
+        prompt_tokens=sum(leg.prompt_tokens for leg in legs),
+        completion_tokens=sum(leg.completion_tokens for leg in legs),
+        latency_s=sum(leg.latency_s for leg in legs),
+        llm_calls=sum(leg.llm_calls for leg in legs),
+        tool_calls_before_suspend=list(legs[0].tool_calls),
+        suspends=sum(1 for leg in legs if leg.suspended),
+    )
+
+
+def _run_item(agent: Any, item: EvalItem) -> AgentResult:
+    """Run one item, driving any suspend/resume cycle to completion."""
+    legs = [agent.run(item)]
+    while legs[-1].suspended and len(legs) <= MAX_RESUMES:
+        if not hasattr(agent, "resume"):
+            return replace(
+                _merge_legs(legs),
+                error="adapter suspended but does not implement resume()",
+            )
+        decision = item.resume_with or "approve"
+        legs.append(agent.resume(item, legs[-1].resume_state, decision))
+    if legs[-1].suspended:
+        return replace(
+            _merge_legs(legs),
+            error=f"still suspended after {MAX_RESUMES} resumes",
+        )
+    return _merge_legs(legs)
 
 
 def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> dict[str, Any]:
@@ -48,12 +94,25 @@ def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> d
             "traceback": traceback.format_exc(),
         }
 
+    # "This framework has no interrupt mechanism wired up" and "this framework
+    # tried to pause and got it wrong" are different findings, and scoring them
+    # both as a pile of failed items would conflate them.
+    if SUSPEND_TOOL in arena.tools and not hasattr(agent, "resume"):
+        return {
+            **record,
+            "available": False,
+            "reason": (
+                "arena requires a pause for human approval, but this adapter does "
+                "not implement the resume API (arena.types.ResumableRunner)"
+            ),
+        }
+
     for rep in range(config.repeat):
         for item in arena.dataset:
             started = time.perf_counter()
             error_tb: str | None = None
             try:
-                result = agent.run(item)
+                result = _run_item(agent, item)
             except Exception as exc:  # noqa: BLE001
                 # Keep the traceback: an adapter that fails every item otherwise
                 # reports one unhelpful line, and the frame that actually raised
@@ -76,6 +135,16 @@ def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> d
                     "latency_s": round(result.latency_s, 4),
                     "llm_calls": result.llm_calls,
                     "error": result.error,
+                    **(
+                        {
+                            "suspends": result.suspends,
+                            "tool_calls_before_suspend": [
+                                tc.get("name") for tc in result.tool_calls_before_suspend
+                            ],
+                        }
+                        if result.suspends
+                        else {}
+                    ),
                     **({"traceback": error_tb} if error_tb else {}),
                 }
             )

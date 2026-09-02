@@ -16,6 +16,10 @@ class EvalItem:
     input: str
     checks: list[dict[str, Any]] = field(default_factory=list)
     note: str = ""
+    # What the harness injects when the agent suspends for approval. Fixed per
+    # item so the decision is part of the frozen eval set, not something the
+    # agent or the framework can influence.
+    resume_with: str = ""
 
     @classmethod
     def from_json(cls, obj: dict[str, Any]) -> EvalItem:
@@ -24,6 +28,7 @@ class EvalItem:
             input=str(obj["input"]),
             checks=list(obj.get("checks", [])),
             note=str(obj.get("note", "")),
+            resume_with=str(obj.get("resume_with", "")),
         )
 
 
@@ -63,6 +68,19 @@ class AgentResult:
     error: str | None = None
     raw: dict[str, Any] | None = None
 
+    # --- suspend / resume -------------------------------------------------
+    # Set by an adapter when the agent paused for a human decision instead of
+    # finishing. The runner injects the item's `resume_with` and calls
+    # `resume()`; see docs/methodology.md section 7.
+    suspended: bool = False
+    suspend_request: str = ""
+    resume_state: Any = None
+    # Filled in by the runner once the legs are merged, so a check can ask what
+    # the agent did *before* it paused - which is the whole point of the
+    # human_in_the_loop arena.
+    suspends: int = 0
+    tool_calls_before_suspend: list[dict[str, Any]] = field(default_factory=list)
+
     @property
     def total_tokens(self) -> int:
         return self.prompt_tokens + self.completion_tokens
@@ -79,6 +97,19 @@ class ItemOutcome:
 @runtime_checkable
 class AgentRunner(Protocol):
     def run(self, item: EvalItem) -> AgentResult: ...
+
+
+@runtime_checkable
+class ResumableRunner(AgentRunner, Protocol):
+    """An adapter that can pause mid-run and be resumed with a decision.
+
+    Optional. An adapter that does not implement `resume` simply never suspends;
+    arenas that require a pause report it as unsupported rather than as a failed
+    item, because "this framework has no interrupt mechanism wired up" and "this
+    framework tried and got it wrong" are different findings.
+    """
+
+    def resume(self, item: EvalItem, state: Any, decision: str) -> AgentResult: ...
 
 
 @runtime_checkable

@@ -11,21 +11,36 @@ import json
 from typing import Any
 
 from .calculator import calculator
+from .rooms import book_room, request_approval, search_rooms
 from .search import search
 
 __all__ = [
     "search",
     "calculator",
+    "search_rooms",
+    "book_room",
+    "request_approval",
     "OPENAI_TOOL_SPECS",
+    "SUSPEND_TOOL",
     "dispatch",
     "TOOL_FUNCS",
     "specs_for",
     "names_for",
 ]
 
+# The tool whose invocation means "pause and ask a human", rather than "run this".
+# An arena that declares it is asking for a suspend/resume cycle; adapters that
+# cannot provide one are reported as unsupported for that arena.
+SUSPEND_TOOL = "request_approval"
+
 TOOL_FUNCS = {
     "search": lambda args: search(str(args.get("query", "")), int(args.get("k", 3))),
     "calculator": lambda args: calculator(str(args.get("expr", ""))),
+    "search_rooms": lambda args: search_rooms(
+        int(args.get("capacity", 0) or 0), str(args.get("day", ""))
+    ),
+    "book_room": lambda args: book_room(str(args.get("room_id", ""))),
+    "request_approval": lambda args: request_approval(str(args.get("summary", ""))),
 }
 
 OPENAI_TOOL_SPECS: list[dict[str, Any]] = [
@@ -55,6 +70,52 @@ OPENAI_TOOL_SPECS: list[dict[str, Any]] = [
                     "expr": {"type": "string", "description": "Arithmetic expression."},
                 },
                 "required": ["expr"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "search_rooms",
+            "description": "List meeting rooms that seat at least `capacity` and are free on `day`.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "capacity": {"type": "integer", "description": "People to seat."},
+                    "day": {"type": "string", "description": "Day of the week, e.g. 'tuesday'."},
+                },
+                "required": ["capacity", "day"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "request_approval",
+            "description": (
+                "Ask a human to approve a consequential action before you take it. "
+                "Call this and stop; you will be told the decision."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string", "description": "What you want approved."},
+                },
+                "required": ["summary"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "book_room",
+            "description": "Book a meeting room by id. Only call this after approval.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "room_id": {"type": "string", "description": "Room id, e.g. 'R3'."},
+                },
+                "required": ["room_id"],
             },
         },
     },

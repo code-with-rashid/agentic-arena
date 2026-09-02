@@ -1,5 +1,21 @@
 # Arena design: `human_in_the_loop`
 
+## Status
+
+Shipped as `arenas/human_in_the_loop/` — 12 items, 6 approved / 6 denied.
+
+The harness half is done: `arena.types.ResumableRunner`, `EvalItem.resume_with`,
+leg-merging in `arena.runner`, and three check types (`suspended`,
+`no_tool_before_suspend`, `tool_not_used`). See `docs/methodology.md` §7.
+
+**Adapter coverage so far: `vanilla` only (emulated), 12/12.** The other four
+adapters report *unsupported* rather than failing — they have no `resume` method
+yet. That is deliberate: LangGraph and Agent Framework both have real interrupt
+mechanisms, and scoring them 0 because nobody has wired them up would be a
+misleading finding. Wiring them is the next step, and it is what turns the
+"Human-in-the-loop / interrupts" row of the feature matrix from judged into
+measured.
+
 ## Goal
 
 The agent must pause before a "consequential" action, surface an approval request,
@@ -28,9 +44,18 @@ harness inspects the pause, injects `approve` or `deny`, and resumes.
 - approved items: `book_room` called exactly once after resume
 - denied items: `book_room` never called; `iregex` for an acknowledgement
 
-## Notes
+## Notes — as built
 
-- Baseline `vanilla` can emulate this with a two-phase call; that's a useful
-  contrast row but should be marked as emulated, not native.
-- Harness needs a resume API: `runner.run(item)` may return a `Suspended` result
-  the runner feeds back. Small addition to `arena.types`.
+- The rooms backend (`arena/tools/rooms.py`) is deterministic and keeps no state:
+  `book_room` returns a confirmation string and persists nothing, so whether it
+  was called is read from the harness's own tool-call log. A run has no side
+  effects and repeat runs cannot interfere with each other.
+- `request_approval` is declared as a tool so the model can call it, but adapters
+  must **intercept** it rather than execute it. If one runs it anyway, the
+  function returns a string beginning `NOT APPROVED` rather than raising, so the
+  failure reads as "did not pause" instead of an unrelated crash.
+- The baseline emulates the pause by carrying the transcript back in — no durable
+  checkpoint. Marked emulated in the feature matrix, because emulation does not
+  survive a process restart. That distinction is what `durable_state` will test.
+- `MAX_RESUMES = 3` in `arena/runner.py` caps the cycle. Real items need one
+  pause; the cap exists so a broken adapter fails loudly instead of hanging.

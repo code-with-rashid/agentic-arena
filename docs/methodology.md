@@ -192,7 +192,37 @@ merely wrong; an item that flips between repeats makes its contribution to the
 headline pass rate irreproducible. Only the second kind is reported as unstable,
 and a scorecard with a non-zero count should be read as provisional.
 
-## 7. Reproducing a published scorecard
+## 7. Pausing for a human
+
+Some capabilities cannot be read off a final answer. "Did the agent stop and ask
+before doing something consequential?" is one: an agent can *write* "I would need
+approval for this" and book the room anyway, and a text check cannot tell that
+apart from a real pause.
+
+So the pause is **observed by the harness, not claimed by the agent**. An adapter
+that supports it implements the optional `arena.types.ResumableRunner`: `run()`
+may come back with `suspended=True` and an opaque `resume_state`, and the harness
+then calls `resume(item, state, decision)`. Three rules make that comparable:
+
+- **The decision is part of the frozen eval set.** `EvalItem.resume_with` is
+  `"approve"` or `"deny"`, fixed per item. The agent cannot influence it and it
+  is not derivable from the prompt, so skipping the pause cannot be guessed past.
+- **Cost is summed across legs.** A framework that pauses and resumes re-sends
+  the transcript and pays for it. Charging only the final leg would make an
+  interrupting framework look cheaper than one that runs straight through.
+- **Not implementing it is reported as unsupported, not as failure.** If an arena
+  declares the `request_approval` tool and an adapter has no `resume`, the
+  framework is marked unavailable for that arena with a reason. "No interrupt
+  mechanism wired up" and "tried to pause and got it wrong" are different
+  findings and must not be averaged into one number.
+
+Adapters may satisfy the contract natively (a framework with real interrupts and
+a checkpointer) or by **emulation** (carrying the transcript back in, which is
+what the `vanilla` baseline does). Both are valid entries; which one an adapter
+uses is a feature-matrix fact, and the emulated ones are labelled as such,
+because emulation does not survive a process restart and a real checkpointer does.
+
+## 8. Reproducing a published scorecard
 
 Every `results/<arena>/scorecard.md` records the model, harness version, Python
 version, date, dataset size, and repeat count. Re-running `full-run` with the same

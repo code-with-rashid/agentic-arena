@@ -61,6 +61,14 @@ ruff check . && ruff format --check .
    asserts both of these against the request body the mock server actually
    received, so a hard-coded prompt or an undeclared tool fails CI.
 
+3c. *Optional:* if the framework has a real interrupt mechanism, implement
+   `resume(item, state, decision)` as well — see `arena.types.ResumableRunner`
+   and `docs/methodology.md` §7. Return `AgentResult(suspended=True, ...)` with an
+   opaque `resume_state` instead of executing the arena's `request_approval`
+   tool, and the harness will inject the item's decision and call you back.
+   Adapters without it are reported as *unsupported* on arenas that need a pause,
+   never as failing, so there is no penalty for leaving it out.
+
 4. Populate `AgentResult`: `output_text`, `tool_calls`, `prompt_tokens`,
    `completion_tokens`, `latency_s`, and `error` on failure. Token counts come back
    from the gateway response; if the framework hides them, read them from
