@@ -87,7 +87,7 @@ def _resumable(name, arena):
 
 @pytest.mark.parametrize("arena_id", ["human_in_the_loop", "durable_state"])
 @pytest.mark.parametrize("name", BUILDABLE)
-def test_cost_summed_across_legs_matches_the_wire(name, arena_id):
+def test_cost_summed_across_legs_matches_the_wire(name, arena_id, tmp_path):
     """The paused path, where an off-by-one leg is invisible to every other check.
 
     The harness sums cost across legs, so each leg must report only its own work:
@@ -102,6 +102,12 @@ def test_cost_summed_across_legs_matches_the_wire(name, arena_id):
     adapter = load_framework(name)
     with MockServer(MockScript.load(arena.mock_script_path)) as server:
         config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        if arena.durable:
+            # The harness owns a checkpoint dir and hands the same path to the
+            # rebuilt runner (arena.runner.run). Without it an adapter whose store
+            # is on disk falls back to a private temp dir per build and cannot
+            # find its own session - a fault of this probe, not of the adapter.
+            config = replace(config, checkpoint_dir=str(tmp_path))
         runner = adapter.build(arena, config)
         first = runner.run(item)
         if not first.suspended:

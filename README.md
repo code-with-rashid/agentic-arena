@@ -130,9 +130,10 @@ No live scorecard exists yet, so **nothing here is about answer quality**. What
 - Under eight scripted faults, LangGraph and the OpenAI Agents SDK each lose one
   item and smolagents loses four — exactly the four its tool validator rejects
   before the tool body runs, which it never writes back into the conversation.
-- Five frameworks pause for a human, by five genuinely different mechanisms, all
-  producing an identical trace to the scorer. Four of the five also survive the
-  process being killed; Agent Framework's pause does not.
+- Six frameworks pause for a human, by six genuinely different mechanisms, all
+  producing an identical trace to the scorer. Five of the six survive the process
+  being killed; Agent Framework's pause does not. Google ADK's pause is
+  *reported* rather than enforced — ignore the signal and the agent acts anyway.
 - Splitting one agent into a three-role pipeline costs **2× the LLM calls and
   ~2.5× the prompt tokens** — and costs that whether you build it with a graph
   library or a `for` loop. LangGraph's orchestration machinery itself adds

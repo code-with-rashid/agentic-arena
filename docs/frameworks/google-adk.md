@@ -1,7 +1,7 @@
 # Google ADK
 
 [Adapter](../../frameworks/google_adk/adapter.py) · `google-adk==2.8.0` +
-`litellm==1.99.0` · runs 5 of 7 arenas
+`litellm==1.99.0` + `sqlalchemy` · runs all 7 arenas
 
 Google's Agent Development Kit. An `LlmAgent` driven by `InMemoryRunner`.
 
@@ -52,8 +52,8 @@ the wire.
 | `rag` | 15/15 |
 | `multi_agent` | 10/10 |
 | `resilience` | **6/8** *(comparable)* |
-| `human_in_the_loop` | unsupported — no `resume` method |
-| `durable_state` | unsupported — no `resume` method |
+| `human_in_the_loop` | 12/12 |
+| `durable_state` | 8/8 |
 
 ### Prompt size: 1.05× baseline *(comparable)*
 
@@ -93,13 +93,64 @@ an encoding difference rather than an alteration — the same category as
 smolagents' `Observation:` prefix. Truncation and summarisation still fail the
 check.
 
+## The pause: a long-running tool, and one thing it does not do
+
+ADK's pause is `LongRunningFunctionTool` — the tool returns a `{"status":
+"pending"}` marker, the run reports the call in `long_running_tool_ids`, and the
+real answer is supplied later against the same `function_call_id`. That is a
+sixth distinct mechanism; no two of the six look alike.
+
+**But it does not stop the run.** Left to itself, ADK hands the model the
+`pending` marker as the tool result and the model carries on — measured, it went
+straight on to call `book_room` without any human decision, which is exactly what
+the arena's `no_tool_before_suspend` check exists to catch. Breaking out of the
+event stream when `long_running_tool_ids` appears is what makes the pause real:
+
+```python
+async for event in stream:
+    if call.id in (event.long_running_tool_ids or set()):
+        pending = (call.id, call.name, summary)
+        break  # <- the pause
+await stream.aclose()  # or ADK's contextvars unwind noisily
+```
+
+So this is a *reported* interrupt rather than an *enforced* one. Worth knowing
+before you rely on it for anything consequential: the signal is there, but
+nothing stops the agent if you do not act on it.
+
+Resuming is fully native — a `types.FunctionResponse` carrying the decision
+against the same call id. Nothing about the transcript is reconstructed by hand.
+
+### Durable, at the cost of one more dependency
+
+`durable_state` throws the runner away at the pause, so the session has to be on
+disk. `DatabaseSessionService` does exactly that, and the adapter points it at the
+harness-owned checkpoint dir — the same shape as LangGraph's `SqliteSaver`:
+
+```python
+DatabaseSessionService(db_url=f"sqlite+aiosqlite:///{checkpoint_dir}/adk_sessions.sqlite")
+```
+
+Two traps: a Windows path needs forward slashes, and plain `sqlite://` fails with
+*"the asyncio extension requires an async driver"* — it must be `sqlite+aiosqlite`
+(which ships with google-adk).
+
+That costs `sqlalchemy`, on top of an already heavy tree. Without it ADK still
+pauses, but only for as long as the process lives.
+
+`resume_state` is three strings (session id, call id, call name), so it crosses
+the JSON gap trivially — everything else lives in the store. 8/8, and the arena's
+`call_counts` check confirms it resumed rather than restarted: exactly
+`{'search': 2, 'calculator': 1}`, with no repeated lookups.
+
+One gotcha worth naming: on a non-durable arena `resume` builds a fresh `Runner`,
+and a fresh `InMemorySessionService` with it arrives **empty** — the conversation
+lives in the session service, not in the `Runner`. Caching it is what took
+`human_in_the_loop` from 0/12 to 12/12. On a durable arena the bug is invisible,
+because the store is on disk.
+
 ## Not yet done
 
-- **No pause.** ADK ships `LongRunningFunctionTool` and the `LlmAgent` carries
-  `rerun_on_resume` / `wait_for_output` fields, so a pause looks reachable — it is
-  simply not adapted yet, which is why both pause arenas report *unsupported*
-  rather than failing. That is the obvious next contribution here, and would be a
-  sixth distinct mechanism.
 - **Gemini itself is unmeasured.** Everything above is ADK driving an
   OpenAI-compatible endpoint through LiteLLM, which is the only way to hold the
   model constant across frameworks. ADK against Gemini would be a different
