@@ -108,10 +108,77 @@ are paying ~3.5 KB per request for scaffolding you do not need.
 - **First-turn effects dominate on short tasks.** The tool block is sent on every
   request, so its cost scales with the number of LLM calls, not with the length
   of the conversation. On a 2-call task it is a large fraction of the prompt; on
-  a 20-turn conversation it matters much less.
+  a long one it matters much less — [measured below](#what-happens-when-the-loop-gets-long).
 - **This is per-arena.** `tool_use` declares two tools; `rag` and
   `structured_output` declare one, so their spread is smaller. Run
   `.github/scripts/report_overhead.py <arena>` against any run record.
+
+## What happens when the loop gets long
+
+The table above is a two-call task, which is where framework overhead looks its
+worst: a fixed per-request cost is being divided by two requests. The obvious
+next question is whether it ever stops mattering, and until now this page
+asserted an answer without measuring one.
+
+Scripting the *same* conversation out to 30 tool-calling turns and recording
+every request:
+
+| request # | 1 | 11 | 31 |
+|---|---:|---:|---:|
+| `vanilla` (stdlib baseline) | 121 | 1531 | 4350 |
+| `smolagents` | 1069 | 2551 | 5515 |
+| **ratio** | **8.83×** | **1.67×** | **1.27×** |
+
+(estimated prompt tokens; a smaller arena prompt than the table above, so compare
+the ratios and not the absolute numbers)
+
+Regenerate with:
+
+```bash
+python .github/scripts/report_growth.py 30
+```
+
+### Nobody truncates
+
+Not one of the seven frameworks drops, windows or summarises anything. All 31
+requests carry the entire history, and the curve is a straight line out to the
+last one. No adapter opted out of a feature here — none of these libraries ships
+context management on the default path.
+
+So in a long tool loop, the thing bounding your prompt is `max_tool_iterations`,
+which is the harness's knob, not the library's. If you are running a real agent
+on a real bill, that is your problem to solve and no framework here solves it
+for you.
+
+### Frameworks differ by a constant, not by a rate
+
+The marginal cost of one more turn, across all seven: **136.7 to 148.2** tokens.
+An 8% band, against an **8.8×** spread on the first request. Adding a turn costs
+everyone the same; the frameworks differ only in where they start.
+
+That is the whole mechanism behind the decay in the table. A per-request constant
+is paid once per request, so its cumulative cost grows **linearly** in turns,
+while the conversation it is being divided by grows **quadratically** — every
+turn resends every previous turn. Any fixed overhead therefore decays as `1/n`.
+
+Concretely, `vanilla` spends 9,901 estimated prompt tokens on a 10-turn item and
+71,745 on a 30-turn one: 3× the turns, 7× the bill.
+
+### What that means for the headline number
+
+`smolagents`' 3.77× is real, and it is a two-call number. Read it as an upper
+bound rather than a tax:
+
+- on short, high-volume items — classification, extraction, one-shot RAG — the
+  multiple is close to the full 3.77× and worth caring about;
+- on a long agentic loop it converges toward 1×, and by turn 30 the framework you
+  picked is a rounding error next to the number of turns you took.
+
+The two properties above are gated in
+[`tests/test_prompt_growth.py`](../tests/test_prompt_growth.py) — not the
+constants, which are findings, but the *shape*. If a framework started dropping
+history, every comparison on this page would be between different conversations,
+and a loud failure is better than a quietly wrong table.
 
 ## History
 

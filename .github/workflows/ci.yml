@@ -108,6 +108,11 @@ jobs:
         # retries a 400, a 429 is survived or reported). Per-framework retry
         # counts are findings in docs/transport.md, not test failures.
         run: pytest tests/test_transport_faults.py -q
+      - name: Nobody truncates, and everyone grows at the same rate
+        # Gates the shape of a long conversation, not the constants. A framework
+        # that started dropping history would make every number in
+        # docs/overhead.md a comparison between different conversations.
+        run: pytest tests/test_prompt_growth.py -q
       - name: Report retry behaviour per framework
         run: python .github/scripts/report_transport.py
       - name: Run the resilience arena
@@ -118,6 +123,11 @@ jobs:
         run: python -m arena run --arena tool_use --framework all --mode mock --no-scorecard
       - name: Report per-framework prompt overhead
         run: python .github/scripts/report_overhead.py tool_use
+      - name: How that overhead behaves on a long tool loop
+        # Report-only: the constants are findings. It fails only if a framework
+        # started truncating history, which would make the table above a
+        # comparison between different conversations.
+        run: python .github/scripts/report_growth.py 20
       - name: Which frameworks can pause, and which can survive a crash
         # Adapters without a `resume` method report themselves unsupported here
         # rather than failing items, so this step is a capability census, not a
