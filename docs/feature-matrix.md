@@ -11,6 +11,7 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ✅ | ❓ | ✅ | ✅ (Chat Completions client) | ✅ (`OpenAIServerModel`, needs the `[openai]` extra) |
 | Streaming tokens | ❌ | ✅ | 🟡 | ❓ | ❓ | ❓ | ❓ | ❓ |
 | Recovers from malformed tool args | ✅ | ❌ | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ |
+| Runs every tool call in a batched turn | ✅ | 🟡 (drops a malformed sibling) | ❓ | ✅ | ❓ | ✅ | ✅ | 🟡 (drops the whole batch) |
 | Recovers from an unknown tool name | ✅ | ✅ | ✅ | ❌ (raises) | ❓ | ✅ | ✅ | ❌ (not written back) |
 | Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) |
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) |
@@ -25,6 +26,37 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 
 The two `Recovers from ...` rows are measured, not judged — see the `resilience`
 arena and the comparison CI prints on every run.
+
+### Batched tool calls, and a quieter failure mode
+
+A model may return several tool calls in one turn. With two *valid* calls all six
+adapters do the right thing — both run, both results reach the model. The
+interesting case is when one call in the batch is broken. Counting the tool
+results that actually reach the model:
+
+| fault, batched with one good call | results reaching the model |
+|---|---|
+| malformed args — `langgraph` | **1 of 2** — the malformed call is silently dropped |
+| malformed args — everyone else | 2 of 2 |
+| missing required arg — `smolagents` | **0 of 2** — the whole batch is dropped |
+| missing required arg — everyone else | 2 of 2 |
+
+Both are *silent*. The run continues, answers from partial evidence, and the model
+is never told a call went missing. That is a different question from the one
+`resilience` asks: not "does it recover?" but "does it tell the truth about what
+happened on the way?" A framework that drops a lookup without saying so produces
+a confident answer built on half the evidence.
+
+It also refines the `res-01` row. `langgraph` losing malformed tool arguments is
+**conditional**: alone, the malformed call produces no tool message and the graph
+halts (so the item fails, visibly); batched with a call that succeeds, the graph
+carries on and the drop becomes invisible. The visible failure is the better of
+the two outcomes.
+
+Measured in `tests/test_parallel_tool_calls.py`, which gates the invariants
+(valid batches work, the baseline surfaces every result, batching never makes a
+framework worse than it is serially) and leaves the per-framework differences as
+findings, the same way `resilience` does.
 
 Those two rows do not fully capture `smolagents`, which loses **four** of the
 eight faults. The unknown-tool-name row is the visible one, but the real boundary
