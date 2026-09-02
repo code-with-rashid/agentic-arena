@@ -5,24 +5,24 @@ experience writing the adapter — link to the adapter code or an upstream doc.
 
 Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet assessed
 
-| Capability | vanilla | LangGraph | CrewAI | OpenAI Agents SDK | Claude Agent SDK | Pydantic AI | MS Agent Framework | smolagents |
-|---|---|---|---|---|---|---|---|---|
-| Language | Python | Python | Python | Python | Python | Python | Python / .NET | Python |
-| OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ✅ | ❓ | ✅ | ✅ (Chat Completions client) | ✅ (`OpenAIServerModel`, needs the `[openai]` extra) |
-| Streaming tokens | ❌ | ✅ | 🟡 | ❓ | ❓ | ❓ | ❓ | ❓ |
-| Recovers from malformed tool args | ✅ | ❌ | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ |
-| Runs every tool call in a batched turn | ✅ | 🟡 (drops a malformed sibling) | ❓ | ✅ | ❓ | ✅ | ✅ | 🟡 (drops the whole batch) |
-| Recovers from an unknown tool name | ✅ | ✅ | ✅ | ❌ (raises) | ❓ | ✅ | ✅ | ❌ (not written back) |
-| Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) |
-| Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) |
-| Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) |
-| Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) |
-| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | ✅ (`approval_mode`, measured) | ❌ (no interrupt primitive) |
-| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❌ (session store does not round-trip, measured) | ❌ |
-| Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 |
-| Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) | 🟡 (`arun`) |
-| Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) |
-| Licence | — | MIT | MIT | MIT | ❓ | MIT | MIT | Apache-2.0 |
+| Capability | vanilla | LangGraph | CrewAI | OpenAI Agents SDK | Claude Agent SDK | Pydantic AI | MS Agent Framework | smolagents | Google ADK |
+|---|---|---|---|---|---|---|---|---|---|
+| Language | Python | Python | Python | Python | Python | Python | Python / .NET | Python | Python |
+| OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ✅ | ❓ | ✅ | ✅ (Chat Completions client) | ✅ (`OpenAIServerModel`, needs the `[openai]` extra) | ✅ (via LiteLLM only) |
+| Streaming tokens | ❌ | ✅ | 🟡 | ❓ | ❓ | ❓ | ❓ | ❓ | ❓ |
+| Recovers from malformed tool args | ✅ | ❌ | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ❌ (raises) |
+| Runs every tool call in a batched turn | ✅ | 🟡 (drops a malformed sibling) | ❓ | ✅ | ❓ | ✅ | ✅ | 🟡 (drops the whole batch) | ✅ |
+| Recovers from an unknown tool name | ✅ | ✅ | ✅ | ❌ (raises) | ❓ | ✅ | ✅ | ❌ (not written back) | ❌ (raises) |
+| Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) | ✅ (through LiteLLM) |
+| Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) | ✅ (event stream) |
+| Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) | ✅ (per-event `usage_metadata`) |
+| Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) | ✅ (sub-agents) |
+| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | ✅ (`approval_mode`, measured) | ❌ (no interrupt primitive) | 🟡 (`LongRunningFunctionTool`, not adapted) |
+| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❌ (session store does not round-trip, measured) | ❌ | ❓ |
+| Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 | 🟡 (`output_schema`) |
+| Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) | 🟡 (`arun`) | ✅ (async-first) |
+| Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) |
+| Licence | — | MIT | MIT | MIT | ❓ | MIT | MIT | Apache-2.0 | Apache-2.0 |
 
 The two `Recovers from ...` rows are measured, not judged — see the `resilience`
 arena and the comparison CI prints on every run.

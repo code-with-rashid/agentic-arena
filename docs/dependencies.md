@@ -30,6 +30,7 @@
 | `openai_agents` | `openai-agents==0.22.0` |
 | `microsoft_af` | `agent-framework-core==1.16.0`, `agent-framework-openai==1.14.1` |
 | `smolagents` | `smolagents[openai]==1.26.0` |
+| `google_adk` | `google-adk==2.8.0`, `litellm==1.99.0` — LiteLLM is required, not optional: it is the only way ADK reaches a non-Google endpoint, and it is the heaviest dependency tree in the repo |
 | `openai_agents_multi` | `-r ../openai_agents/requirements.txt` — same reason as `langgraph_multi` |
 | `langgraph_multi` | `-r ../langgraph/requirements.txt` — the pipeline contrast entry shares the single-agent adapter's pins, so the two cannot drift apart |
 | `vanilla_multi` | none — stdlib |

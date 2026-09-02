@@ -23,6 +23,7 @@ A local run on `tool_use`, 15 items, mean per item:
 | microsoft_af | 732 | 0.97× |
 | `vanilla` (stdlib baseline) | 754 | 1.00× |
 | openai_agents | 787 | 1.04× |
+| google_adk | 791 | 1.05× |
 | smolagents | 2845 | **3.77×** |
 
 Completion tokens and LLM calls are identical across the first five (45.1 and
@@ -32,7 +33,7 @@ but not on completion tokens (74.7) — see below.
 
 ## What drives it
 
-Five of the six are within a 1.15× band of each other, and `smolagents` sits
+Six of the seven are within a 1.15× band of each other, and `smolagents` sits
 right outside it. They are two different stories, so take them separately.
 
 ### The 1.15× band

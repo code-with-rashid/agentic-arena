@@ -26,6 +26,7 @@ serialises the request. **[measured]**
 | `microsoft_af` | 732 | 0.97× |
 | `vanilla` (hand-rolled, stdlib) | 754 | 1.00× |
 | `openai_agents` | 787 | 1.04× |
+| `google_adk` | 791 | 1.05× |
 | `smolagents` | 2845 | **3.77×** |
 
 Three of the five frameworks put *fewer* bytes on the wire than the by-hand loop,
@@ -60,6 +61,7 @@ framework. Any difference is the framework's own error handling. **[measured]**
 | `microsoft_af` | 8/8 | — |
 | `langgraph` | **7/8** | `res-01` — gives up when the model returns malformed tool arguments |
 | `openai_agents` | **7/8** | `res-02` — raises `ModelBehaviorError` on an unknown tool name |
+| `google_adk` | **6/8** | `res-01` and `res-02` — the only framework that loses both, by raising |
 | `smolagents` | **4/8** | every fault its validator rejects *before* running the tool |
 
 The LangGraph and OpenAI Agents failures are not fatal in production — both are
@@ -123,6 +125,7 @@ Each of these cost real debugging time while building the adapters. **[measured]
 |---|---|
 | `pydantic_ai` | `Agent(retries=...)` is a **tool-validation** budget, not a loop cap. Capping the agent loop needs `UsageLimits(request_limit=...)`. Left alone, a 6-call budget ran **50** LLM calls. |
 | `microsoft_af` | The tool loop is **uncapped** unless you set `max_iterations`. Same 6-call budget ran **41**. Async-only, so each item needs a fresh client and event loop. |
+| `google_adk` | Needs `litellm` to reach anything but Gemini, which drags in boto3/tokenizers/huggingface-hub. Tool schemas come from the **docstring**, so a missing `Args:` block silently changes the schema. |
 | `langgraph` | One tool round is *two* graph steps, so `recursion_limit` must be `2 × ` your LLM-call budget. `create_react_agent` is deprecated (moves to `langchain.agents` in 2.0). |
 | `openai_agents` | Built-in tracing POSTs to `api.openai.com` unless explicitly disabled. |
 | `smolagents` | `pip install smolagents` is not enough — `OpenAIServerModel` raises without the `[openai]` extra. `max_steps` is off by one (it makes one model call *beyond* the budget). An exhausted run returns `""`, not an exception, so a failure looks like a blank answer unless you read the last memory step. |

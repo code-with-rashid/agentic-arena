@@ -87,6 +87,16 @@ updates:
       smolagents:
         patterns: ["*"]
 
+  - package-ecosystem: pip
+    directory: /frameworks/google_adk
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(google_adk)"
+    groups:
+      google-adk:
+        patterns: ["*"]
+
   # crewai is deliberately excluded: its adapter is not yet mock-verified and its
   # requirement is a range rather than a pin, so a bump PR would carry no signal.
   # Add it here once the adapter is green and pinned.
