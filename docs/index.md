@@ -9,6 +9,9 @@
 - [Feature matrix](feature-matrix.md) — capabilities that aren't scorecard numbers.
 - [Framework overhead](overhead.md) — what each library adds to the wire for an
   identical task. One of only two things mock mode can compare honestly.
+- [When the gateway fails](transport.md) — retry and backoff behaviour when the
+  provider returns 429/500/400. The one dimension where the hand-rolled baseline
+  loses outright.
 - [Dependencies](dependencies.md) — the pinning policy, why the harness has zero
   runtime deps, and the deprecation register.
 - Per-framework deep dives: [`frameworks/`](frameworks/)

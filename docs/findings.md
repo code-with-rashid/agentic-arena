@@ -134,6 +134,39 @@ on and the drop becomes invisible. The visible failure is the better outcome.
 python -m pytest tests/test_parallel_tool_calls.py -q
 ```
 
+### 2c. When the *gateway* fails, not the model
+
+Every arena scripts the model. None scripts the provider returning 429, 500 or
+400 — which is what real deployments hit. Attempts that reached the wire:
+
+| framework | 429 once | 429 ×3 | 500 once | 400 |
+|---|---|---|---|---|
+| `vanilla` (stdlib baseline) | **raises (1)** | raises (1) | **raises (1)** | raises (1) |
+| `langgraph` | ok (2) | **raises (2)** | ok (2) | raises (1) |
+| `pydantic_ai`, `openai_agents`, `microsoft_af`, `google_adk` | ok (2) | raises (3) | ok (2) | raises (1) |
+| `smolagents` | ok (2) | **ok (4, +2–4 min)** | ok (2) | raises (1) |
+
+**This is the clearest answer in the repo to "what does a framework buy you?"**
+The hand-rolled loop has no retry at all: one 429 and the item is lost. Every
+framework survives it. It is the first dimension where the baseline loses
+outright — on prompt size it is mid-pack, on `resilience` joint best, on
+delegation exactly as expensive as a graph library.
+
+**smolagents is the only one that survives three consecutive 429s — by sleeping
+for minutes on one item** (measured at 139 s, 160 s and 225 s, so heavily
+jittered). Nothing in the scorecard shows it: the item passes. In a batch that is
+throughput quietly collapsing. Everyone else fails fast in ~1.3 s and hands you
+the error. Both are defensible; neither is documented.
+
+**LangGraph retries once where the others retry twice**, and everyone correctly
+refuses to retry a 400.
+
+→ [transport.md](transport.md)
+
+```bash
+python .github/scripts/report_transport.py
+```
+
 ---
 
 ## 3. What delegation costs
