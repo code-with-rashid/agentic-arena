@@ -96,16 +96,16 @@ reaches the model unaltered — for every adapter.
 Mock pass rates are ~100% by construction and prove only correct wiring. The two
 columns that compare frameworks honestly are `resilience` and prompt size.
 
-### Prompt size: 3.77× baseline *(comparable)*
+### Prompt size: 3.90× baseline *(comparable)*
 
-The other five adapters sit within a 1.15× band. `smolagents` is at **3.77×**
-(2845 estimated prompt tokens per item against `vanilla`'s 754), and the cause is
+The other six adapters sit within a 1.15× band. `smolagents` is at **3.90×**
+(2936 estimated prompt tokens per item against `vanilla`'s 754), and the cause is
 entirely its templated system prompt — 3932 characters where the arena asked for
 384, resent on every request. The arena's instruction survives verbatim inside it,
 but it is under 10% of what goes out; the rest is a framework preamble, two worked
 examples, a trailing rules block, and a **prose restatement of the same tools that
 are already in the OpenAI `tools` schema**. Full breakdown in
-[overhead.md](../overhead.md#smolagents-377-and-it-is-all-system-prompt).
+[overhead.md](../overhead.md#smolagents-390-and-it-is-all-system-prompt).
 
 Its completion tokens are also higher (74.7 vs 45.1) for a related reason: the
 final answer leaves as a JSON tool call rather than as plain content.

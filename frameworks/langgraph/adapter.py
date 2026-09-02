@@ -18,7 +18,7 @@ import contextlib
 import tempfile
 from contextlib import ExitStack
 from pathlib import Path
-from typing import Any
+from typing import Annotated, Any
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig
@@ -29,17 +29,28 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 
 def _make_tools(names: list[str]) -> list[Any]:
+    """Signatures, wording and parameter descriptions track `arena.tools.specs_for`.
+
+    They are not this adapter's to choose. LangChain reads a parameter
+    description only from `Annotated`, not from the docstring, so without the
+    annotations below this adapter sent bare types where the arena had described
+    every argument - part of why it measured leanest on the wire. See
+    docs/tool-schemas.md.
+    """
     from langchain_core.tools import tool
     from langgraph.types import interrupt
 
     @tool
-    def search(query: str, k: int = 3) -> str:
-        """Search a small knowledge base of general facts."""
+    def search(
+        query: Annotated[str, "What to look up."],
+        k: Annotated[int, "How many snippets."] = 3,
+    ) -> str:
+        """Search a knowledge base of general facts. Returns up to k text snippets."""
         return _search(query, k)
 
     @tool
-    def calculator(expr: str) -> str:
-        """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+    def calculator(expr: Annotated[str, "Arithmetic expression."]) -> str:
+        """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
         return _calculator(expr)
 
     @tool

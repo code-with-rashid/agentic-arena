@@ -13,34 +13,38 @@
 ## 1. Do you actually need a framework?
 
 The intuition is that a hand-rolled loop must be the cheapest thing on the wire.
-**That turned out to be false here** — worth stating plainly, because it was
-written in this guide as a hypothesis before it was measured.
+This guide first wrote that down as a hypothesis, then published the opposite
+after measuring, and has now had to take that back: the frameworks that measured
+cheaper were **sending less**. See [tool-schemas.md](tool-schemas.md).
 
-Same task, same tools, same scripted turns; the only variable is how each library
-serialises the request. **[measured]**
+Same task, same tools — genuinely the same tools now — same scripted turns; the
+only variable is how each library serialises the request. **[measured]**
 
 | framework | prompt tokens / item | vs baseline |
 |---|--:|--:|
-| `langgraph` | 683 | **0.90×** |
-| `pydantic_ai` | 724 | 0.96× |
-| `microsoft_af` | 732 | 0.97× |
-| `vanilla` (hand-rolled, stdlib) | 754 | 1.00× |
-| `openai_agents` | 787 | 1.04× |
-| `google_adk` | 791 | 1.05× |
-| `smolagents` | 2845 | **3.77×** |
+| `vanilla` (hand-rolled, stdlib) | 753.5 | 1.00× |
+| `langgraph` | 753.5 | 1.00× |
+| `pydantic_ai` | 794.0 | 1.05× |
+| `microsoft_af` | 802.0 | 1.06× |
+| `google_adk` | 836.1 | 1.11× |
+| `openai_agents` | 856.9 | 1.14× |
+| `smolagents` | 2935.5 | **3.90×** |
 
-Three of the five frameworks put *fewer* bytes on the wire than the by-hand loop,
-because they render the same tool schemas more compactly. Five of them sit in a
-1.15× band.
+**No framework is leaner on the wire than the by-hand loop**, and `langgraph`
+ties it byte for byte. Six sit inside a 1.15× band, and what separates the others
+from the floor is decoration — `title` on every property,
+`additionalProperties: false`, `strict: true` — rather than tighter
+serialisation. That is a duller claim than the one it replaces and it is the one
+the measurement supports.
 
 `smolagents` is the outlier, and for a different reason: not tool serialisation
-but a 3.9 KB templated system prompt it prepends to yours and resends on every
+but a 4.2 KB templated system prompt it prepends to yours and resends on every
 request — including a prose restatement of the tools it has *already* sent as a
 schema. That scaffolding is what lets it drive models that tool-call badly; if
-yours tool-calls well, it is ~3.5 KB per request you are paying for nothing. See
+yours tool-calls well, it is ~3.8 KB per request you are paying for nothing. See
 [overhead.md](overhead.md).
 
-### That 3.77× is a *short-item* number
+### That 3.90× is a *short-item* number
 
 The table above is a two-call task, which is where a fixed per-request cost looks
 its worst. Running the same conversation out to 30 tool-calling turns, the

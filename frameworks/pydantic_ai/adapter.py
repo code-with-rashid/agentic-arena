@@ -15,7 +15,9 @@ the harness discards the runner there, so nothing in memory survives.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
+
+from pydantic import Field
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig
@@ -68,17 +70,24 @@ class _Runner:
         self._limits = UsageLimits(request_limit=config.max_tool_iterations)
 
         if "search" in names:
-
+            # Signatures, wording and parameter descriptions track
+            # `arena.tools.specs_for`. Pydantic AI reads a parameter description
+            # from `Field`, not from the docstring - see docs/tool-schemas.md.
             @self._agent.tool_plain
-            def search(query: str, k: int = 3) -> str:
-                """Search a small knowledge base of general facts."""
+            def search(
+                query: Annotated[str, Field(description="What to look up.")],
+                k: Annotated[int, Field(description="How many snippets.")] = 3,
+            ) -> str:
+                """Search a knowledge base of general facts. Returns up to k text snippets."""
                 return _search(query, k)
 
         if "calculator" in names:
 
             @self._agent.tool_plain
-            def calculator(expr: str) -> str:
-                """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+            def calculator(
+                expr: Annotated[str, Field(description="Arithmetic expression.")],
+            ) -> str:
+                """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
                 return _calculator(expr)
 
         if "search_rooms" in names:

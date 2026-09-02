@@ -19,7 +19,9 @@ runner and only JSON survives.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Annotated, Any
+
+from pydantic import Field
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig
@@ -30,16 +32,25 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 
 def _make_tools(names: list[str]) -> list[Any]:
+    """Signatures, wording and parameter descriptions track `arena.tools.specs_for`.
+
+    The SDK emits `strict: true`, which forces *every* property into `required`
+    even where the arena gave one a default. That is a framework property rather
+    than an adapter choice, and it is a finding in docs/tool-schemas.md.
+    """
     from agents import function_tool
 
     @function_tool
-    def search(query: str, k: int = 3) -> str:
-        """Search a small knowledge base of general facts."""
+    def search(
+        query: Annotated[str, Field(description="What to look up.")],
+        k: Annotated[int, Field(description="How many snippets.")] = 3,
+    ) -> str:
+        """Search a knowledge base of general facts. Returns up to k text snippets."""
         return _search(query, k)
 
     @function_tool
-    def calculator(expr: str) -> str:
-        """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+    def calculator(expr: Annotated[str, Field(description="Arithmetic expression.")]) -> str:
+        """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
         return _calculator(expr)
 
     @function_tool

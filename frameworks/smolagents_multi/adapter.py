@@ -70,13 +70,14 @@ def _make_tools(names: list[str]) -> list[Any]:
     from smolagents import tool
 
     @tool
-    def search(query: str) -> str:
-        """Search a small knowledge base of general facts.
+    def search(query: str, k: int = 3) -> str:
+        """Search a knowledge base of general facts. Returns up to k text snippets.
 
         Args:
             query: What to look up.
+            k: How many snippets.
         """
-        return _search(query)
+        return _search(query, k)
 
     available = {"search": search}
     return [available[name] for name in names if name in available]

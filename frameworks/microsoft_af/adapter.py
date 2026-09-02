@@ -30,7 +30,9 @@ different from the other four:
 from __future__ import annotations
 
 import asyncio
-from typing import Any
+from typing import Annotated, Any
+
+from pydantic import Field
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig
@@ -40,13 +42,19 @@ from arena.tools import search as _search
 from arena.types import AgentResult, ArenaSpec, EvalItem
 
 
-def search(query: str, k: int = 3) -> str:
-    """Search a small knowledge base of general facts."""
+# Signatures, wording and parameter descriptions track `arena.tools.specs_for`.
+# Agent Framework reads a parameter description from `Field`, not from the
+# docstring - see docs/tool-schemas.md.
+def search(
+    query: Annotated[str, Field(description="What to look up.")],
+    k: Annotated[int, Field(description="How many snippets.")] = 3,
+) -> str:
+    """Search a knowledge base of general facts. Returns up to k text snippets."""
     return _search(query, k)
 
 
-def calculator(expr: str) -> str:
-    """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
+def calculator(expr: Annotated[str, Field(description="Arithmetic expression.")]) -> str:
+    """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'."""
     return _calculator(expr)
 
 

@@ -33,22 +33,29 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 # ADK builds each tool's schema from the signature and the Google-style
 # docstring, so the `Args:` blocks below are load-bearing, not decoration.
+#
+# Signatures and wording track `arena.tools.specs_for` exactly. They are not this
+# adapter's to choose: the arena declares the tools, and a framework offered a
+# narrower one is being handed a different task. This file used to declare
+# `search(query)`, silently withholding the `k` parameter the arena grants
+# everyone else - see docs/tool-schemas.md.
 
 
-def search(query: str) -> str:
-    """Search a small knowledge base of general facts.
+def search(query: str, k: int = 3) -> str:
+    """Search a knowledge base of general facts. Returns up to k text snippets.
 
     Args:
         query: What to look up.
+        k: How many snippets.
     """
-    return _search(query)
+    return _search(query, k)
 
 
 def calculator(expr: str) -> str:
-    """Evaluate a basic arithmetic expression such as '330 / 0.3048'.
+    """Evaluate a basic arithmetic expression, e.g. '330 / 0.3048'.
 
     Args:
-        expr: The arithmetic expression to evaluate.
+        expr: Arithmetic expression.
     """
     return _calculator(expr)
 

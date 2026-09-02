@@ -13,6 +13,9 @@
 - [When the gateway fails](transport.md) — retry and backoff behaviour when the
   provider returns 429/500/400. The one dimension where the hand-rolled baseline
   loses outright.
+- [Tool schemas](tool-schemas.md) — whether every framework describes the *same*
+  tool to the model. Two were not, and correcting it overturned this repo's
+  most-cited overhead finding.
 - [Structured output](structured-output.md) — which frameworks ask the provider
   for a schema (none), what they do with a record that violates one (nothing),
   and what that means for what the arena is grading.

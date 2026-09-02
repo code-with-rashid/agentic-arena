@@ -84,6 +84,13 @@ jobs:
         env:
           ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af,smolagents,google_adk
         run: pytest tests/test_adapters_contract.py -q
+      - name: Every framework describes the same tool
+        # A hard gate. Two adapters were declaring `search(query)` where the arena
+        # declares `search(query, k=3)`, and four sent bare types where the arena
+        # described every parameter. Mock mode is structurally blind to it — the
+        # mock replays scripted calls whatever the schema said — so this is the
+        # only thing that can catch it. See docs/tool-schemas.md.
+        run: pytest tests/test_tool_schema_fidelity.py -q
       - name: Usage accounting — every adapter reports what it actually spent
         # A hard gate, not a report. An adapter that under-reports posts
         # better overhead and cost numbers than it earned while every
