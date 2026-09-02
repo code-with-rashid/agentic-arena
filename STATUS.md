@@ -17,15 +17,19 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   - `human_in_the_loop` — 12 items, the agent must pause for approval before
     booking. `langgraph` (native interrupt), `openai_agents` (`needs_approval`),
     `pydantic_ai` (deferred tools) and `vanilla` (emulated) all 12/12;
-    `microsoft_af` reports unsupported because it has no `resume` method
+    `microsoft_af` and `smolagents` report unsupported because they have no
+    `resume` method
   - `durable_state` — 8 items; the harness throws the runner away at the
     checkpoint and rebuilds it. All four resumable adapters 8/8, by four
     different mechanisms — see docs/feature-matrix.md
-- Five adapters run green in mock mode on every arena:
+- Six adapters run in mock mode:
   `vanilla`, `langgraph` (LangGraph 1.2.11), `pydantic_ai` (pydantic-ai-slim 2.37),
-  `openai_agents` (openai-agents 0.22), `microsoft_af` (agent-framework 1.16).
-- `python -m arena run --arena <id> --framework all --mode mock` → the five above
-  green, the rest report themselves unavailable cleanly.
+  `openai_agents` (openai-agents 0.22), `microsoft_af` (agent-framework 1.16),
+  `smolagents` (smolagents 1.26). `vanilla` and `pydantic_ai` are green on all
+  seven arenas; the others' misses are measured findings, not wiring bugs
+  (`resilience` recovery, and pause support reported as *unsupported*).
+- `python -m arena run --arena <id> --framework all --mode mock` → the six above
+  run, the rest report themselves unavailable cleanly.
 - `pytest -q` → all offline; `ruff check .` + `ruff format --check .` clean.
 - `python -m arena scorecard --arena <id>` regenerates the scorecard (live →
   `results/<id>/`, mock → `runs/scorecards/<id>/`).
@@ -44,6 +48,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | `frameworks/claude_agent_sdk` | deliberate stub — drives the `claude` CLI (Node) over the Anthropic Messages API, not one OpenAI-compatible endpoint | see `frameworks/claude_agent_sdk/README.md` for the three ways to close it |
 | Real multi-agent entries for `multi_agent` | only single-agent role-play entries exist | add `<fw>-multi` adapters using each framework's own graph/crew/handoff mechanism, compared on token and LLM-call cost |
 | Pause support for `microsoft_af` | ships `ToolApprovalMiddleware`, which needs an `AgentSession` and session state | implement `resume` — three worked patterns now exist in `frameworks/{langgraph,openai_agents,pydantic_ai}/adapter.py` |
+| `smolagents` `CodeAgent` | only `ToolCallingAgent` is measured; `CodeAgent` answers by executing Python, a genuinely different execution model | give it its own adapter entry rather than swapping it inside this one |
 | `multi_agent` real orchestration | only the single-agent role-play entry exists | add `<fw>-multi` adapter entries that use each framework's own graph/crew/handoff mechanism; compare tokens + LLM calls against the single-agent run |
 | `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |
 | Docs site | plain markdown in `docs/` | MkDocs Material + GitHub Pages (Phase 4) |
@@ -53,7 +58,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 1. Add repo secret `OPENAI_API_KEY` (and optionally vars `ARENA_MODEL`,
    `OPENAI_BASE_URL`).
 2. Run the **full-run** GitHub Action (`workflow_dispatch`) with
-   `frameworks = "vanilla langgraph pydantic_ai openai_agents microsoft_af"`,
+   `frameworks = "vanilla langgraph pydantic_ai openai_agents microsoft_af smolagents"`,
    `repeat = 3`.
 3. Download the artifact, sanity-check `results/<arena>/scorecard.md`, commit it.
 

@@ -25,6 +25,8 @@ __all__ = [
     "OPENAI_TOOL_SPECS",
     "SUSPEND_TOOL",
     "SUSPEND_TOOLS",
+    "CONTROL_TOOLS",
+    "FINAL_ANSWER_TOOL",
     "dispatch",
     "TOOL_FUNCS",
     "specs_for",
@@ -41,6 +43,15 @@ __all__ = [
 # Adapters intercept either and suspend. What happens at the pause is the arena's
 # business, not the adapter's: `durable = true` in arena.toml makes the harness
 # throw the runner away and rebuild it before resuming.
+# A framework may advertise tools of its own that exist purely to drive its loop.
+# smolagents ends a run by calling `final_answer`; that grants the agent no
+# capability the arena withheld - it cannot search, calculate or book anything -
+# so it does not break the "same tools for everyone" rule. It is listed here
+# explicitly rather than tolerated implicitly, and the wire-level contract test
+# subtracts exactly this set and nothing else.
+FINAL_ANSWER_TOOL = "final_answer"
+CONTROL_TOOLS = (FINAL_ANSWER_TOOL,)
+
 SUSPEND_TOOLS = ("request_approval", "save_progress")
 SUSPEND_TOOL = SUSPEND_TOOLS[0]
 

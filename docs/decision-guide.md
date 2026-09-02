@@ -26,10 +26,18 @@ serialises the request. **[measured]**
 | `microsoft_af` | 732 | 0.97× |
 | `vanilla` (hand-rolled, stdlib) | 754 | 1.00× |
 | `openai_agents` | 787 | 1.04× |
+| `smolagents` | 2845 | **3.77×** |
 
-Three of the four frameworks put *fewer* bytes on the wire than the by-hand loop,
-because they render the same tool schemas more compactly. The spread across all
-five is 1.15×. See [overhead.md](overhead.md).
+Three of the five frameworks put *fewer* bytes on the wire than the by-hand loop,
+because they render the same tool schemas more compactly. Five of them sit in a
+1.15× band.
+
+`smolagents` is the outlier, and for a different reason: not tool serialisation
+but a 3.9 KB templated system prompt it prepends to yours and resends on every
+request — including a prose restatement of the tools it has *already* sent as a
+schema. That scaffolding is what lets it drive models that tool-call badly; if
+yours tool-calls well, it is ~3.5 KB per request you are paying for nothing. See
+[overhead.md](overhead.md).
 
 So "avoid the framework tax" is not a good reason to hand-roll. The real reasons
 to hand-roll are: you want zero dependencies, you want to read every line of the
@@ -52,10 +60,19 @@ framework. Any difference is the framework's own error handling. **[measured]**
 | `microsoft_af` | 8/8 | — |
 | `langgraph` | **7/8** | `res-01` — gives up when the model returns malformed tool arguments |
 | `openai_agents` | **7/8** | `res-02` — raises `ModelBehaviorError` on an unknown tool name |
+| `smolagents` | **4/8** | every fault its validator rejects *before* running the tool |
 
-Neither failure is fatal in production — both are recoverable with a retry
-wrapper — but both are the kind of thing you find out about at 3am rather than in
-a benchmark, which is the point of scripting them.
+The LangGraph and OpenAI Agents failures are not fatal in production — both are
+recoverable with a retry wrapper — but they are the kind of thing you find out
+about at 3am rather than in a benchmark, which is the point of scripting them.
+
+`smolagents` is a structural difference rather than a single rough edge. It
+recovers from all four faults where the tool *ran* and returned something, and
+loses all four the tool-validation layer rejects first (unknown name, missing
+argument, unexpected argument, `null` arguments) — because it never writes those
+back into the conversation. The model cannot see the error, so it re-emits the
+identical call until the step budget is gone. Retry wrappers do not help; the
+prompt is byte-identical each time.
 
 ## 3. Do you need to pause for a human?
 
@@ -70,6 +87,7 @@ and books the room anyway fails. **[measured]**
 | `pydantic_ai` | ✅ 12/12 | 🟡 8/8 | tool raises `CallDeferred`; durability is stateless — the conversation is serialised and replayed as `message_history` |
 | `vanilla` | 🟡 12/12 | 🟡 8/8 | stateless resume — the whole transcript is serialised into the resume state |
 | `microsoft_af` | not wired | not wired | ships `ToolApprovalMiddleware`, but it needs an `AgentSession` and session state — a different shape again **[claimed]** |
+| `smolagents` | ❌ | ❌ | no interrupt or approval primitive to adapt **[measured]** |
 
 The `durable_state` arena is the stricter test: the harness throws the runner
 away at the pause and rebuilds it, so only a real checkpoint or a serialised
@@ -90,7 +108,9 @@ the useful part:
 
 All four produce an identical trace to the scorer, so pick on the mechanism, not
 the score. `microsoft_af` reports *unsupported* rather than failing, which means
-"nobody has wired it up", not "it can't".
+"nobody has wired it up", not "it can't". `smolagents` is the one case where it
+does mean "it can't" — it ships nothing to adapt, so a pause there is something
+you build on top rather than something you configure.
 
 ## 4. Gotchas worth knowing before you adopt
 
@@ -102,6 +122,7 @@ Each of these cost real debugging time while building the adapters. **[measured]
 | `microsoft_af` | The tool loop is **uncapped** unless you set `max_iterations`. Same 6-call budget ran **41**. Async-only, so each item needs a fresh client and event loop. |
 | `langgraph` | One tool round is *two* graph steps, so `recursion_limit` must be `2 × ` your LLM-call budget. `create_react_agent` is deprecated (moves to `langchain.agents` in 2.0). |
 | `openai_agents` | Built-in tracing POSTs to `api.openai.com` unless explicitly disabled. |
+| `smolagents` | `pip install smolagents` is not enough — `OpenAIServerModel` raises without the `[openai]` extra. `max_steps` is off by one (it makes one model call *beyond* the budget). An exhausted run returns `""`, not an exception, so a failure looks like a blank answer unless you read the last memory step. |
 | `crewai` | Drives a **text ReAct loop**, not native OpenAI tool calling — it advertises no `tools` and stops on `Observation:`. Anything assuming function-calling semantics needs rework. Heavy transitive tree (chromadb → onnxruntime). |
 | `claude_agent_sdk` | Drives the `claude` CLI over the Anthropic Messages API; it cannot sit behind one shared OpenAI-compatible gateway at all. |
 
@@ -116,11 +137,12 @@ numbers, and `multi_agent` currently runs single-agent role-play entries only.
 
 | If the core need is... | Look first at... | Arena that tests it |
 |---|---|---|
-| Deterministic, auditable, resumable workflows | LangGraph — the only one with a demonstrated durable pause | `human_in_the_loop` ✅, `durable_state` ⬜ |
+| Deterministic, auditable, resumable workflows | LangGraph — the only one that pauses via a real checkpointer | `human_in_the_loop` ✅, `durable_state` ✅ |
 | Fastest path to a multi-agent prototype | CrewAI | `multi_agent` (no real multi-agent entries yet) |
 | Conversational multi-agent / event-driven | Microsoft Agent Framework | `multi_agent` |
 | Minimal wrapper around one provider's models | OpenAI Agents SDK / Claude Agent SDK | `tool_use` |
 | Type-safe outputs, model-agnostic | Pydantic AI | `structured_output` |
+| Small local/open models that tool-call poorly | smolagents — its heavy prompt scaffolding is the point | `tool_use` |
 
 Constraints that override all of the above: language (Python vs TypeScript),
 self-host vs SaaS, licence, provider lock-in, and existing infrastructure.

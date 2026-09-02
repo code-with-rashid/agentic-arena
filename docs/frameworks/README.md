@@ -9,6 +9,7 @@ and results. Written and maintained by whoever owns the adapter.
 | [OpenAI Agents SDK](openai-agents-sdk.md) | runs all 7 arenas | Heaviest on the wire (1.04×); `needs_approval` + a fully serialisable `RunState`; **tracing uploads to OpenAI unless disabled** |
 | [Pydantic AI](pydantic-ai.md) | runs all 7, green on all 7 | `Agent(retries=...)` is **not** a loop cap — it ran 50 LLM calls on a budget of 6; deferred tools for the pause |
 | [Microsoft Agent Framework](microsoft-agent-framework.md) | runs 5 of 7 | Tool loop **uncapped** by default (41 calls on a budget of 6); approval story is session-store-shaped, not yet adapted |
+| [smolagents](smolagents.md) | runs 5 of 7 | **3.77× baseline on the wire** — a 3.9 KB templated system prompt resent every request; drops the 4 `resilience` faults its validator rejects before the tool runs |
 | [CrewAI](crewai.md) | not in CI | Drives a **text ReAct loop**, not native tool calling — answers correctly, records no tool calls |
 | [Claude Agent SDK](claude-agent-sdk.md) | stub, on purpose | Spawns the `claude` CLI over the Anthropic Messages API; cannot sit behind the shared OpenAI-compatible gateway |
 
@@ -17,9 +18,9 @@ documented next to its code. It is the control in the experiment, and it is
 **not** the cheapest on the wire — see [overhead.md](../overhead.md).
 
 `vanilla` and `pydantic_ai` are green on every arena they run. `langgraph` and
-`openai_agents` each lose one `resilience` item — that is a measured finding, not
-a broken adapter. `microsoft_af` reports *unsupported* on the two pause arenas
-rather than failing them.
+`openai_agents` each lose one `resilience` item, and `smolagents` loses four —
+those are measured findings, not broken adapters. `microsoft_af` and `smolagents`
+report *unsupported* on the two pause arenas rather than failing them.
 
 ## Reading these pages
 

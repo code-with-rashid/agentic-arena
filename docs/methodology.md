@@ -35,6 +35,25 @@ registers exactly those (`arena.tools.names_for` / `specs_for` resolve the list)
 handing an agent a tool the arena did not declare lets one framework solve a task
 in a way another cannot, which is the same fairness break as swapping the model.
 
+### Control tools are exempt
+
+Some frameworks end their loop by *calling a tool* rather than by replying with
+content — smolagents advertises a `final_answer` tool and treats a plain content
+reply as "not finished yet". That tool carries no task capability: it is how the
+framework returns a value, the way another framework returns from a function.
+
+`arena.tools.CONTROL_TOOLS` names them (`final_answer` today). They are exempt
+from the "only declared tools" rule, excluded from an adapter's reported
+`tool_calls` so they cannot satisfy a `tool_used` check or inflate
+`max_tool_calls`, and the mock server renders a scripted content turn as a
+`final_answer` call for clients that advertise one. The exemption is deliberately
+a fixed list, not a pattern: a framework cannot smuggle a capability past the
+arena by naming a tool cleverly.
+
+They are **not** excluded from prompt-size accounting. A framework that must
+advertise an extra tool on every request really does pay for it, and
+[overhead.md](overhead.md) reports what that costs.
+
 ## 3b. One iteration budget
 
 `ArenaConfig.max_tool_iterations` caps how many LLM calls an adapter may spend on

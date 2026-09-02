@@ -29,6 +29,7 @@
 | `pydantic_ai` | `pydantic-ai-slim[openai]==2.37.0` |
 | `openai_agents` | `openai-agents==0.22.0` |
 | `microsoft_af` | `agent-framework-core==1.16.0`, `agent-framework-openai==1.14.1` |
+| `smolagents` | `smolagents[openai]==1.26.0` |
 | `crewai` | `crewai>=0.130,<1.0` — a range, because the adapter is not yet verified |
 | `claude_agent_sdk` | unpinned — deliberate stub |
 
@@ -36,7 +37,11 @@ Two adapters deliberately install the *narrow* package rather than the
 meta-package: `pydantic-ai-slim[openai]` instead of `pydantic-ai`, and
 `agent-framework-core` + `-openai` instead of `agent-framework`. The
 meta-packages pull provider SDKs (azure, boto3, redis, qdrant, ollama, ...) that
-no arena uses. This matters for install time and for honestly describing what a
+no arena uses.
+
+`smolagents` runs the opposite way: the bare package is *too* narrow. Without the
+`[openai]` extra, `OpenAIServerModel` raises at construction, and the failure
+reads like a bad import rather than a missing extra. This matters for install time and for honestly describing what a
 framework costs to adopt for this task.
 
 ## Automation
