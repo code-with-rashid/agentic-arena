@@ -87,6 +87,11 @@ jobs:
         # the comparison silently lies. Only runs meaningfully here, where
         # the real frameworks are installed.
         run: pytest tests/test_usage_accounting.py -q
+      - name: Batched tool calls — every call in a turn is run and reported
+        # Gates the invariants only. Which frameworks silently drop a broken
+        # sibling is a finding, documented in docs/feature-matrix.md, not a
+        # test failure — same rule as the resilience arena.
+        run: pytest tests/test_parallel_tool_calls.py -q
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
       - name: Report recovery, and fail only if the baseline broke
