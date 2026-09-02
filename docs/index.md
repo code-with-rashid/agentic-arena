@@ -5,6 +5,8 @@
 - [Feature matrix](feature-matrix.md) — capabilities that aren't scorecard numbers.
 - [Framework overhead](overhead.md) — what each library adds to the wire for an
   identical task. One of only two things mock mode can compare honestly.
+- [Dependencies](dependencies.md) — the pinning policy, why the harness has zero
+  runtime deps, and the deprecation register.
 - Per-framework deep dives: [`frameworks/`](frameworks/)
 
 ## How a run works

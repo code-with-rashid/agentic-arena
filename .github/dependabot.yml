@@ -1,0 +1,83 @@
+version: 2
+
+# Adapter pins are deliberate: a scorecard names the library version it was
+# produced with, so bumping one invalidates that scorecard until it is re-run.
+# Dependabot's job here is to make drift *visible* on a predictable cadence, not
+# to keep main on latest. Each adapter is grouped into a single PR so a bump and
+# its re-run are one reviewable unit.
+#
+# Reviewing an adapter bump:
+#   1. read the upstream changelog for anything touching tool calling, the loop
+#      cap, or the OpenAI-compatible client
+#   2. `pytest tests/test_adapters_contract.py` with ARENA_EXPECT_FRAMEWORKS set
+#   3. `python -m arena run --arena <each> --framework <name> --mode mock`
+#   4. check the `comparison` job's overhead table — a jump means the library
+#      changed how it serialises tool schemas, which is a finding worth a note in
+#      docs/overhead.md
+#   5. re-run and refresh results/ if a live scorecard exists for that framework
+
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: "chore(ci)"
+
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      harness-dev:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /frameworks/langgraph
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(langgraph)"
+    groups:
+      langgraph:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /frameworks/pydantic_ai
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(pydantic_ai)"
+    groups:
+      pydantic-ai:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /frameworks/openai_agents
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(openai_agents)"
+    groups:
+      openai-agents:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directory: /frameworks/microsoft_af
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(microsoft_af)"
+    groups:
+      agent-framework:
+        patterns: ["*"]
+
+  # crewai is deliberately excluded: its adapter is not yet mock-verified and its
+  # requirement is a range rather than a pin, so a bump PR would carry no signal.
+  # Add it here once the adapter is green and pinned.
+  # claude_agent_sdk is excluded for the same reason - it is a deliberate stub.
