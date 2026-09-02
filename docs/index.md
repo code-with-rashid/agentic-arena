@@ -8,7 +8,8 @@
   [measured] or [claimed]; nothing about answer quality until a live run exists.
 - [Feature matrix](feature-matrix.md) — capabilities that aren't scorecard numbers.
 - [Framework overhead](overhead.md) — what each library adds to the wire for an
-  identical task. One of only two things mock mode can compare honestly.
+  identical task, and what happens to that cost once the tool loop gets long.
+  One of only two things mock mode can compare honestly.
 - [When the gateway fails](transport.md) — retry and backoff behaviour when the
   provider returns 429/500/400. The one dimension where the hand-rolled baseline
   loses outright.
