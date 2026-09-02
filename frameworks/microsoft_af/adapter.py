@@ -32,7 +32,14 @@ from __future__ import annotations
 import asyncio
 from typing import Annotated, Any
 
-from pydantic import Field
+# Guarded: every framework here depends on pydantic, but the harness itself has
+# zero runtime deps and CI's lint job installs none of them - an adapter module
+# must still import cleanly there. The annotation below is only evaluated when a
+# runner is built, by which point the framework (and pydantic) is present.
+try:
+    from pydantic import Field
+except ImportError:  # pragma: no cover - adapter is unbuildable without it anyway
+    Field = None  # type: ignore[assignment]
 
 from arena import tools as arena_tools
 from arena.config import ArenaConfig

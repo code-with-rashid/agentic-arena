@@ -2,9 +2,11 @@
 a clean NotImplementedError. This keeps stubs honest and catches import-time typos.
 """
 
+import builtins
 import contextlib
 import json
 import os
+import sys
 from dataclasses import replace
 
 import pytest
@@ -60,6 +62,64 @@ def test_adapter_loads_and_declares_metadata(name):
     adapter = load_framework(name)
     assert adapter.name == name
     assert isinstance(adapter.lib_version, str) and adapter.lib_version
+
+
+def test_no_adapter_imports_its_framework_at_module_level():
+    """Every adapter module must import with none of the frameworks installed.
+
+    The harness has zero runtime dependencies and CI's `lint-and-test` job
+    installs no framework at all, so `available_frameworks()` has to be able to
+    import all thirteen adapter modules against a bare interpreter. Framework
+    imports therefore live inside `build()`, and `lib_version` reports
+    "(not installed)" rather than raising.
+
+    This is checked here rather than left to CI because the failure is confusing
+    when it happens: the test that breaks is
+    `test_adapter_loads_and_declares_metadata`, which looks like a metadata
+    problem and is really a missing dependency three files away. Adding a
+    `from pydantic import Field` at module scope for tool parameter descriptions
+    broke exactly this, and only on the job where nothing is installed.
+    """
+    blocked = {
+        "pydantic",
+        "agents",
+        "agent_framework",
+        "pydantic_ai",
+        "langchain_core",
+        "langchain_openai",
+        "langgraph",
+        "smolagents",
+        "google",
+        "crewai",
+        "claude_agent_sdk",
+    }
+    real_import = builtins.__import__
+
+    def guarded(name, *args, **kwargs):
+        if name.split(".")[0] in blocked:
+            raise ImportError(f"simulated: {name} is not installed")
+        return real_import(name, *args, **kwargs)
+
+    broken = []
+    builtins.__import__ = guarded
+    try:
+        for framework in available_frameworks():
+            module = f"frameworks.{framework}.adapter"
+            sys.modules.pop(module, None)
+            try:
+                adapter = load_framework(framework)
+                assert isinstance(adapter.lib_version, str)
+            except Exception as exc:  # noqa: BLE001 - the outcome under test
+                broken.append(f"{framework}: {type(exc).__name__}: {exc}")
+    finally:
+        builtins.__import__ = real_import
+        for framework in available_frameworks():
+            sys.modules.pop(f"frameworks.{framework}.adapter", None)
+
+    assert not broken, (
+        "adapter module(s) need their framework at import time; move the import "
+        f"into build() or guard it: {broken}"
+    )
 
 
 @pytest.mark.parametrize("name", sorted(STUBS))
