@@ -21,7 +21,8 @@ import sys
 PAIRS = [
     ("vanilla", "vanilla_multi", "structural"),
     ("langgraph", "langgraph_multi", "structural"),
-    ("openai_agents", "openai_agents_multi", "model-decided"),
+    ("openai_agents", "openai_agents_multi", "model-decided, speaker swap"),
+    ("smolagents", "smolagents_multi", "model-decided, sub-agent as tool"),
 ]
 
 runs = sorted(pathlib.Path("runs").glob("*__multi_agent__mock.json"))

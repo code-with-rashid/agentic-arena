@@ -204,7 +204,9 @@ def run(
 
     mock: MockServer | None = None
     if config.mode == "mock":
-        mock = MockServer(arena.mock_script_path).start()
+        # The declared tool list lets the mock tell a delegate advertised as an
+        # ordinary tool from a task tool the arena actually asked for.
+        mock = MockServer(arena.mock_script_path, arena_tools=arena.tools).start()
         config = replace(config, base_url=mock.base_url, api_key="mock-key")
 
     started = _now_iso()

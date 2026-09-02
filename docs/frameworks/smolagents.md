@@ -180,16 +180,24 @@ the tools above, in a second place. It is the single most consistent thing about
 this framework's wire behaviour.
 
 For scale: the OpenAI Agents SDK charges 262 characters to offer a handoff, so
-this is 3.3× to hold open the same option. See
+this is 3.3× to hold open the same option.
+
+**Taking the delegation costs more too — and here that is the framework's
+architecture, not its prompting.** `smolagents_multi` runs the same three roles
+as the other pipeline entries and spends **6 model calls where they spend 4**
+(4.03× / 3.00× against the single-agent entry, where every other mechanism is
+~2.5× / 2.00×). A sub-agent's reply is a *tool result*, not the end of the run,
+so the manager is still going and has to produce its own final answer once the
+sub-agent returns. Every level of nesting costs one extra call. See
 [multi-agent.md](../multi-agent.md#a-third-shape-the-sub-agent-invoked-as-a-tool).
+
+Context does not travel either: a managed sub-agent starts a fresh conversation
+and receives only the task string, where a speaker-swapping handoff inherits the
+whole transcript. Passing findings down the chain is something you do by hand,
+and pay for again.
 
 ## Not yet done
 
-- **The end-to-end `managed_agents` pipeline.** Only the advertising cost above
-  is measured. The mock cannot yet drive a nested sub-agent — it gets a fresh
-  conversation, so the script replays from turn 1 — and
-  [multi-agent.md](../multi-agent.md#still-open) records exactly what would fix
-  it.
 - **No pause support.** `smolagents` has no interrupt/approval primitive
   equivalent to LangGraph's `interrupt()` or the OpenAI SDK's `needs_approval`, so
   the adapter implements no `resume` and the two pause arenas report *unsupported*

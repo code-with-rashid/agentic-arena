@@ -184,6 +184,58 @@ different: the sub-agent is advertised as an ordinary tool named after itself, a
 calling it runs a whole nested agent whose result comes back as the tool's return
 value. The speaker never changes.
 
+`smolagents_multi` is that pipeline, with the same three roles and the same role
+wording as the other three entries:
+
+    researcher --writer(task)--> writer --editor(task)--> editor
+
+### It costs 3× the calls, where every other mechanism costs 2×
+
+| entry | prompt tok | completion | LLM calls | pass |
+|---|--:|--:|--:|--:|
+| `smolagents` | 2584.1 | 115.5 | 2.00 | 10/10 |
+| `smolagents_multi` | 10419.3 | 589.9 | 6.00 | 10/10 |
+
+| kind | comparison | prompt | LLM calls |
+|---|---|--:|--:|
+| structural | `vanilla` → `vanilla_multi` | 2.50× | 2.00× |
+| structural | `langgraph` → `langgraph_multi` | 2.62× | 2.00× |
+| model-decided, speaker swap | `openai_agents` → `openai_agents_multi` | 2.76× | 2.00× |
+| model-decided, sub-agent as tool | `smolagents` → `smolagents_multi` | **4.03×** | **3.00×** |
+
+Three roles cost two model calls in every mechanism above except this one, which
+costs three. The reason is visible on the wire — six requests, down the chain and
+back up it:
+
+```
+req1: researcher   searches
+req2: researcher   delegates to writer
+req3: writer       delegates to editor
+req4: editor       answers
+req5: writer       answers          <- pure mechanism
+req6: researcher   answers          <- pure mechanism
+```
+
+**A sub-agent's reply is a tool result, not the end of the run.** A handoff hands
+the conversation over and the receiving agent finishes it; a managed sub-agent
+hands a *value* back to a manager that is still running and must now produce its
+own final answer. So every level of nesting costs one extra call that a handoff
+does not, and the cost grows with the depth of the chain rather than with the work.
+
+That is the finding, and `tests/test_multi_agent_arena.py` asserts the six-stage
+sequence directly — a pipeline that collapsed to two roles posts
+`['researcher', 'researcher', 'writer', 'researcher']` and fails.
+
+**One thing this measurement does not include.** The mock delegates by passing
+the original task through verbatim, so the writer never receives the researcher's
+findings. That is the *cheapest* delegation possible; a real manager composing a
+task that carries its research would send more, not less. Read 4.03× as a floor.
+It is also a property of the mechanism worth knowing on its own: with a speaker
+swap the transcript comes along automatically, and with a sub-agent it does not —
+context has to be passed by hand, and you pay for it again.
+
+### And offering one costs 3.3× a handoff, before anyone delegates
+
 "You pay to advertise, not to take" **generalises to it — and costs 3.3× more.**
 Measured with no delegation happening at all, characters of system prompt plus
 tool schema on the *first* request:
@@ -214,21 +266,48 @@ paid on every request rather than only the delegating one, it scales with how
 many delegates are offered, and each sub-agent really is described twice. The
 byte counts stay findings.
 
+### What the mock needed in order to drive a nested pipeline
+
+The handoff accommodation is stateless because a transfer swaps the speaker
+inside *one* conversation: the assistant-turn count keeps climbing and the last
+agent, offering no transfer, answers. A managed sub-agent breaks both halves of
+that — it gets a **fresh** conversation, and the manager goes on advertising it
+forever. Three narrow changes, each of which is a small correctness improvement
+on its own:
+
+- **An agent holding none of the arena's tools skips scripted tool-call turns.**
+  Otherwise a sub-agent is served turn 1, the researcher's `search` call, for a
+  tool the writer role deliberately does not have. Deliberately *not* the more
+  obvious "skip any turn whose tool this client did not advertise" — that rule
+  deletes `res-02`, which scripts a call to a tool that does not exist on
+  purpose. The narrow version leaves every normal adapter and every scripted
+  fault exactly as they were.
+- **Delegate at most once per tool per conversation**, read off the transcript so
+  the server stays stateless. This is what terminates the chain. It has to check
+  both encodings: smolagents replays its own calls as assistant *content*
+  (`Calling tools: [{'function': {'name': 'editor', …}}]`), so looking only at
+  the structured `tool_calls` field finds nothing and the manager delegates on
+  every turn until its budget is gone — which is exactly what happened first.
+- **The delegation call carries the task.** `transfer_to_*` takes no arguments,
+  but a sub-agent about to start a fresh conversation has to be told something.
+  Passing the original user message is what a manager would send, and it keeps
+  the sub-agent on the same scenario so the pipeline stays on the same item.
+
+Recognising a delegate at all needs the arena's declared tool list, because
+`writer` is indistinguishable from a task tool by name — so the harness now hands
+`MockServer` the arena's tools. A bare `MockServer` in a test still recognises
+only the explicit `transfer_to_*` shape, which is the narrower behaviour on
+purpose. Verified behaviour-preserving: the handoff chain's numbers are unchanged
+to the decimal (2.76×, 2.00×).
+
 ## Still open
 
-- **An end-to-end pipeline number for `managed_agents`.** The advertising cost
-  above is measured; the full three-role cost is not, and the blocker is the
-  mock rather than the adapter. The handoff accommodation terminates without any
-  state because a transfer swaps the speaker inside *one* conversation, so the
-  assistant-turn count keeps climbing and the last agent — offering no
-  transfer — answers. A managed sub-agent instead gets a **fresh** conversation,
-  so the mock would replay the script from turn 1 and serve it a `search` call it
-  has no tool for, and the manager goes on advertising the sub-agent forever, so
-  nothing terminates. Making this work needs the mock to skip scripted tool calls
-  a client never advertised, and to delegate at most once per tool per
-  conversation. Both look reasonable and neither is written.
-- **CrewAI crews**, the same shape again, and still blocked on an adapter that
-  has never been mock-verified.
+- **CrewAI crews**, the same sub-agent-as-tool shape again, and still blocked on
+  an adapter that has never been mock-verified.
+- **Whether forwarding context changes the ranking.** Every pipeline here passes
+  the minimum down the chain. A manager that forwards its findings pays more, and
+  the two mechanisms would not pay the same amount — the speaker-swap chain gets
+  the transcript for free.
 - **More than three roles.** The compounding above predicts prompt cost grows
   faster than call count, and the handoff finding predicts it grows with the
   number of *offered* transfers too. Two points do not establish a curve.

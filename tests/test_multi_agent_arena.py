@@ -10,6 +10,8 @@ whether they can clear the bar.
 import json
 from dataclasses import replace
 
+import pytest
+
 from arena.config import REPO_ROOT, ArenaConfig
 from arena.llm.mockserver import MockScript, MockServer
 from arena.registry import frameworks_for_arena, load_arena, load_framework
@@ -18,6 +20,21 @@ from arena.runner import run
 SCRIPT = json.loads(
     (REPO_ROOT / "arenas" / "multi_agent" / "mock_script.json").read_text(encoding="utf-8")
 )
+
+
+def _system(request):
+    """The system prompt as text, whether the client sent a string or content parts."""
+    out = ""
+    for message in request.get("messages", []):
+        if message.get("role") != "system":
+            continue
+        content = message.get("content", "")
+        out += (
+            content
+            if isinstance(content, str)
+            else "".join(p.get("text", "") for p in content if isinstance(p, dict))
+        )
+    return out
 
 
 def test_every_scenario_researches_then_writes_a_brief():
@@ -83,6 +100,48 @@ def test_pipeline_entry_is_really_three_roles_and_costs_more():
     assert result.llm_calls == 2 * single.llm_calls == 4
     assert result.prompt_tokens > single.prompt_tokens
     assert result.output_text == single.output_text, "same scripted answer, different cost"
+
+
+def test_the_managed_agent_pipeline_pays_an_extra_call_per_delegation():
+    """`smolagents_multi` is the third delegation shape, and it costs a third more.
+
+    A sub-agent invoked as a tool returns a *tool result*, not the end of the
+    run, so every delegator has to make one more model call to produce its own
+    final answer after its sub-agent comes back. The other three pipeline entries
+    spend 4 calls on three roles; this one spends 6, and the two extra are the
+    mechanism rather than the work.
+
+    Asserted rather than described because it is the finding, and because a
+    pipeline that quietly collapsed into one agent would still post 10/10.
+    """
+    pytest.importorskip("smolagents")
+    arena = load_arena("multi_agent")
+    script = MockScript.load(arena.mock_script_path)
+    with MockServer(script, arena_tools=arena.tools) as server:
+        config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        result = load_framework("smolagents_multi").build(arena, config).run(arena.dataset[0])
+        requests = server.requests
+
+    stages = [
+        next((r for r in ("researcher", "writer", "editor") if f"the {r}" in _system(req)), "?")
+        for req in requests
+    ]
+    # Down the chain, then back up it: each delegator wakes again to answer.
+    assert stages == ["researcher", "researcher", "writer", "editor", "writer", "researcher"], (
+        stages
+    )
+
+    # Every stage carries the arena's task prompt, not just a role line.
+    for req in requests:
+        assert arena.system_prompt in _system(req)
+
+    with MockServer(script, arena_tools=arena.tools) as server:
+        config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        single = load_framework("smolagents").build(arena, config).run(arena.dataset[0])
+    assert result.llm_calls == 3 * single.llm_calls == 6, (result.llm_calls, single.llm_calls)
+    assert result.output_text == single.output_text, "same scripted answer, different cost"
+    # Delegating is not a tool the arena granted, so it must not be logged as one.
+    assert [c["name"] for c in result.tool_calls] == ["search"], result.tool_calls
 
 
 def test_variant_entries_are_scoped_to_their_arena():

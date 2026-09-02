@@ -12,7 +12,13 @@ import pytest
 from arena.config import ArenaConfig
 from arena.llm.mockserver import MockScript, MockServer
 from arena.registry import available_frameworks, load_arena, load_framework
-from arena.tools import CONTROL_TOOL_PREFIXES, CONTROL_TOOLS, TOOL_FUNCS, is_control_tool
+from arena.tools import (
+    CONTROL_TOOL_PREFIXES,
+    CONTROL_TOOLS,
+    TOOL_FUNCS,
+    check_declared_delegates,
+    is_control_tool,
+)
 from arena.types import ArenaSpec, EvalItem
 
 STUBS = {"claude_agent_sdk"}
@@ -94,13 +100,21 @@ def test_adapter_advertises_only_the_tools_the_arena_declares(name):
     body = _wire_traffic(name, ["search"])
     advertised = sorted(t.get("function", {}).get("name", "") for t in body.get("tools", []) or [])
     # A framework may add tools that only drive its own loop - smolagents ends a
-    # run by calling `final_answer`, and a handoff chain advertises
-    # `transfer_to_<agent>`. Those grant no arena capability, so exactly that set
-    # is subtracted and nothing else.
-    task_tools = [t for t in advertised if not is_control_tool(t)]
+    # run by calling `final_answer`, a handoff chain advertises
+    # `transfer_to_<agent>`, and a managed-agent pipeline advertises each
+    # sub-agent under its own name. Those grant no arena capability, so exactly
+    # that set is subtracted and nothing else.
+    #
+    # The third kind has no name pattern to match, so the adapter has to declare
+    # it. That declaration is checked, not trusted: it may not cover a tool the
+    # arena actually declares.
+    delegates = tuple(getattr(load_framework(name), "delegates", ()))
+    check_declared_delegates(delegates, ["search"])
+    task_tools = [t for t in advertised if not is_control_tool(t, delegates)]
     assert task_tools == ["search"], (
         f"{name}: advertised {advertised}, but the arena declares only ['search'] "
-        f"(exempt: {list(CONTROL_TOOLS)} and {list(CONTROL_TOOL_PREFIXES)}*)"
+        f"(exempt: {list(CONTROL_TOOLS)}, {list(CONTROL_TOOL_PREFIXES)}*, "
+        f"and this adapter's declared delegates {list(delegates)})"
     )
 
 
@@ -290,3 +304,27 @@ def test_every_expected_framework_is_contract_tested():
         pytest.skip("ARENA_EXPECT_FRAMEWORKS not set (no frameworks installed here)")
     missing = sorted(set(expected) - set(BUILDABLE))
     assert not missing, f"expected to contract-test {expected}, but could not build {missing}"
+
+
+def test_a_delegate_declaration_cannot_cover_a_real_tool():
+    """The one exemption an adapter declares for itself must stay bounded.
+
+    `final_answer` is a fixed name and `transfer_to_*` a fixed prefix, but a
+    managed-agent pipeline names its delegate tools after its sub-agents, so the
+    adapter has to declare them. That is the only place an adapter gets to widen
+    the fairness rule, so the widening is checked: declaring `search` a delegate
+    would exempt a real task capability and must be refused.
+    """
+    check_declared_delegates(("writer", "editor"), ["search", "calculator"])
+    with pytest.raises(ValueError, match="may not cover a task capability"):
+        check_declared_delegates(("writer", "search"), ["search", "calculator"])
+
+
+def test_every_delegate_an_adapter_declares_is_absent_from_every_arena():
+    """No adapter may declare a delegate that collides with any arena's tools."""
+    from arena.registry import available_arenas
+
+    tools = {t for arena_id in available_arenas() for t in load_arena(arena_id).tools}
+    for name in available_frameworks():
+        declared = tuple(getattr(load_framework(name), "delegates", ()))
+        check_declared_delegates(declared, sorted(tools))
