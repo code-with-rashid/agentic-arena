@@ -82,10 +82,22 @@ finding. A single-agent entry on such an arena is named `<fw>` as usual; a
 real-orchestration entry is named `<fw>-multi` so the two can be compared
 directly.
 
-`tests/test_adapters_contract.py` enforces both rules on the wire: it builds each
-adapter against a sentinel arena and asserts, from the request body the mock
-server actually received, that the arena's prompt reached the model and that only
-the arena's declared tools were advertised.
+`tests/test_adapters_contract.py` enforces these rules on the wire: it builds each
+adapter against a sentinel arena and asserts, from the request bodies the mock
+server actually received, that
+
+- the arena's prompt reached the model,
+- only the arena's declared tools were advertised,
+- the adapter stopped at `max_tool_iterations`,
+- the tool result reached the model **byte-for-byte** (a framework that truncates
+  or re-wraps tool output stays green in mock mode and scores near zero live),
+- the tool ran on the arguments the model asked for,
+- each request replays the whole transcript, not just the newest message.
+
+These only mean something against the real libraries, and the `dev` extra pulls
+no framework — so they run in the `comparison` CI job, which installs every
+adapter and sets `ARENA_EXPECT_FRAMEWORKS` so a broken install fails loudly
+instead of silently shrinking the matrix back to `vanilla`.
 
 ### Testing grounding without a judge
 

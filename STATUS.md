@@ -59,8 +59,12 @@ python -m arena run --arena tool_use \
 ## Known rough edges
 
 - Mock server picks a scenario by substring-matching the first user message and
-  serves turn *N* after *N* assistant messages. Adapters that don't replay prior
-  tool calls in each request would desync — none of the current ones do.
+  serves turn *N* after *N* assistant messages, so an adapter that sent only the
+  latest delta would desync. This used to be an untested assumption; it is now
+  asserted on the wire for every adapter by
+  `test_adapter_replays_the_whole_transcript`, alongside checks that the tool
+  result reaches the model byte-for-byte and that the tool ran on the arguments
+  the model actually asked for.
 - `microsoft_af` is async-only; the adapter builds a fresh client + event loop per
   item so the httpx client never outlives its loop. `openai_agents` needs its
   built-in tracing disabled or it POSTs to `api.openai.com`.
