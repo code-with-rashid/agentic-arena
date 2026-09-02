@@ -1,0 +1,389 @@
+{
+  "_comment": "Canned turns replayed by arena.llm.mockserver so durable_state runs offline. Five turns: search, search, save_progress (the crash point), calculator, answer. The harness discards the runner at turn 3 and rebuilds it; a resumed adapter continues the same transcript so the mock serves turn 4, while an adapter that started over would be served turn 1 again and duplicate its searches.",
+  "scenarios": [
+    {
+      "match": "burj khalifa than the eiffel tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Burj Khalifa"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Eiffel Tower"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "Burj Khalifa is 828 m; Eiffel Tower is 330 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "828 - 330"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The Burj Khalifa is 498 metres taller than the Eiffel Tower."
+        }
+      ]
+    },
+    {
+      "match": "cn tower than the space needle",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "CN Tower"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Space Needle"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "CN Tower is 553 m; Space Needle is 184 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "553 - 184"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The CN Tower is 369 metres taller than the Space Needle."
+        }
+      ]
+    },
+    {
+      "match": "empire state building than the chrysler building",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Empire State Building"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Chrysler Building"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "Empire State Building is 443 m; Chrysler Building is 319 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "443 - 319"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The Empire State Building is 124 metres taller than the Chrysler Building."
+        }
+      ]
+    },
+    {
+      "match": "taipei 101 than the the shard",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Taipei 101"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "The Shard"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "Taipei 101 is 508 m; The Shard is 310 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "508 - 310"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The Taipei 101 is 198 metres taller than the The Shard."
+        }
+      ]
+    },
+    {
+      "match": "petronas towers than the tokyo tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Petronas Towers"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Tokyo Tower"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "Petronas Towers is 452 m; Tokyo Tower is 333 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "452 - 333"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The Petronas Towers is 119 metres taller than the Tokyo Tower."
+        }
+      ]
+    },
+    {
+      "match": "one world trade center than the willis tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "One World Trade Center"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Willis Tower"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "One World Trade Center is 541 m; Willis Tower is 442 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "541 - 442"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The One World Trade Center is 99 metres taller than the Willis Tower."
+        }
+      ]
+    },
+    {
+      "match": "golden gate bridge than the gateway arch",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Golden Gate Bridge"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Gateway Arch"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "Golden Gate Bridge is 227 m; Gateway Arch is 192 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "227 - 192"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The Golden Gate Bridge is 35 metres taller than the Gateway Arch."
+        }
+      ]
+    },
+    {
+      "match": "burj khalifa than the cn tower",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "Burj Khalifa"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "search",
+              "arguments": {
+                "query": "CN Tower"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "save_progress",
+              "arguments": {
+                "note": "Burj Khalifa is 828 m; CN Tower is 553 m. Next: subtract."
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "calculator",
+              "arguments": {
+                "expr": "828 - 553"
+              }
+            }
+          ]
+        },
+        {
+          "content": "The Burj Khalifa is 275 metres taller than the CN Tower."
+        }
+      ]
+    }
+  ]
+}

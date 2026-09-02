@@ -5,9 +5,11 @@ this is the "just write the loop yourself" comparison point for lines of code,
 latency overhead, and token overhead.
 
 It also implements the optional suspend/resume contract
-(`arena.types.ResumableRunner`) by **emulation**: there is no durable checkpoint
-here, just a dict carrying the transcript back in. That is a real distinction from
-a framework with native interrupts, and the feature matrix records it as emulated.
+(`arena.types.ResumableRunner`) by **emulation**: there is no checkpoint store,
+just the transcript carried back in `resume_state`. Because that dict is plain
+JSON it does survive the `durable_state` arena's simulated crash — stateless
+resume is a legitimate way to be durable — but it is not the same thing as a
+framework checkpointer, and the feature matrix records it as emulated.
 """
 
 from __future__ import annotations
@@ -76,15 +78,18 @@ class _Runner:
                 }
             )
             for i, tc in enumerate(resp.tool_calls):
-                if tc["name"] == tools.SUSPEND_TOOL:
+                if tc["name"] in tools.SUSPEND_TOOLS:
                     # Do not execute it and do not log it as a tool call: asking
-                    # for permission is the pause, not an action taken.
-                    args = tc["arguments"]
-                    summary = args.get("summary", "") if isinstance(args, dict) else str(args)
+                    # for permission (or checkpointing) is the pause, not an action.
+                    args = tc["arguments"] if isinstance(tc["arguments"], dict) else {}
+                    summary = args.get("summary") or args.get("note") or ""
                     return _finish(
                         output_text=last_content,
                         suspended=True,
                         suspend_request=str(summary),
+                        # Plain JSON on purpose: a `durable` arena round-trips this
+                        # through json.dumps as a crash would, and rebuilds the
+                        # runner, so nothing that is not in here can survive.
                         resume_state={
                             "messages": messages,
                             "approval_id": tc["id"],

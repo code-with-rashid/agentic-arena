@@ -40,6 +40,10 @@ class ArenaSpec:
     system_prompt_intent: str
     dataset: list[EvalItem]
     mock_script_path: str
+    # A durable arena does not just pause - it throws the runner away at the pause
+    # and rebuilds it, so only what the adapter persisted (or serialised into
+    # `resume_state`) can cross the gap. See docs/methodology.md section 7.
+    durable: bool = False
 
     @property
     def tool_use_allowed(self) -> bool:

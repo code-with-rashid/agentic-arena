@@ -101,3 +101,29 @@ def test_render_labels_what_the_numbers_mean(mode):
     # A mock report must warn the reader; a live one must not carry that caveat.
     assert ("wiring check, not a leaderboard" in text) == (mode == "mock")
     assert "Coverage" in text
+
+
+def test_pause_cell_separates_unsupported_from_failing():
+    """The whole point of the column: 'not wired up' is not 'got it wrong'."""
+    unsupported = _record("durable_state", [_fw("x", reason="does not implement the resume API")])
+    assert S._pause_cell(unsupported, "x") == "no"
+
+    good = _record("durable_state", [_fw("x", items=[_item("a", suspends=1)])])
+    assert S._pause_cell(good, "x") == "yes (1/1)"
+
+    # Paused but the item still failed: neither a clean yes nor an unsupported no.
+    broken = _record("durable_state", [_fw("x", items=[_item("a", passed=False, suspends=1)])])
+    assert S._pause_cell(broken, "x") == "**1/1**"
+
+    assert S._pause_cell(None, "x") == "—"
+
+
+def test_pause_section_reports_both_arenas_separately():
+    records = [
+        _record("human_in_the_loop", [_fw("x", items=[_item("a", suspends=1)])]),
+        _record("durable_state", [_fw("x", reason="does not implement the resume API")]),
+    ]
+    out: list[str] = []
+    S._pauses(records, ["x"], out)
+    row = next(line for line in out if line.startswith("| `x`"))
+    assert "yes (1/1)" in row and "| no |" in row, row

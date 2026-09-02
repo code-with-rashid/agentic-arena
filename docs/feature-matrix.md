@@ -17,7 +17,7 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) |
 | Built-in multi-agent | ❌ | ✅ (graph) | ✅ (crew) | 🟡 (handoffs) | 🟡 (subagents) | 🟡 | ✅ |
 | Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`) | ❓ | ❓ | ❓ | 🟡 (deferred tools) | 🟡 (tool-approval middleware) |
-| Durable state / checkpointing | ❌ | ✅ (checkpointer) | ❓ | ❓ | ❓ | ❓ | ❓ |
+| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ❓ | ❓ | ❓ | ❓ |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 |
 | Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) |
 | Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) |
@@ -41,12 +41,23 @@ agent's prose:
 | `vanilla` | 12/12 | emulated — transcript carried back in, no checkpoint (hence 🟡, not ✅) |
 
 Both produce an identical trace to the scorer: one pause per item, `book_room`
-never called before it, and called on exactly the six approved items. The
-difference is that the emulated pause would not survive a process restart, which
-is what `durable_state` will test.
+never called before it, and called on exactly the six approved items.
+
+`Durable state / checkpointing` is measured by `durable_state`, which discards the
+runner at the pause and rebuilds it, so only a real checkpoint or a serialised
+transcript can get across:
+
+| adapter | result | mechanism |
+|---|---|---|
+| `langgraph` | 8/8 | `SqliteSaver` writing to the harness-owned checkpoint dir; a fresh runner reopens the same thread |
+| `vanilla` | 8/8 | stateless resume — the whole transcript is serialised into `resume_state`. Durable, but it is not a checkpointer, hence 🟡 |
+
+An adapter patched to restart from scratch instead of resuming drops to **0/8**:
+it reaches the right answer by redoing both lookups, and the `call_counts` check
+catches the duplicated work.
 
 `crewai`, `openai_agents`, `pydantic_ai` and `microsoft_af` have no `resume`
-method yet and report *unsupported* on that arena. Read their cells as unmeasured
+method yet and report *unsupported* on both arenas. Read their cells as unmeasured
 claims from upstream docs, not as results — Agent Framework in particular ships
 tool-approval middleware that nobody has wired up here.
 

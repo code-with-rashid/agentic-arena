@@ -68,7 +68,7 @@ when its output satisfies every check for that item.
 | 4 | `multi_agent` — researcher → writer → editor pipeline | orchestration, handoffs | ✅ spec + dataset + scorer (single-agent baseline) |
 | 5 | `rag` — agent over a fixed local corpus; single-hop, multi-hop, and unanswerable | retrieval integration, grounding | ✅ spec + dataset + scorer |
 | 6 | `human_in_the_loop` — approval gate, pause + resume | interrupts, HITL | ✅ spec + dataset + scorer (`langgraph` native, `vanilla` emulated) |
-| 7 | `durable_state` — resume after a crash | checkpointing, durability | 🚧 spec drafted |
+| 7 | `durable_state` — resume after a crash | checkpointing, durability | ✅ spec + dataset + scorer (`langgraph` + `vanilla`) |
 
 ## The frameworks
 

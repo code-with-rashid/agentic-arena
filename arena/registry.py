@@ -43,6 +43,7 @@ def load_arena(arena_id: str) -> ArenaSpec:
         system_prompt_intent=meta.get("system_prompt_intent", ""),
         dataset=dataset,
         mock_script_path=str(base / "mock_script.json"),
+        durable=bool(meta.get("durable", False)),
     )
 
 

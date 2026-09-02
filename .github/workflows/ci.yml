@@ -80,14 +80,14 @@ jobs:
         run: python -m arena run --arena tool_use --framework all --mode mock --no-scorecard
       - name: Report per-framework prompt overhead
         run: python .github/scripts/report_overhead.py tool_use
-      - name: Which frameworks support a human-in-the-loop pause
+      - name: Which frameworks can pause, and which can survive a crash
         # Adapters without a `resume` method report themselves unsupported here
         # rather than failing items, so this step is a capability census, not a
         # gate. It turns red only if the run itself breaks.
         run: python -m arena run --arena human_in_the_loop --framework all --mode mock --no-scorecard
       - name: Run the remaining arenas so the summary is complete
         run: |
-          for a in structured_output rag multi_agent; do
+          for a in structured_output rag multi_agent durable_state; do
             python -m arena run --arena "$a" --framework all --mode mock --no-scorecard
           done
       - name: Cross-arena summary

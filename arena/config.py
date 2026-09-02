@@ -29,6 +29,10 @@ class ArenaConfig:
     repeat: int = 1
     request_timeout_s: float = 60.0
     max_tool_iterations: int = 6
+    # Where an adapter may persist checkpoints for a `durable` arena. The harness
+    # owns it, hands the same path to every framework, and clears it between runs,
+    # so no adapter gets a private store the others do not have.
+    checkpoint_dir: str = ""
 
     @classmethod
     def from_env(cls, *, mode: str | None = None, repeat: int | None = None) -> ArenaConfig:

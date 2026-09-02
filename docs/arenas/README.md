@@ -12,6 +12,6 @@ and this file becomes its reference notes.
 | `multi_agent` | [multi_agent.md](multi_agent.md) | ✅ `arenas/multi_agent/` (single-agent baseline; real multi-agent entries pending) |
 | `rag` | [rag.md](rag.md) | ✅ `arenas/rag/` |
 | `human_in_the_loop` | [human_in_the_loop.md](human_in_the_loop.md) | ✅ `arenas/human_in_the_loop/` (`langgraph` native + `vanilla` emulated; others report unsupported) |
-| `durable_state` | [durable_state.md](durable_state.md) | ⬜ |
+| `durable_state` | [durable_state.md](durable_state.md) | ✅ `arenas/durable_state/` (`langgraph` sqlite checkpointer + `vanilla` stateless resume) |
 
 See [../../CONTRIBUTING.md](../../CONTRIBUTING.md) → "Adding an arena".
