@@ -9,6 +9,14 @@
   runtime deps, and the deprecation register.
 - Per-framework deep dives: [`frameworks/`](frameworks/)
 
+## Reports
+
+- `python -m arena scorecard --arena <id>` — one arena, every adapter.
+- `python -m arena summary --print` — **all** arenas in one view: a coverage grid
+  plus the three things that compare honestly offline (fault recovery, prompt
+  size, pause support). Written to `runs/summary.md` for mock runs and
+  `results/summary.md` for live ones, so mock numbers never reach `results/`.
+
 ## How a run works
 
 ```

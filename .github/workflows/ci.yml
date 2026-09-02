@@ -85,6 +85,17 @@ jobs:
         # rather than failing items, so this step is a capability census, not a
         # gate. It turns red only if the run itself breaks.
         run: python -m arena run --arena human_in_the_loop --framework all --mode mock --no-scorecard
+      - name: Run the remaining arenas so the summary is complete
+        run: |
+          for a in structured_output rag multi_agent; do
+            python -m arena run --arena "$a" --framework all --mode mock --no-scorecard
+          done
+      - name: Cross-arena summary
+        run: python -m arena summary --print
+      - uses: actions/upload-artifact@v7
+        with:
+          name: cross-arena-summary
+          path: runs/summary.md
 
   mock-smoke:
     # Proves a real framework adapter wires together against the mock LLM.

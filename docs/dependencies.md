@@ -57,11 +57,13 @@ worth knowing about:
 |---|---|---|
 | `actions/checkout` | every workflow | yes |
 | `actions/setup-python` | every workflow | yes |
-| `actions/upload-artifact` | `full-run.yml` only | **no** — that workflow is `workflow_dispatch` and needs `OPENAI_API_KEY` |
+| `actions/upload-artifact` | `full-run.yml`, and the `comparison` job | yes |
 
-So an `upload-artifact` bump lands untested and first runs when someone triggers
-a live run. It is a low-risk action, but if a `full-run` fails at the upload step
-right after a bump, that is the first place to look.
+`upload-artifact` used to appear only in `full-run.yml`, which is
+`workflow_dispatch` and needs `OPENAI_API_KEY` — so a bump to it landed untested
+and would first have run whenever someone triggered a live run. The `comparison`
+job now uploads the cross-arena summary with the same action, which closes that
+gap incidentally. Worth re-checking this table whenever a workflow is added.
 
 `actions/checkout@v7` carries a breaking change — it blocks checking out fork PRs
 under `pull_request_target` and `workflow_run`. This repo's workflows trigger on

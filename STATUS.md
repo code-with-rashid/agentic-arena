@@ -25,6 +25,8 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 - `pytest -q` → all offline; `ruff check .` + `ruff format --check .` clean.
 - `python -m arena scorecard --arena <id>` regenerates the scorecard (live →
   `results/<id>/`, mock → `runs/scorecards/<id>/`).
+- `python -m arena summary --print` renders every arena in one view — coverage,
+  fault recovery, prompt size, pause support. CI uploads it as an artifact.
 - CI: `lint-and-test` (3.11–3.13, runs `arena validate` + pytest), `resilience`
   (reports the recovery table; fails only if the stdlib baseline breaks), and
   `mock-smoke` (a framework × arena matrix).
