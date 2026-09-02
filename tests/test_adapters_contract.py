@@ -284,6 +284,58 @@ def test_adapter_replays_the_whole_transcript(name):
     _tool_result_text(name, requests)
 
 
+def _streams_blindly(request):
+    """Does this request stream without asking for the usage that comes with it?
+
+    A real OpenAI-compatible provider returns **no `usage` at all** on a streamed
+    response unless the client sets `stream_options: {"include_usage": true}`.
+    """
+    if not request.get("stream"):
+        return False
+    return not (request.get("stream_options") or {}).get("include_usage")
+
+
+def test_the_blind_streaming_check_would_actually_catch_one():
+    """The predicate below, exercised on the shape it exists to reject.
+
+    Necessary because **no adapter here streams**, so the parametrised gate has
+    nothing to reject today and would pass just as happily if the predicate were
+    `return False`. This is what stops it being vacuous.
+    """
+    assert _streams_blindly({"stream": True})
+    assert _streams_blindly({"stream": True, "stream_options": {}})
+    assert not _streams_blindly({"stream": True, "stream_options": {"include_usage": True}})
+    assert not _streams_blindly({"stream": False})
+    assert not _streams_blindly({})
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_adapter_does_not_stream_without_asking_for_usage(name):
+    """Streaming is where token accounting silently goes to zero.
+
+    Measured: no adapter here streams. All seven send `stream: false` (or omit
+    it) on every request, which is worth knowing on its own — the common
+    assumption is that agent frameworks stream by default, and none of these does
+    unless you ask.
+
+    It matters for the numbers rather than the answers. An adapter that switched
+    streaming on without `include_usage` would report zero prompt and completion
+    tokens while every correctness check stayed green — the answer is unaffected,
+    so nothing else in this suite would notice, and
+    `tests/test_usage_accounting.py` would be comparing zero against zero.
+
+    So this is a conditional gate rather than a ban: stream if you like, but ask
+    for the usage. `tests/test_mockserver.py` holds the other side of the
+    contract — the mock sends the usage chunk only when it was requested.
+    """
+    blind = [i for i, r in enumerate(_tool_round_trip(name)) if _streams_blindly(r)]
+    assert not blind, (
+        f"{name} streams without `stream_options: {{include_usage: true}}` on "
+        f"request(s) {blind} — a real provider would return no usage and its "
+        f"reported cost would be zero"
+    )
+
+
 def test_at_least_one_adapter_was_actually_exercised():
     """Guard against the parametrised contract tests silently collapsing to zero."""
     assert "vanilla" in BUILDABLE, BUILDABLE
