@@ -2,8 +2,15 @@
 #
 # ADK is Gemini-first. Reaching the shared OpenAI-compatible gateway goes through
 # its LiteLLM backend, so `litellm` is a hard requirement here rather than an
-# optional extra - and it is the heaviest dependency of any adapter in the repo
-# (it pulls boto3, tokenizers, huggingface-hub and tiktoken). That cost is a
+# optional extra - and it is the heaviest dependency tree of any adapter in the
+# repo (it pulls boto3, tokenizers, huggingface-hub and tiktoken). That cost is a
 # finding about adopting ADK against a non-Google provider, not an accident.
+#
+# sqlalchemy is what `DatabaseSessionService` needs, and that is what makes the
+# pause survive `durable_state` throwing the runner away. Without it ADK still
+# pauses, but only for as long as the process lives. aiosqlite already ships with
+# google-adk, and the URL must use it: plain `sqlite://` fails with
+# "the asyncio extension requires an async driver".
 google-adk==2.8.0
 litellm==1.99.0
+sqlalchemy==2.0.52

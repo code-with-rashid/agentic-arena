@@ -17,9 +17,9 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   - `human_in_the_loop` — 12 items, the agent must pause for approval before
     booking. `langgraph` (native interrupt), `openai_agents` (`needs_approval`),
     `pydantic_ai` (deferred tools), `microsoft_af` (`approval_mode` +
-    `ToolApprovalMiddleware`) and `vanilla` (emulated) all 12/12 — five distinct
-    mechanisms; `smolagents` reports unsupported because it has no
-    `resume` method
+    `ToolApprovalMiddleware`), `google_adk` (`LongRunningFunctionTool`) and
+    `vanilla` (emulated) all 12/12 — six distinct mechanisms; `smolagents`
+    reports unsupported because it has no `resume` method
   - `multi_agent` — 10 items; carries two real three-role pipelines
     (`vanilla_multi` hand-rolled, `langgraph_multi` a `StateGraph`) beside the
     single-agent entries, plus a model-decided handoff chain

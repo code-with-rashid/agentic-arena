@@ -17,8 +17,8 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) | ✅ (event stream) |
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) | ✅ (per-event `usage_metadata`) |
 | Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) | ✅ (sub-agents) |
-| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | ✅ (`approval_mode`, measured) | ❌ (no interrupt primitive) | 🟡 (`LongRunningFunctionTool`, not adapted) |
-| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❌ (session store does not round-trip, measured) | ❌ | ❓ |
+| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | ✅ (`approval_mode`, measured) | ❌ (no interrupt primitive) | 🟡 (reported, not enforced, measured) |
+| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❌ (session store does not round-trip, measured) | ❌ | ✅ (`DatabaseSessionService`, measured) |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 | 🟡 (`output_schema`) |
 | Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) | 🟡 (`arun`) | ✅ (async-first) |
 | Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) |
@@ -97,7 +97,7 @@ model-decided but express delegation as a sub-agent invoked like a tool rather
 than a transfer that swaps the speaker, which the current mock accommodation does
 not pick up.
 
-The `Human-in-the-loop / interrupts` row is now **measured for five adapters**.
+The `Human-in-the-loop / interrupts` row is now **measured for six adapters**.
 `human_in_the_loop` observes the pause in the harness rather than trusting the
 agent's prose:
 
@@ -107,6 +107,7 @@ agent's prose:
 | `openai_agents` | 12/12 | native — the tool is `needs_approval=True`, the run stops with a `ToolApprovalItem`, `resume` calls `approve`/`reject` |
 | `pydantic_ai` | 12/12 | native — the tool raises `CallDeferred`, the run returns `DeferredToolRequests`, `resume` passes `deferred_tool_results` |
 | `microsoft_af` | 12/12 | native — `@tool(approval_mode="always_require")` + `ToolApprovalMiddleware`; `resume` answers with `to_function_approval_response` |
+| `google_adk` | 12/12 | `LongRunningFunctionTool` — the call is *reported* in `long_running_tool_ids`, but the run does not stop on its own (hence 🟡); resumed with a `FunctionResponse` against the same call id |
 | `vanilla` | 12/12 | emulated — transcript carried back in, no checkpoint (hence 🟡, not ✅) |
 
 Both produce an identical trace to the scorer: one pause per item, `book_room`
@@ -121,6 +122,7 @@ transcript can get across:
 | `langgraph` | 8/8 | `SqliteSaver` writing to the harness-owned checkpoint dir; a fresh runner reopens the same thread |
 | `openai_agents` | 8/8 | `RunState.to_json()` / `from_json()` — the SDK serialises the whole run, not just the messages |
 | `pydantic_ai` | 8/8 | stateless resume — the conversation is serialised with `ModelMessagesTypeAdapter` and replayed as `message_history` |
+| `google_adk` | 8/8 | `DatabaseSessionService` on `sqlite+aiosqlite`, writing to the harness-owned checkpoint dir; needs `sqlalchemy` on top of an already heavy tree |
 | `vanilla` | 8/8 | stateless resume — the whole transcript is serialised into `resume_state`. Durable, but it is not a checkpointer, hence 🟡 |
 
 An adapter patched to restart from scratch instead of resuming drops to **0/8**:
