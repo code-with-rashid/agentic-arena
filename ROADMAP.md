@@ -55,7 +55,9 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 ## Phase 4 — Polish + community ⬜
 
 - ⬜ Docs site (MkDocs Material) published to GitHub Pages
-- ⬜ Version pinning per adapter + Renovate/Dependabot for controlled refreshes
+- ✅ Version pinning per adapter + Dependabot for controlled refreshes
+      (`.github/dependabot.yml`, one grouped monthly PR per adapter;
+      policy + deprecation register in `docs/dependencies.md`)
 - ⬜ "Results last refreshed on <date> with <versions>" automation
 - ⬜ Seed `good first issue`s for every empty framework × arena cell
 - ⬜ Launch write-up
