@@ -6,8 +6,8 @@
   `1.16.0` / `1.14.1`) · <https://github.com/microsoft/agent-framework>
 - Licence: MIT
 - Adapter: [`frameworks/microsoft_af/adapter.py`](../../frameworks/microsoft_af/adapter.py)
-- Status: mock-green on the five arenas that need no pause; reports
-  *unsupported* on `human_in_the_loop` and `durable_state` (see below)
+- Status: mock-green on six arenas including `human_in_the_loop` (12/12, native
+  tool-approval middleware); reports *unsupported* on `durable_state` (see below)
 
 ## Wiring notes
 
@@ -41,44 +41,80 @@
   *roundtrips* — the framework then emits one final text response on top, so
   `N - 1` roundtrips gives the same `N` total LLM calls the other adapters get.
 
-## Why the pause is not wired up yet
+## The pause: native tool approval
 
-This is the one adapter that reports *unsupported* on `human_in_the_loop` and
-`durable_state`, and it is worth being precise about why, because "not wired up"
-is not "cannot".
-
-Agent Framework does ship a human-in-the-loop story — `ToolApprovalMiddleware`,
-`ToolApprovalRule`, `ToolApprovalState`. It is a **different shape** from the
-three mechanisms already adapted:
+This adapter pauses with the framework's own **tool-approval middleware**, which
+is a fifth distinct mechanism — no two of the five look alike:
 
 | framework | pause is... | resumes from... |
 |---|---|---|
 | LangGraph | `interrupt()` inside the tool | a checkpointer keyed by `thread_id` |
 | OpenAI Agents | `needs_approval=True` on the tool | `RunState.to_json()` — the whole run |
 | Pydantic AI | `CallDeferred` raised by the tool | the conversation, replayed as `message_history` |
-| **Agent Framework** | a rule in **session state** | an `AgentSession`, whose contents live in a store |
+| **Agent Framework** | `approval_mode="always_require"` on the tool | an `AgentSession` carried forward in memory |
 
-The harness's contract (`arena.types.ResumableRunner`) is that an adapter hands
-back a JSON-serialisable `resume_state` and nothing else — `durable_state` round-
-trips it through `json.dumps` and rebuilds the runner. Agent Framework's approval
-queue lives in session state rather than in anything the adapter is handed, and
-`AgentSession` itself carries only ids (`session_id`, `service_session_id`), so
-satisfying the contract means first choosing and wiring a session store. That is
-a design decision, not a plumbing detail, so it is deliberately not guessed at.
+The wiring:
 
-What was checked, for whoever picks this up:
+```python
+@tool(approval_mode="always_require")
+def request_approval(summary: str) -> str: ...
 
-- `Agent.run(messages, *, session=..., middleware=..., ...)` accepts both.
-- `AgentSession` has `to_dict()` / `from_dict()`, so the *handle* serialises —
-  the question is where its contents are persisted.
-- `FunctionInvocationContext` exposes `function`, `arguments`, `session`,
-  `metadata` and a settable `result`, but no termination flag; overriding the
-  result does not stop the loop, so the model would go on to call the
-  consequential tool anyway. Stopping the run looks like agent-level middleware
-  (`MiddlewareTermination`), not function-level.
 
-Reporting this as *unsupported* rather than as twenty failed items is deliberate;
-see `docs/methodology.md` §7.
+agent = Agent(client, tools=[...], middleware=[ToolApprovalMiddleware(), probe])
+response = await agent.run(prompt, session=AgentSession())
+if response.user_input_requests:  # paused
+    request = response.user_input_requests[0]
+    answer = request.to_function_approval_response(approved)
+    await agent.run(
+        [prompt, *response.messages, Message(role="user", contents=[answer])], session=session
+    )  # the SAME session
+```
+
+Four things cost real debugging time.
+
+**The middleware refuses to run without an `AgentSession`.** Approval bookkeeping
+lives in `session.state`, not in the agent.
+
+**`AgentSession` is a state container, not a conversation store — except that it
+quietly is.** The docs describe it as holding "session IDs and a mutable state
+dict", and `response.messages` comes back holding only the final turn. But the
+transcript is in `session.state["in_memory"]["messages"]`, and **reusing the same
+session object is the only thing that makes the resumed leg see any history at
+all**. Build a fresh session and the resume re-asks the model from an empty
+conversation and pauses again, forever.
+
+**The opening turn must go back as a plain string.**
+`Message(role="user", contents=["..."])` does not produce a user text turn, and
+the resumed leg then arrives with its history silently missing.
+
+**`response.messages` is not a usable ledger once the approval middleware is
+installed.** It collapses to the final turn, hiding the tool round that preceded
+the pause — counting assistant messages under-reported both `llm_calls` and
+`tool_calls`, which the usage-accounting gate catches. The adapter now counts at
+the chat layer with a small observe-only `ChatMiddleware`, which is accurate on
+every arena whether or not the approval middleware is in play.
+
+## Why `durable_state` is still unsupported
+
+`durable_state` throws the runner away at the pause and rebuilds it, so only what
+is in `resume_state` survives. This pause cannot cross that gap, and it was
+measured both ways rather than assumed:
+
+- The middleware's `session.state["tool_approval"]` **is** cleanly
+  JSON-serialisable (a plain dict, ~400 chars). That part is not the problem.
+- The conversation is not. `session.state["in_memory"]` comes back from a JSON
+  round trip as raw strings, and the session middleware then fails with
+  `'str' object has no attribute 'contents'`.
+- Restoring the approval state into a rebuilt agent and replaying a serialised
+  transcript **re-queues the same approval request** instead of consuming the
+  answer — the run pauses again rather than finishing. With the state left out it
+  is worse: the model is re-asked from scratch.
+
+So the adapter deliberately does **not** expose `resume` on a durable arena
+(`Adapter.build` returns a runner without it). An adapter that kept a `resume` it
+could not honour would post 0/8 and read as a broken framework; not having the
+method is the honest signal, and the harness reports *unsupported*. See
+`docs/methodology.md` §7.
 
 ## Results
 

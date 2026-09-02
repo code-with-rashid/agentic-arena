@@ -17,8 +17,8 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) |
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) |
 | Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) |
-| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | 🟡 (tool-approval middleware) | ❌ (no interrupt primitive) |
-| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❓ | ❌ |
+| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | ✅ (`approval_mode`, measured) | ❌ (no interrupt primitive) |
+| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❌ (session store does not round-trip, measured) | ❌ |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 |
 | Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) | 🟡 (`arun`) |
 | Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) |
@@ -97,7 +97,7 @@ model-decided but express delegation as a sub-agent invoked like a tool rather
 than a transfer that swaps the speaker, which the current mock accommodation does
 not pick up.
 
-The `Human-in-the-loop / interrupts` row is now **measured for four adapters**.
+The `Human-in-the-loop / interrupts` row is now **measured for five adapters**.
 `human_in_the_loop` observes the pause in the harness rather than trusting the
 agent's prose:
 
@@ -106,6 +106,7 @@ agent's prose:
 | `langgraph` | 12/12 | native — `interrupt()` + `MemorySaver`, resumed with `Command(resume=...)` |
 | `openai_agents` | 12/12 | native — the tool is `needs_approval=True`, the run stops with a `ToolApprovalItem`, `resume` calls `approve`/`reject` |
 | `pydantic_ai` | 12/12 | native — the tool raises `CallDeferred`, the run returns `DeferredToolRequests`, `resume` passes `deferred_tool_results` |
+| `microsoft_af` | 12/12 | native — `@tool(approval_mode="always_require")` + `ToolApprovalMiddleware`; `resume` answers with `to_function_approval_response` |
 | `vanilla` | 12/12 | emulated — transcript carried back in, no checkpoint (hence 🟡, not ✅) |
 
 Both produce an identical trace to the scorer: one pause per item, `book_room`
@@ -126,13 +127,18 @@ An adapter patched to restart from scratch instead of resuming drops to **0/8**:
 it reaches the right answer by redoing both lookups, and the `call_counts` check
 catches the duplicated work.
 
-`crewai`, `microsoft_af` and `smolagents` have no `resume` method and report
-*unsupported* on both arenas. Read the first two cells as unmeasured claims from
-upstream docs, not as results — Agent Framework ships `ToolApprovalMiddleware`,
-but it requires an `AgentSession` and session state, a different shape again from
-the four mechanisms wired up so far. `smolagents` is marked ❌ rather than ❓
-because it ships no interrupt or approval primitive to adapt: emulating one by
-hand, as `vanilla` does, would measure the adapter instead of the framework.
+`microsoft_af` pauses (12/12) but is **unsupported on `durable_state`**, and that
+was measured rather than assumed: its approval state serialises cleanly, but the
+conversation lives in the `AgentSession`'s in-memory store, which comes back from
+a JSON round trip as raw strings — and restoring the approval state into a
+rebuilt agent re-queues the request instead of consuming the answer. The adapter
+therefore does not expose `resume` on a durable arena at all, because keeping one
+it cannot honour would post 0/8 and read as a broken framework.
+
+`crewai` and `smolagents` have no `resume` method and report *unsupported* on both
+arenas. `smolagents` is marked ❌ rather than ❓ because it ships no interrupt or
+approval primitive to adapt: emulating one by hand, as `vanilla` does, would
+measure the adapter instead of the framework.
 
 > The ❓ cells are the backlog. Each one gets resolved when its adapter is written
 > or when an arena exercises that capability directly.

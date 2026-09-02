@@ -86,7 +86,7 @@ and books the room anyway fails. **[measured]**
 | `openai_agents` | ✅ 12/12 | ✅ 8/8 | `needs_approval=True` on the tool; `RunState.to_json()`/`from_json()` serialise the whole run |
 | `pydantic_ai` | ✅ 12/12 | 🟡 8/8 | tool raises `CallDeferred`; durability is stateless — the conversation is serialised and replayed as `message_history` |
 | `vanilla` | 🟡 12/12 | 🟡 8/8 | stateless resume — the whole transcript is serialised into the resume state |
-| `microsoft_af` | not wired | not wired | ships `ToolApprovalMiddleware`, but it needs an `AgentSession` and session state — a different shape again **[claimed]** |
+| `microsoft_af` | ✅ 12/12 | ❌ | `@tool(approval_mode="always_require")` + `ToolApprovalMiddleware`; the pause is held by the live `AgentSession`, whose message store does not survive JSON **[measured]** |
 | `smolagents` | ❌ | ❌ | no interrupt or approval primitive to adapt **[measured]** |
 
 The `durable_state` arena is the stricter test: the harness throws the runner
@@ -95,7 +95,7 @@ transcript gets across. Both pass — serialising the transcript yourself is a
 legitimate way to be durable — but only LangGraph does it with a checkpointer,
 which is what you want once the state stops fitting in a message list.
 
-Four adapters now clear this bar and **no two use the same mechanism**, which is
+Five adapters now clear this bar and **no two use the same mechanism**, which is
 the useful part:
 
 - **LangGraph** checkpoints the graph itself to disk. Keeps working when state
@@ -104,6 +104,9 @@ the useful part:
   messages, and gives you `approve`/`reject` on the interruption directly.
 - **Pydantic AI** hands you back the conversation and leaves persistence to you.
   Simplest; you own the storage decision.
+- **Agent Framework** marks the tool `approval_mode="always_require"` and queues
+  it in session state. The pause is real, but it is held by the live session — it
+  is the one of the five that cannot survive the process dying.
 - **`vanilla`** shows the floor: serialising your own transcript is ~40 lines.
 
 All four produce an identical trace to the scorer, so pick on the mechanism, not
