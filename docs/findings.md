@@ -195,6 +195,20 @@ in §1: each sub-agent is described **twice**, once as a JSON schema and once in
 prose. Both frameworks bill you for options rather than actions; they do not bill
 the same amount.
 
+**Measured from one role to five, both model-decided mechanisms follow an exact
+law**, so the choice between them is a slope rather than a premium:
+
+| roles | 1 | 2 | 3 | 4 | 5 | |
+|---|--:|--:|--:|--:|--:|---|
+| handoff (speaker swap) | 2 | 3 | 4 | 5 | 6 | **N + 1** calls |
+| sub-agent as tool | 2 | 4 | 6 | 8 | 10 | **2N** calls |
+
+The gap is N − 1 extra model calls and never stops growing. Prompt cost grows
+faster than call count in both: at five roles, 7.80× the prompt for 5× the calls
+(sub-agent) and 5.46× for 3× (handoff), each normalised to its own single-agent
+run. Later stages re-send their own scaffolding *and* carry more accumulated
+context than earlier ones.
+
 Two things this deliberately does *not* say. The lower completion tokens on the
 handoff chain (140 vs 198) are not efficiency — the researcher emits a short
 transfer instead of a draft, so only the last agent writes a brief. And the mock
@@ -327,9 +341,9 @@ fine" is where benchmarks mislead:
   holding the model constant is what makes the comparison fair.
 - **CrewAI**, whose adapter is written but not yet mock-verified (needs Python
   3.12), and **Claude Agent SDK**, still a stub.
-- **Multi-agent beyond three roles.** The compounding in §3 predicts prompt cost
-  grows faster than call count, and the handoff result predicts it grows with the
-  number of *offered* transfers. Two points do not establish a curve.
+- **Whether the delegation laws in §3 survive a real model.** They are
+  structural, so they should, but a real model may delegate more than once, or
+  answer without delegating at all. Mock mode cannot tell you.
 - **Whether forwarding context between roles changes the ranking.** Every
   pipeline measured here passes the minimum down the chain, which favours the
   mechanisms that carry the transcript for free.

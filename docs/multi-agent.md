@@ -300,6 +300,43 @@ only the explicit `transfer_to_*` shape, which is the narrower behaviour on
 purpose. Verified behaviour-preserving: the handoff chain's numbers are unchanged
 to the decimal (2.76×, 2.00×).
 
+## How this scales: two exact laws
+
+Three roles was one point, and this page previously said plainly that two points
+do not establish a curve. Measured from one role to five, both model-decided
+mechanisms follow an exact law:
+
+| roles | 1 | 2 | 3 | 4 | 5 | |
+|---|--:|--:|--:|--:|--:|---|
+| handoff — LLM calls | 2 | 3 | 4 | 5 | 6 | **N + 1** |
+| sub-agent — LLM calls | 2 | 4 | 6 | 8 | 10 | **2N** |
+| handoff — prompt tokens | 452 | 907 | 1362 | 1883 | 2470 | |
+| sub-agent — prompt tokens | 2350 | 5833 | 9285 | 13415 | 18343 | |
+
+Exact at every depth, and both fall straight out of the mechanism. A handoff
+swaps the speaker, so each agent talks once and the last one answers: N calls
+plus the researcher's tool call. A sub-agent hands a *value* back to a manager
+that is still running, so each intermediate level costs 2 (delegate, then
+answer), the top costs 3 (tool call, delegate, answer) and the leaf costs 1 —
+which is 2N.
+
+**The gap is N − 1 extra model calls, and it never stops growing.** At three
+roles it is 6 against 4; at five, 10 against 6. Choosing sub-agents over handoffs
+is not a fixed premium, it is a slope — which is the thing worth knowing before
+you design a deep pipeline.
+
+The other prediction on this page also holds: **prompt cost grows faster than
+call count**, in both mechanisms. Normalised against each framework's own
+single-agent run (necessary, because smolagents starts from a 3.77× baseline),
+five roles cost 7.80× the prompt for a sub-agent chain and 5.46× for a handoff
+chain, against 5× and 3× the calls. Each stage re-sends its own scaffolding *and*
+carries more accumulated context than the stage before it.
+
+Both laws are gated in `tests/test_delegation_depth.py` rather than described,
+because a library change could break them while every depth-3 number on this page
+still looked right. Verified non-vacuous: with the mock's "delegate once per tool"
+rule disabled, three roles cost 72 calls instead of 6.
+
 ## Still open
 
 - **CrewAI crews**, the same sub-agent-as-tool shape again, and still blocked on
@@ -308,6 +345,9 @@ to the decimal (2.76×, 2.00×).
   the minimum down the chain. A manager that forwards its findings pays more, and
   the two mechanisms would not pay the same amount — the speaker-swap chain gets
   the transcript for free.
+- **Whether the laws survive a real model.** They are structural, so they should,
+  but a real model may delegate more than once or answer without delegating at
+  all. That needs a live run.
 - **More than three roles.** The compounding above predicts prompt cost grows
   faster than call count, and the handoff finding predicts it grows with the
   number of *offered* transfers too. Two points do not establish a curve.
