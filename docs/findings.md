@@ -65,6 +65,37 @@ need.
 python -m arena run --arena tool_use --framework all --mode mock --no-scorecard && python .github/scripts/report_overhead.py tool_use
 ```
 
+### 1b. …and what happens to that cost when the loop gets long
+
+The table above is a two-call task, which is where framework overhead looks its
+worst. Running the **same** conversation out to 30 tool-calling turns:
+
+| request # | 1 | 11 | 31 |
+|---|---:|---:|---:|
+| `vanilla` | 121 | 1531 | 4350 |
+| `smolagents` | 1069 | 2551 | 5515 |
+| **ratio** | **8.83×** | **1.67×** | **1.27×** |
+
+**Nobody truncates.** Not one of the seven drops, windows or summarises anything;
+all 31 requests carry the entire history. None of these libraries ships context
+management on the default path, so the only thing bounding your prompt in a long
+loop is `max_tool_iterations` — the harness's knob, not the library's.
+
+**Frameworks differ by a constant, not by a rate.** One more turn costs everyone
+136.7–148.2 tokens, an 8% band, against an 8.8× spread on the *first* request.
+
+Those two facts explain the decay: a per-request constant is linear in turns,
+the conversation it is divided by is quadratic, so any fixed overhead decays as
+`1/n`. `vanilla` spends 9,901 estimated prompt tokens on a 10-turn item and
+71,745 on a 30-turn one — 3× the turns, 7× the bill. Read 3.77× as an upper bound
+on short items, not a tax on every item.
+
+→ [overhead.md](overhead.md#what-happens-when-the-loop-gets-long)
+
+```bash
+python .github/scripts/report_growth.py 30
+```
+
 ---
 
 ## 2. What breaks when the model misbehaves
@@ -418,3 +449,7 @@ fine" is where benchmarks mislead:
 - **Whether forwarding context between roles changes the ranking.** Every
   pipeline measured here passes the minimum down the chain, which favours the
   mechanisms that carry the transcript for free.
+- **Whether any framework can be *configured* to manage context.** §1b measures
+  the default path, where nobody truncates. Several of these libraries expose
+  hooks that would let you trim or summarise; none of them is on by default, and
+  the arena does not turn any of them on.
