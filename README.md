@@ -103,6 +103,10 @@ See [docs/methodology.md](docs/methodology.md) for the full rules. In short:
 4. **Mock mode tests plumbing, live mode tests behavior.** Mock-mode pass rates are
    not a quality signal — they only prove the adapter wires everything together.
    Only `--mode live` numbers go in published scorecards.
+5. **Cost numbers are checked, not trusted.** The mock records what it served, and
+   CI holds every adapter's self-reported usage against it — including across a
+   suspend/resume, where the harness sums legs. An adapter that under-reports would
+   otherwise post better numbers than it earned with a fully green scorecard.
 
 Three things mock mode *can* compare honestly, because the model is held identical
 and only the framework varies: the `resilience` arena's recovery rates,

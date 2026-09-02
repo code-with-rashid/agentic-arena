@@ -42,6 +42,10 @@ jobs:
     #     prompt and iteration-budget bugs, and until now CI ran them against
     #     `vanilla` only, because the dev extra pulls no framework. This is a
     #     hard gate.
+    #   usage      — every adapter's self-reported cost held against what the
+    #     mock actually served, including across a suspend/resume where the
+    #     harness sums legs. Hard gate: the whole benchmark assumes these
+    #     numbers are honest, and three real bugs of that shape have been found.
     #   resilience — the faults are scripted and byte-identical for everyone, so
     #     any difference in outcome is the framework's own error handling.
     #     Report-only; fails only if the stdlib baseline stops recovering, which
@@ -76,6 +80,13 @@ jobs:
         env:
           ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af,smolagents
         run: pytest tests/test_adapters_contract.py -q
+      - name: Usage accounting — every adapter reports what it actually spent
+        # A hard gate, not a report. An adapter that under-reports posts
+        # better overhead and cost numbers than it earned while every
+        # correctness check still passes, so the scorecard stays green and
+        # the comparison silently lies. Only runs meaningfully here, where
+        # the real frameworks are installed.
+        run: pytest tests/test_usage_accounting.py -q
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
       - name: Report recovery, and fail only if the baseline broke

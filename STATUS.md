@@ -38,6 +38,9 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 - `python -m arena run --arena <id> --framework all --mode mock` → the six above
   run, the rest report themselves unavailable cleanly.
 - `pytest -q` → all offline; `ruff check .` + `ruff format --check .` clean.
+- Usage accounting is a CI gate: each adapter's reported tokens/LLM calls are
+  held against what the mock actually served, on the plain and the resumed
+  path. Caught langgraph dropping a whole leg on `durable_state`.
 - `python -m arena scorecard --arena <id>` regenerates the scorecard (live →
   `results/<id>/`, mock → `runs/scorecards/<id>/`).
 - `python -m arena summary --print` renders every arena in one view — coverage,
