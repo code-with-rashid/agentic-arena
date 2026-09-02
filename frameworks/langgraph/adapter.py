@@ -4,12 +4,19 @@ Uses `langgraph.prebuilt.create_react_agent` with an OpenAI-compatible chat mode
 pointed at the shared gateway (real provider in live mode, the mock server in mock
 mode). The shared `search` / `calculator` tools are wrapped as LangChain tools
 without changing their behaviour.
+
+Suspend/resume (`arena.types.ResumableRunner`) is implemented **natively**: the
+`request_approval` tool calls `langgraph.types.interrupt`, which pauses the graph
+and checkpoints it, and `resume` continues the same thread with
+`Command(resume=decision)`. Nothing about the transcript is reconstructed by hand
+— that is the distinction from the `vanilla` baseline's emulated pause.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from arena import tools as arena_tools
 from arena.config import ArenaConfig
 from arena.tools import calculator as _calculator
 from arena.tools import names_for as _tool_names
@@ -19,6 +26,7 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 def _make_tools(names: list[str]) -> list[Any]:
     from langchain_core.tools import tool
+    from langgraph.types import interrupt
 
     @tool
     def search(query: str, k: int = 3) -> str:
@@ -30,7 +38,32 @@ def _make_tools(names: list[str]) -> list[Any]:
         """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
         return _calculator(expr)
 
-    available = {"search": search, "calculator": calculator}
+    @tool
+    def search_rooms(capacity: int, day: str) -> str:
+        """List meeting rooms that seat at least `capacity` and are free on `day`."""
+        return arena_tools.search_rooms(capacity, day)
+
+    @tool
+    def book_room(room_id: str) -> str:
+        """Book a meeting room by id. Only call this after approval."""
+        return arena_tools.book_room(room_id)
+
+    @tool
+    def request_approval(summary: str) -> str:
+        """Ask a human to approve a consequential action before taking it."""
+        # The native pause: LangGraph checkpoints the graph here and `invoke`
+        # returns with `__interrupt__` set. On resume, this call returns the
+        # decision the harness injected and the graph carries on from this point.
+        decision = interrupt({"request": summary})
+        return f"Decision: {decision}."
+
+    available = {
+        "search": search,
+        "calculator": calculator,
+        "search_rooms": search_rooms,
+        "book_room": book_room,
+        "request_approval": request_approval,
+    }
     return [available[name] for name in names if name in available]
 
 
@@ -50,22 +83,38 @@ class _Runner:
             timeout=config.request_timeout_s,
             max_retries=1,
         )
-        self.agent = create_react_agent(model, _make_tools(_tool_names(arena.tools)))
+        # `interrupt` needs somewhere to checkpoint, and a checkpointer needs a
+        # thread id, so both only appear for arenas that actually ask for a pause.
+        self._pausable = arena_tools.SUSPEND_TOOL in (arena.tools or [])
+        checkpointer = None
+        if self._pausable:
+            from langgraph.checkpoint.memory import MemorySaver
 
-    def run(self, item: EvalItem) -> AgentResult:
-        state = self.agent.invoke(
-            {
-                "messages": [
-                    ("system", self.system_prompt),
-                    ("user", item.input),
-                ]
-            },
-            # One tool round = two graph steps (model node + tool node), so the
-            # recursion limit must be 2x the LLM-call budget to match the other
-            # adapters. The old +2 bought this framework an extra model call.
-            config={"recursion_limit": 2 * self.config.max_tool_iterations},
+            checkpointer = MemorySaver()
+        self.agent = create_react_agent(
+            model, _make_tools(_tool_names(arena.tools)), checkpointer=checkpointer
         )
-        messages = state["messages"]
+        self._threads = 0
+
+    def _config_for(self, item: EvalItem) -> dict[str, Any]:
+        # One tool round = two graph steps (model node + tool node), so the
+        # recursion limit must be 2x the LLM-call budget to match the other
+        # adapters. The old +2 bought this framework an extra model call.
+        cfg: dict[str, Any] = {"recursion_limit": 2 * self.config.max_tool_iterations}
+        if self._pausable:
+            self._threads += 1
+            cfg["configurable"] = {"thread_id": f"{item.id}-{self._threads}"}
+        return cfg
+
+    def _result(self, state: dict[str, Any], cfg: dict[str, Any], seen: int) -> AgentResult:
+        """Build a result from the messages added since `seen`.
+
+        Slicing matters: a resumed `invoke` returns the *whole* thread, and the
+        harness sums cost across legs, so counting from zero twice would double
+        every token on any item that paused.
+        """
+        all_messages = state.get("messages", [])
+        messages = all_messages[seen:]
 
         tool_calls: list[dict[str, Any]] = []
         prompt_tokens = completion_tokens = llm_calls = 0
@@ -77,17 +126,49 @@ class _Runner:
                 completion_tokens += int(usage.get("output_tokens", 0))
                 llm_calls += 1
             for call in getattr(msg, "tool_calls", None) or []:
+                # Asking permission is the pause, not an action taken - the
+                # baseline does not log it either, and the arena's
+                # `no_tool_before_suspend` check compares the two.
+                if call.get("name") == arena_tools.SUSPEND_TOOL:
+                    continue
                 tool_calls.append({"name": call.get("name", ""), "arguments": call.get("args", {})})
             if msg.__class__.__name__ == "AIMessage" and getattr(msg, "content", ""):
                 final_text = msg.content if isinstance(msg.content, str) else str(msg.content)
 
-        return AgentResult(
+        interrupts = state.get("__interrupt__") or ()
+        result = AgentResult(
             output_text=final_text,
             tool_calls=tool_calls,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             llm_calls=llm_calls,
         )
+        if not interrupts:
+            return result
+
+        payload = getattr(interrupts[0], "value", interrupts[0])
+        request = payload.get("request", "") if isinstance(payload, dict) else str(payload)
+        result.suspended = True
+        result.suspend_request = str(request)
+        result.resume_state = {"config": cfg, "seen": len(all_messages)}
+        return result
+
+    def run(self, item: EvalItem) -> AgentResult:
+        cfg = self._config_for(item)
+        state = self.agent.invoke(
+            {"messages": [("system", self.system_prompt), ("user", item.input)]},
+            config=cfg,
+        )
+        return self._result(state, cfg, seen=0)
+
+    def resume(self, item: EvalItem, state: Any, decision: str) -> AgentResult:
+        from langgraph.types import Command
+
+        if not isinstance(state, dict) or "config" not in state:
+            return AgentResult(error=f"cannot resume: unusable state {type(state).__name__}")
+        cfg = state["config"]
+        new_state = self.agent.invoke(Command(resume=decision), config=cfg)
+        return self._result(new_state, cfg, seen=int(state.get("seen", 0)))
 
 
 class Adapter:

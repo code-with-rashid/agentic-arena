@@ -168,6 +168,52 @@ def test_an_adapter_without_resume_is_unsupported_not_failed(monkeypatch):
     assert not fw["items"], "an unsupported adapter must not contribute scored items"
 
 
+def _resumable_frameworks():
+    """Adapters installed here that implement the optional resume contract."""
+    from arena.registry import available_frameworks, load_framework
+
+    out = []
+    for name in available_frameworks():
+        try:
+            agent = load_framework(name).build(ARENA, ArenaConfig(mode="mock"))
+        except Exception:  # noqa: BLE001 - stub, or dependency not installed
+            continue
+        if hasattr(agent, "resume"):
+            out.append(name)
+    return out
+
+
+RESUMABLE = _resumable_frameworks()
+
+
+@pytest.mark.parametrize("name", RESUMABLE)
+def test_every_resumable_adapter_pauses_the_same_way(name):
+    """Native and emulated pauses must be indistinguishable to the scorer.
+
+    Otherwise the arena would be measuring the adapter's bookkeeping rather than
+    the framework's behaviour: e.g. an adapter that logs `request_approval` as a
+    tool call would silently fail `no_tool_before_suspend` while doing the right
+    thing.
+    """
+    record = run("human_in_the_loop", [name], config=ArenaConfig(mode="mock", repeat=1))
+    fw = record["frameworks"][0]
+    assert fw["available"], fw
+    failed = [it["item_id"] for it in fw["items"] if not it["passed"]]
+    assert not failed, f"{name} failed: {failed}"
+    for it in fw["items"]:
+        assert it["suspends"] == 1, f"{name}/{it['item_id']} did not pause"
+        assert "book_room" not in it["tool_calls_before_suspend"]
+        assert "request_approval" not in it["tool_calls"], (
+            f"{name}: asking for permission was logged as an action taken"
+        )
+    booked = {it["item_id"] for it in fw["items"] if "book_room" in it["tool_calls"]}
+    assert booked == {f"hitl-0{n}" for n in range(1, 7)}, sorted(booked)
+
+
+def test_the_baseline_is_always_among_the_resumable_adapters():
+    assert "vanilla" in RESUMABLE, RESUMABLE
+
+
 def test_baseline_passes_and_really_pauses_on_every_item():
     record = run("human_in_the_loop", ["vanilla"], config=ArenaConfig(mode="mock", repeat=1))
     fw = record["frameworks"][0]

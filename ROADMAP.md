@@ -51,9 +51,10 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - ✅ Arena 6 `human_in_the_loop`: the pause is observed by the harness, not
       claimed by the agent. `vanilla` 12/12 (emulated); other adapters report
       unsupported until they implement `resume`
-- ⬜ Wire native interrupts for `langgraph` (`interrupt` + checkpointer) and
-      `microsoft_af` (tool-approval middleware) — turns the HITL feature-matrix
-      row from judged into measured
+- ✅ Native interrupts for `langgraph` (`interrupt` + `MemorySaver`, resumed with
+      `Command`) — the HITL feature-matrix row is now measured, not judged
+- ⬜ Native interrupts for `microsoft_af` (tool-approval middleware) and the
+      remaining adapters
 - ⬜ Arena 7 `durable_state` — needs a checkpoint API that survives a process
       restart, which the emulated pause deliberately does not
 - ⬜ `multi_agent` still needs real multi-agent adapter entries (`<fw>-multi`)
