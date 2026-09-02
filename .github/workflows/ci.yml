@@ -77,6 +77,9 @@ jobs:
           - { python-version: "3.13", framework: pydantic_ai, arena: structured_output }
           - { python-version: "3.13", framework: openai_agents, arena: tool_use }
           - { python-version: "3.13", framework: microsoft_af, arena: tool_use }
+          - { python-version: "3.13", framework: langgraph, arena: multi_agent }
+          - { python-version: "3.13", framework: pydantic_ai, arena: multi_agent }
+          - { python-version: "3.13", framework: openai_agents, arena: multi_agent }
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6

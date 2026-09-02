@@ -43,6 +43,23 @@ def test_not_contains():
     assert not score_item(_item([{"type": "not_contains", "value": "1889"}]), res2).passed
 
 
+def test_sentence_count_bounds_and_decimal_points():
+    brief = (
+        "The Eiffel Tower is a wrought-iron lattice tower in Paris. "
+        "It was completed in 1889. It stands 330.5 metres tall."
+    )
+    res = AgentResult(output_text=brief)
+    # 3 sentences; the 330.5 decimal point must not be read as a fourth.
+    assert score_item(_item([{"type": "sentence_count", "min": 3, "max": 5}]), res).passed
+    assert not score_item(_item([{"type": "sentence_count", "min": 4, "max": 5}]), res).passed
+    assert not score_item(_item([{"type": "sentence_count", "min": 1, "max": 2}]), res).passed
+
+
+def test_sentence_count_defaults_are_permissive():
+    res = AgentResult(output_text="One. Two. Three. Four. Five. Six.")
+    assert score_item(_item([{"type": "sentence_count"}]), res).passed
+
+
 _SCHEMA = {
     "type": "object",
     "required": ["name", "year", "height_m", "sources"],

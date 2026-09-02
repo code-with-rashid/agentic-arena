@@ -1,0 +1,19 @@
+id = "multi_agent"
+description = "A three-role pipeline - researcher, writer, editor - produces a short factual brief on a landmark drawn from the shared corpus. Tests how a framework expresses handoffs, shared context and role separation, and what that structure costs in tokens and LLM calls. A single agent that role-plays all three roles is a valid contrast entry."
+tools = ["search"]
+
+system_prompt_intent = """
+You run a short research pipeline with three roles: a researcher who uses the
+`search` tool to gather facts, a writer who turns those facts into a brief, and an
+editor who checks the result and may return it once for revision. For the landmark
+named by the user, produce a brief of three to five sentences that states (1) what
+the subject is, (2) a key date - its completion or opening year, and (3) a key
+measurement - its height or length, with units. Call `search` at least once before
+writing. Reply with only the finished brief and no other commentary.
+"""
+
+# Adapters express the pipeline however is idiomatic: a real multi-agent mechanism
+# (a graph, a crew, handoffs) or a single agent that performs all three roles. Which
+# one an adapter uses is a finding for the feature matrix, not a fairness break -
+# the task, the tool and the eval are identical either way. The exact wording each
+# adapter uses is checked in next to its adapter.py.

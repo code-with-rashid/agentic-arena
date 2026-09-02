@@ -18,7 +18,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - ✅ Arena 1 `tool_use`: `arena.toml` spec, `dataset.jsonl` (15 items), `mock_script.json`
 - ✅ Scorer: `contains`, `icontains`, `not_contains`, `iregex`, `numeric_equals`
       (with tolerance), `tool_used`, `no_tool`, `min/max_tool_calls`, `json_valid`,
-      `json_schema`, `json_path_equals`
+      `json_schema`, `json_path_equals`, `sentence_count`
 - ✅ `vanilla` baseline adapter (stdlib agent loop) — runs green in mock mode
 - ✅ `langgraph` adapter
 - ✅ `crewai` adapter (written; mock-verify still pending on Python 3.12)
@@ -42,9 +42,11 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - ✅ Arena 2 `structured_output`: schema-checked JSON record over the shared corpus
 - ✅ Arena 3 `resilience`: scripted model/tool faults; the first arena that produces
       differentiated results offline (see docs/methodology.md section 5)
-- ⬜ Implement arenas 3–6 (`multi_agent`, `rag`, `human_in_the_loop`,
-      `durable_state`) across the adapter set — HITL and durable_state need a
-      harness resume/checkpoint API first
+- ✅ Arena 4 `multi_agent`: researcher → writer → editor pipeline produces a
+      bounded factual brief; single-agent role-play is a valid contrast entry
+- ⬜ Implement arenas 5–6 (`rag`, `human_in_the_loop`, `durable_state`) across the
+      adapter set — HITL and durable_state need a harness resume/checkpoint API
+      first; `multi_agent` still needs real multi-agent adapter entries (`<fw>-multi`)
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
 - ⬜ Latency / token / cost charts generated into `results/charts/`
 

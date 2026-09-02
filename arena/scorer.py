@@ -31,6 +31,7 @@ CHECK_SPECS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "json_valid": ((), ()),
     "json_schema": (("schema",), ()),
     "json_path_equals": (("path", "value"), ("tol",)),
+    "sentence_count": ((), ("min", "max")),
 }
 
 
@@ -177,6 +178,14 @@ def _check(check: dict[str, Any], result: AgentResult) -> tuple[bool, str]:
     if ctype == "max_tool_calls":
         n = int(check["value"])
         return (len(tool_names) <= n, f"expected <= {n} tool calls")
+    if ctype == "sentence_count":
+        lo = int(check.get("min", 1))
+        hi = int(check.get("max", 10_000))
+        # A period between two digits is a decimal point, not a sentence end.
+        cleaned = re.sub(r"(?<=\d)\.(?=\d)", "", text)
+        sentences = [s for s in re.split(r"[.!?]+", cleaned) if any(c.isalpha() for c in s)]
+        n = len(sentences)
+        return (lo <= n <= hi, f"expected between {lo} and {hi} sentences, got {n}")
     if ctype == "json_valid":
         try:
             extract_json(text)
