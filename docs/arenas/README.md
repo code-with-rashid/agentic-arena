@@ -10,7 +10,7 @@ and this file becomes its reference notes.
 | `structured_output` | [structured_output.md](structured_output.md) | ✅ `arenas/structured_output/` |
 | `resilience` | (built directly; see the arena.toml) | ✅ `arenas/resilience/` |
 | `multi_agent` | [multi_agent.md](multi_agent.md) | ✅ `arenas/multi_agent/` (single-agent baseline; real multi-agent entries pending) |
-| `rag` | [rag.md](rag.md) | ⬜ |
+| `rag` | [rag.md](rag.md) | ✅ `arenas/rag/` |
 | `human_in_the_loop` | [human_in_the_loop.md](human_in_the_loop.md) | ⬜ |
 | `durable_state` | [durable_state.md](durable_state.md) | ⬜ |
 

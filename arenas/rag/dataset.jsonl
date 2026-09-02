@@ -1,0 +1,18 @@
+# rag - agentic retrieval over the shared corpus.
+# single-hop (rag-01..09), multi-hop (rag-10..12, min 2 searches),
+# unanswerable (rag-13..15: refuse, and do NOT emit the real-world answer).
+{"id": "rag-01", "input": "According to the corpus, how tall is the CN Tower in metres?", "checks": [{"type": "numeric_equals", "value": 553, "tol": 1}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-02", "input": "In what year was the Space Needle built?", "checks": [{"type": "numeric_equals", "value": 1962, "tol": 0}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-03", "input": "How many metres below sea level is the Challenger Deep, per the corpus?", "checks": [{"type": "numeric_equals", "value": 10935, "tol": 5}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-04", "input": "How long is the Amazon River in kilometres?", "checks": [{"type": "numeric_equals", "value": 6400, "tol": 1}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-05", "input": "In what year was the Python programming language first released?", "checks": [{"type": "numeric_equals", "value": 1991, "tol": 0}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-06", "input": "How tall is the Leaning Tower of Pisa on its high side, in metres?", "checks": [{"type": "numeric_equals", "value": 57, "tol": 1}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-07", "input": "Excluding its pedestal, how tall is the Christ the Redeemer statue in metres?", "checks": [{"type": "numeric_equals", "value": 30, "tol": 1}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-08", "input": "How tall is the Gateway Arch in metres?", "checks": [{"type": "numeric_equals", "value": 192, "tol": 1}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-09", "input": "In what year was the Sydney Opera House formally opened?", "checks": [{"type": "numeric_equals", "value": 1973, "tol": 0}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-10", "input": "How tall, in metres, is the tower that inspired Tokyo Tower?", "checks": [{"type": "numeric_equals", "value": 330, "tol": 1}, {"type": "icontains", "value": "Eiffel"}, {"type": "min_tool_calls", "value": 2}]}
+{"id": "rag-11", "input": "In what year did the skyscraper that ended Taipei 101's run as world's tallest building open?", "checks": [{"type": "numeric_equals", "value": 2010, "tol": 0}, {"type": "icontains", "value": "Burj Khalifa"}, {"type": "min_tool_calls", "value": 2}]}
+{"id": "rag-12", "input": "How tall, in metres, is the building that overtook the Chrysler Building as the world's tallest?", "checks": [{"type": "numeric_equals", "value": 443, "tol": 1}, {"type": "icontains", "value": "Empire State"}, {"type": "min_tool_calls", "value": 2}]}
+{"id": "rag-13", "input": "In what year was Gustave Eiffel, the engineer, born?", "checks": [{"type": "iregex", "value": "(cannot|can't|could not|couldn't|do not|don't|does not|doesn't|no information|not (found|available|in the|stated|mentioned|include))"}, {"type": "not_contains", "value": "1832"}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-14", "input": "Who was the sculptor that designed the Statue of Liberty?", "checks": [{"type": "iregex", "value": "(cannot|can't|could not|couldn't|do not|don't|does not|doesn't|no information|not (found|available|in the|stated|mentioned|include))"}, {"type": "not_contains", "value": "Bartholdi"}, {"type": "min_tool_calls", "value": 1}]}
+{"id": "rag-15", "input": "In what year did construction of the Golden Gate Bridge begin?", "checks": [{"type": "iregex", "value": "(cannot|can't|could not|couldn't|do not|don't|does not|doesn't|no information|not (found|available|in the|stated|mentioned|include))"}, {"type": "not_contains", "value": "1933"}, {"type": "min_tool_calls", "value": 1}]}

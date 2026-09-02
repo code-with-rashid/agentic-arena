@@ -1,0 +1,18 @@
+id = "rag"
+description = "Agentic retrieval over the fixed shared corpus: the agent decides when to search, with what query, and how many hops. Single-hop lookups, multi-hop chains (a fact points to an entity whose fact is in another passage), and questions the corpus cannot answer (the agent must say so, not invent a number). Tests retrieval integration and grounding, not embedding quality - the retriever is deterministic and identical for everyone."
+tools = ["search"]
+
+system_prompt_intent = """
+Answer the user's question using only the `search` tool, which retrieves passages
+from a fixed reference corpus. Search whenever you are not certain; for a question
+that depends on a second fact, search again with a query built from what the first
+result told you. Ground every answer in the retrieved passages. If the corpus does
+not contain the answer, say so plainly and do not guess a name or a number from
+memory. Answer concisely, including the key fact or figure.
+"""
+
+# `rag` reuses the shared `search` tool rather than adding a `retrieve` tool: the
+# point is to hold retrieval constant and measure how each framework drives it.
+# Multi-hop items require at least two searches; unanswerable items check for a
+# refusal AND the absence of the real-world answer, so an agent that leans on the
+# model's parametric memory instead of the corpus fails them.

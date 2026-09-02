@@ -80,6 +80,9 @@ jobs:
           - { python-version: "3.13", framework: langgraph, arena: multi_agent }
           - { python-version: "3.13", framework: pydantic_ai, arena: multi_agent }
           - { python-version: "3.13", framework: openai_agents, arena: multi_agent }
+          - { python-version: "3.13", framework: langgraph, arena: rag }
+          - { python-version: "3.13", framework: pydantic_ai, arena: rag }
+          - { python-version: "3.13", framework: microsoft_af, arena: rag }
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
