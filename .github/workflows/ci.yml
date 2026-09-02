@@ -31,6 +31,10 @@ jobs:
           ruff format --check .
       - name: Validate arena specs / datasets / mock scripts
         run: python -m arena validate
+      - name: Docs cross-references resolve
+        # A stale `#anchor` does not 404 — GitHub serves the page scrolled to the
+        # top — so a broken deep link looks identical to a working one.
+        run: pytest tests/test_doc_links.py -q
       - name: Unit tests (offline)
         run: pytest -q
 

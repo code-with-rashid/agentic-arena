@@ -40,13 +40,62 @@ schema. That scaffolding is what lets it drive models that tool-call badly; if
 yours tool-calls well, it is ~3.5 KB per request you are paying for nothing. See
 [overhead.md](overhead.md).
 
-So "avoid the framework tax" is not a good reason to hand-roll. The real reasons
-to hand-roll are: you want zero dependencies, you want to read every line of the
-loop, or your control flow is genuinely trivial. The `vanilla` adapter is 142
-lines including the suspend/resume support.
+### That 3.77× is a *short-item* number
+
+The table above is a two-call task, which is where a fixed per-request cost looks
+its worst. Running the same conversation out to 30 tool-calling turns, the
+`smolagents` multiple decays from **8.83× on request 1 to 1.27× on request 31**.
+**[measured]**
+
+The reason is a general one: every framework here grows at the same rate
+(136.7–148.2 tokens per turn, an 8% band) and differs only in a constant. A
+constant paid once per request is linear in turns; the conversation it is divided
+by is quadratic. So any framework overhead decays as `1/n`.
+
+Read it that way: the multiple bites on short, high-volume items —
+classification, extraction, one-shot RAG — and washes out on long agentic loops.
+
+**And nobody truncates.** Not one of the seven drops, windows or summarises
+history; all 31 requests carry the whole conversation. If you are running long
+loops on a real bill, context management is something you build, not something
+any of these libraries does for you by default. See
+[overhead.md](overhead.md#what-happens-when-the-loop-gets-long).
+
+### The one place the hand-rolled loop simply loses
+
+Everything above says the framework tax is small or negative. This does not:
+**[measured]**
+
+| | one 429 | three consecutive 429s |
+|---|---|---|
+| `vanilla` (hand-rolled) | **loses the item** | loses the item |
+| every framework here | survives (2–3 attempts) | raises, except `smolagents` |
+
+The hand-rolled loop has **no retry at all**, so a single transient rate limit
+loses the item. Every framework survives one without you writing a line. It is
+the only dimension measured in this repo where the baseline is beaten outright —
+and no arena could see it, because arenas script the *model* misbehaving, not the
+provider.
+
+Two footnotes that matter operationally. `langgraph` retries **once** where the
+others retry twice, which against a provider that rate-limits in bursts is the
+difference between a blip and a lost item. And `smolagents` is the only one that
+survives three consecutive 429s — by **sleeping two to four minutes** on a single
+item, which no scorecard can show you because the item *passes*. See
+[transport.md](transport.md).
+
+### So
+
+"Avoid the framework tax" is not a good reason to hand-roll: on short items the
+tax is roughly zero for six of seven, on long ones it decays away, and on a
+flaky gateway hand-rolling costs you items. The real reasons to hand-roll are
+that you want zero dependencies, you want to read every line of the loop, or your
+control flow is genuinely trivial — and if you do, budget for the retry layer you
+are now writing yourself. The `vanilla` adapter is 142 lines *before* that.
 
 Conversely, the reasons to adopt one are orchestration, durability, interrupts,
-and a large tool surface you don't want to hand-manage — not token efficiency.
+retry-on-the-wire, and a large tool surface you don't want to hand-manage — not
+token efficiency.
 
 ## 2. What breaks under stress?
 
@@ -139,11 +188,70 @@ Also: prefer the **narrow** package over the meta-package. `pydantic-ai-slim[ope
 and `agent-framework-core` + `-openai` avoid dragging in azure/boto3/redis/qdrant/
 ollama that none of this needs.
 
-## 5. Shape of the work
+**And set a timeout, explicitly, in every one of them.** None of these libraries
+takes a request timeout on the path you would naturally write, so a hung provider
+sits on your worker for whatever the underlying client's default is — ten minutes,
+for anything on the official OpenAI client. This repo shipped that bug in five of
+seven adapters until it was measured. Each needs a different route: **[measured]**
+
+| framework | how the timeout gets in |
+|---|---|
+| `openai_agents`, `microsoft_af` | `AsyncOpenAI(timeout=...)` |
+| `pydantic_ai` | pass an `openai_client`; `OpenAIProvider(base_url=...)` builds its own and gives you no way in |
+| `smolagents` | `OpenAIServerModel(client_kwargs={"timeout": ...})` |
+| `google_adk` | `LiteLlm(timeout=...)` |
+| `langgraph` | `ChatOpenAI(timeout=...)` |
+
+Note also that the value bounds **one attempt**, not one item: a framework that
+retries twice can spend three times it before giving up.
+
+## 5. If you are splitting the work across agents
+
+The *benefit* of delegation is still **[claimed]** — mock mode holds the model
+constant, so it cannot tell you whether three roles answer better than one. The
+**cost** is now measured across four delegation mechanisms in three libraries,
+from one role to five, and it scales by an exact law. **[measured]**
+
+| mechanism | library | LLM calls for N roles |
+|---|---|---|
+| `handoffs` — speaker swap | `openai_agents` | **N + 1** |
+| `sub_agents` — transfer, returns to parent | `google_adk` | **N + 2** |
+| `managed_agents` — sub-agent as a tool | `smolagents` | **2N** |
+| `AgentTool` — sub-agent as a tool | `google_adk` | **2N** |
+
+Three things to take from that table.
+
+**"Handoff" is not one thing.** The OpenAI SDK and ADK both describe theirs as
+transferring to another agent; ADK returns control to the *parent* afterwards and
+the parent speaks again, which is the whole difference between N+1 and N+2. Same
+word, different control flow.
+
+**Sub-agent-as-a-tool costs double.** Two libraries that share no code agree at
+every depth: the sub-agent's reply is a tool result rather than the end of the
+run, so each level costs two calls instead of one.
+
+**But calls are the wrong thing to optimise.** Prompt tokens for the same chains
+at four roles, *inside ADK* so nothing else varies:
+
+| mechanism | calls | prompt tokens |
+|---|--:|--:|
+| `sub_agents` — transfer | 6 | **7,375** |
+| `AgentTool` — as a tool | 8 | **1,722** |
+
+A transfer keeps one conversation every agent sees all of, so the prompt
+compounds (15.4× from one role to four). A sub-agent-as-tool starts a *fresh*
+conversation, so the prompt stays nearly flat and the calls compound instead.
+Cheaper in calls is dearer in prompt, and prompt is usually the larger bill —
+a reader who took only the call-count law from this table would pick the wrong
+mechanism.
+
+**Also**: offering a sub-agent costs prompt on every request whether or not
+anyone delegates. See [multi-agent.md](multi-agent.md).
+
+### Shape of the work
 
 Still largely **[claimed]** — these map to arenas that exist but have no live
-numbers. `multi_agent` now carries two real pipelines, so the *cost* of
-delegation is measured even though its benefit is not.
+numbers.
 
 | If the core need is... | Look first at... | Arena that tests it |
 |---|---|---|
@@ -153,6 +261,7 @@ delegation is measured even though its benefit is not.
 | Minimal wrapper around one provider's models | OpenAI Agents SDK / Claude Agent SDK | `tool_use` |
 | Type-safe outputs, model-agnostic | Pydantic AI | `structured_output` |
 | Small local/open models that tool-call poorly | smolagents — its heavy prompt scaffolding is the point | `tool_use` |
+| Long tool loops on a real bill | none of them — nobody truncates history by default | `tool_use` ✅ |
 
 Constraints that override all of the above: language (Python vs TypeScript),
 self-host vs SaaS, licence, provider lock-in, and existing infrastructure.
@@ -172,7 +281,15 @@ flowchart TD
     C -- yes --> F{Graph-shaped and<br/>auditable, or<br/>conversational?}
     F -- graph --> LG
     F -- conversational --> MAF[Microsoft Agent Framework]
+    V --> R[budget for a retry layer:<br/>one 429 loses the item]
 ```
+
+If the answer to C is *yes*, the mechanism matters more than the library — see
+§5. Roughly: a **speaker swap** (`handoffs`) is cheapest in calls and keeps one
+compounding conversation; a **sub-agent-as-a-tool** (`AgentTool`,
+`managed_agents`) costs twice the calls and keeps the prompt nearly flat. Pick on
+which of those two bills you would rather pay, not on which library you already
+have.
 
 This sketch is deliberately about **mechanics**, not quality. Once a live
 scorecard exists it should be revisited — a framework that is lean on the wire
