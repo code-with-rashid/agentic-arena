@@ -195,6 +195,33 @@ in §1: each sub-agent is described **twice**, once as a JSON schema and once in
 prose. Both frameworks bill you for options rather than actions; they do not bill
 the same amount.
 
+**Measured from one role to five, across four implementations in three
+libraries, every one follows an exact law:**
+
+| roles | | 1 | 2 | 3 | 4 | 5 | |
+|---|---|--:|--:|--:|--:|--:|---|
+| `handoffs` (openai_agents) | speaker swap | 2 | 3 | 4 | 5 | 6 | **N + 1** |
+| `sub_agents` (google_adk) | transfer, returns to parent | 2 | 4 | 5 | 6 | 7 | **N + 2** |
+| `managed_agents` (smolagents) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
+| `AgentTool` (google_adk) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
+
+**2N is the mechanism, not the library** — smolagents and ADK share no code and
+agree at every depth. **"Handoff" is not one thing** — both the OpenAI SDK and
+ADK call theirs a transfer, and ADK's costs one call more because it returns
+control to the parent, which then speaks again.
+
+**And you pay in calls or in prompt, not both — the call law alone points the
+wrong way.** Inside ADK at four roles: `sub_agents` costs 6 calls and 7375 prompt
+tokens; `AgentTool` costs 8 calls and 1722. A transfer keeps one conversation
+every agent sees all of, so the prompt compounds (15.4× against 3× the calls); a
+sub-agent starts fresh, so the prompt stays flat and the calls compound instead
+(3.59× against 4×). Cheaper in calls is dearer in prompt, and prompt is usually
+the larger bill.
+
+Restarting only helps if there is little to re-send: smolagents restarts too and
+still compounds (5.68×), because each sub-agent carries its own ~4 KB templated
+system prompt — the scaffolding from §1.
+
 Two things this deliberately does *not* say. The lower completion tokens on the
 handoff chain (140 vs 198) are not efficiency — the researcher emits a short
 transfer instead of a draft, so only the last agent writes a brief. And the mock
@@ -327,9 +354,9 @@ fine" is where benchmarks mislead:
   holding the model constant is what makes the comparison fair.
 - **CrewAI**, whose adapter is written but not yet mock-verified (needs Python
   3.12), and **Claude Agent SDK**, still a stub.
-- **Multi-agent beyond three roles.** The compounding in §3 predicts prompt cost
-  grows faster than call count, and the handoff result predicts it grows with the
-  number of *offered* transfers. Two points do not establish a curve.
+- **Whether the delegation laws in §3 survive a real model.** They are
+  structural, so they should, but a real model may delegate more than once, or
+  answer without delegating at all. Mock mode cannot tell you.
 - **Whether forwarding context between roles changes the ranking.** Every
   pipeline measured here passes the minimum down the chain, which favours the
   mechanisms that carry the transcript for free.

@@ -98,6 +98,11 @@ jobs:
         # many delegates are offered. The byte counts are findings and live in
         # docs/multi-agent.md.
         run: pytest tests/test_delegation_advertising.py -q
+      - name: How delegation cost scales with the depth of the chain
+        # The only job where both mechanisms are installed, so the one that can
+        # compare them. Gates the two laws (a handoff chain costs N+1 model
+        # calls, a sub-agent chain 2N) and that the gap widens with depth.
+        run: pytest tests/test_delegation_depth.py -q
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
       - name: Report recovery, and fail only if the baseline broke
