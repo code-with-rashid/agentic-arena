@@ -7,6 +7,9 @@ A single `pydantic_ai.Agent` with the shared search / calculator tools.
 - **LLM:** `OpenAIChatModel(config.model, provider=OpenAIProvider(base_url=config.base_url,
   api_key=config.api_key))`. Pydantic AI treats any OpenAI-compatible endpoint as a
   first-class provider, so the shared gateway / mock server drives it directly.
+  The provider is handed an explicit `AsyncOpenAI(..., timeout=config.request_timeout_s)`
+  rather than a `base_url`: given a `base_url` it builds its own client with the
+  library default timeout, and the arena's budget would be ignored.
 - **Tools:** registered with `@agent.tool_plain`, each delegating to the unmodified
   `arena.tools` function. Tool calls are recovered from `result.all_messages()` by
   scanning for `ToolCallPart`.

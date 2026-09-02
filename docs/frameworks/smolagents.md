@@ -220,6 +220,25 @@ For a batch job that is a throughput collapse the scorecard cannot see, because
 the item passes. For an interactive script it is arguably the right default. See
 [transport.md](../transport.md).
 
+**It applies to rate limits and nothing else.** `Retrying` is constructed with
+`retry_predicate=is_rate_limit_error`, which lowercases the exception text and
+looks for `429`, `rate limit`, `too many requests` or `rate_limit`. A hung
+provider produces none of those, so the outer layer never engages: against a
+20-second hang this adapter gives up in 8.5 s across 3 attempts, which is the
+OpenAI client's own two retries and nothing more. "smolagents retries for
+minutes" is true of exactly one status code.
+
+One consequence worth noting: because the predicate matches on the *string*, a
+provider whose 500 body happens to mention rate limiting would trigger the
+minutes-long path too.
+
+**Timeouts reach it only through `client_kwargs`.** `OpenAIServerModel` builds
+its own client and takes no `timeout` of its own, so the adapter passes
+`client_kwargs={"timeout": config.request_timeout_s}`. Without that line the
+shared budget is silently ignored and the OpenAI client's ten-minute default
+applies - which is what it was doing until
+[the parity fix](../transport.md#a-hung-provider-is-a-different-failure-and-five-adapters-were-deaf-to-it).
+
 ## Not yet done
 
 - **No pause support.** `smolagents` has no interrupt/approval primitive

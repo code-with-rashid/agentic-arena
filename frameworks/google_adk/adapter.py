@@ -162,6 +162,9 @@ class _Runner:
             model=f"openai/{self.config.model}",
             api_base=self.config.base_url,
             api_key=self.config.api_key,
+            # LiteLLM forwards unknown kwargs to the completion call, which is
+            # where its own per-request timeout lives.
+            timeout=self.config.request_timeout_s,
             temperature=0.0,
         )
         agent = LlmAgent(

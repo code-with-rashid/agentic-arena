@@ -88,6 +88,9 @@ class _Runner:
             model_id=config.model,
             api_base=config.base_url,
             api_key=config.api_key,
+            # smolagents builds the client itself; `client_kwargs` is the only
+            # way through to it, and without this the shared budget is ignored.
+            client_kwargs={"timeout": config.request_timeout_s},
             temperature=0.0,
         )
         self._agent = ToolCallingAgent(

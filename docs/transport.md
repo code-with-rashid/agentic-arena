@@ -8,6 +8,10 @@ tool, misbehaving on purpose in `resilience`. None of them scripts the
 429 in a burst, a 500 from a proxy, a 400 for a request that was never going to
 work.
 
+Nor does any of them script the provider simply *not answering*, which is what
+`ArenaConfig.request_timeout_s` exists to bound and what
+[five of seven adapters were silently ignoring](#a-hung-provider-is-a-different-failure-and-five-adapters-were-deaf-to-it).
+
 The mock server takes a `faults` list — one HTTP status per attempt, so
 `[429, 429, 200]` fails the first two attempts and serves the third normally. A
 faulted attempt never reads the prompt, so it consumes no scripted turn and
@@ -114,6 +118,59 @@ It is the opposite trade-off from everyone else's, and both are defensible:
 The second is the wrong default for a batch job and arguably the right one for
 an interactive script. Neither is visible from the documentation.
 
+### A hung provider is a different failure, and five adapters were deaf to it
+
+`ArenaConfig.request_timeout_s` has existed since the first commit. Only two of
+the seven adapters ever passed it to their client.
+
+The mock server takes `stall_seconds`, which accepts the request and then
+answers nothing for that long. Against a 20 s hang on a **1 second** configured
+budget, before this was fixed:
+
+| adapter | wired the budget? | outcome on a 20 s hang |
+|---|---|---|
+| `vanilla`, `langgraph` | yes | gave up at ~1 s |
+| `pydantic_ai`, `openai_agents`, `microsoft_af`, `smolagents`, `google_adk` | **no** | **waited 20 s and answered** |
+
+Each of the five had inherited its library's default instead — for anything on
+the official OpenAI client that is **ten minutes**. This is a harness bug of the
+same shape as an unwired iteration budget: a `latency_s` column would have been
+reporting library defaults rather than the arena's configuration, and one hung
+request could have stalled a whole run for ten minutes with nothing in the
+scorecard explaining why.
+
+All five now pass it through, each by a different route — `AsyncOpenAI(timeout=)`
+for `openai_agents` and `microsoft_af`, an explicit `openai_client` for
+`pydantic_ai` (whose `OpenAIProvider(base_url=...)` builds its own client and
+gives you no other way in), `client_kwargs={"timeout": ...}` for `smolagents`,
+and `LiteLlm(timeout=)` for `google_adk`. Both gates are in
+`tests/test_transport_faults.py`, and the second one — that *doubling* the budget
+doubles the wait — is what stops an adapter passing with any hard-coded value.
+
+### The budget is per attempt, so the worst case is a multiple of it
+
+Measured gaps on a 2 s budget: `[2.5, 2.8]`. That is the budget plus the same
+~0.5 s / ~0.8 s backoff as everywhere else — the runner abandons *each attempt*
+at the budget and then retries.
+
+So the default `request_timeout_s = 60.0` is not a one-minute ceiling on an item.
+For the five frameworks that retry twice it is **a three-minute one**, and there
+is no single knob that says otherwise. If you are sizing a per-item deadline,
+size it as `timeout x attempts + backoff`.
+
+### smolagents' minutes-long stall is rate-limits only
+
+[Above](#smolagents-keeps-going-and-blocks-for-over-two-minutes), three 429s cost
+two to four minutes. A hung provider does **not**: 3 attempts in 8.5 s, which is
+the inner OpenAI client acting alone.
+
+The outer `Retrying` is built with `retry_predicate=is_rate_limit_error`, a
+substring check for `429` / `rate limit` / `too many requests` in the exception
+text. A timeout matches none of those and falls straight through. So the honest
+version of "smolagents retries for minutes" is *"smolagents retries for minutes
+on one status code"*, and `tests/test_transport_faults.py` pins the predicate so
+that stays true.
+
 ### Everyone refuses to retry a 400
 
 Universal, and correct: a malformed request will be malformed the second time
@@ -139,6 +196,11 @@ Gated in `tests/test_transport_faults.py`:
   second (uniform across all six, so a regression would be unambiguous);
 - smolagents' outer-layer constants still predict a 120-240 s first sleep,
   read from the installed module rather than re-measured;
+- smolagents' outer retry is still gated on rate limits, so the finding above
+  that a hung provider fails fast stays true;
+- every adapter **honours `request_timeout_s`** against a hung gateway, and
+  doubling the budget doubles the wait — the second half is what makes it a check
+  on the configuration rather than on any short timeout;
 - a faulted attempt consumes no scripted turn, which is the instrument checking
   itself: if it did, a retrying framework would be served the *next* turn and
   every row above would be comparing different conversations.
@@ -153,9 +215,9 @@ tightly anyway.
 - **`Retry-After` on the *outer* layers.** Measured for the one framework that
   has a second retry layer; the others have only their client's, which honours it.
   A framework that added its own wrapper could regress here unnoticed.
-- **Timeouts and connection failures.** A hung connection is a different failure
-  from a fast 500, and `request_timeout_s` exists in `ArenaConfig` but nothing
-  exercises it.
+- **Connection failures.** A refused or dropped connection is a third shape,
+  distinct from both a fast 500 and the hang measured above. The mock server can
+  fail a request but not drop one mid-response.
 - **Whether retries are counted in reported cost.** A retried attempt that
   reached the provider may still be billed.
   [`tests/test_usage_accounting.py`](../tests/test_usage_accounting.py) holds

@@ -93,7 +93,11 @@ class _Runner:
         self.config = config
         # Task instruction comes from the arena spec, not from this file.
         self.system_prompt = arena.system_prompt
-        client = AsyncOpenAI(base_url=config.base_url, api_key=config.api_key)
+        client = AsyncOpenAI(
+            base_url=config.base_url,
+            api_key=config.api_key,
+            timeout=config.request_timeout_s,
+        )
         model = OpenAIChatCompletionsModel(model=config.model, openai_client=client)
         settings = ModelSettings(temperature=0.0)
 

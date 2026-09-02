@@ -89,7 +89,11 @@ class _Runner:
         self.config = config
         # Task instruction comes from the arena spec, not from this file.
         self.system_prompt = arena.system_prompt
-        client = AsyncOpenAI(base_url=config.base_url, api_key=config.api_key)
+        client = AsyncOpenAI(
+            base_url=config.base_url,
+            api_key=config.api_key,
+            timeout=config.request_timeout_s,
+        )
         names = _tool_names(arena.tools)
         self._pausable = any(n in names for n in arena_tools.SUSPEND_TOOLS)
         self._agent = Agent(

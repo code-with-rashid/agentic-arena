@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 import threading
 import time
 import uuid
@@ -436,6 +437,14 @@ class _Handler(BaseHTTPRequestHandler):
         self.server.attempts.append(time.perf_counter())  # type: ignore[attr-defined]
         faults: list[int] = self.server.faults  # type: ignore[attr-defined]
         status = faults[attempt] if attempt < len(faults) else 200
+        # A hung provider, which is a different failure from a fast error: the
+        # request is accepted and then nothing comes back. Whether the caller
+        # gives up on its own is what `request_timeout_s` exists to decide.
+        # Applied only to attempts that were going to be served, so `faults` and
+        # `stall_seconds` stay independent knobs rather than compounding.
+        stall: float = self.server.stall_seconds  # type: ignore[attr-defined]
+        if stall and status == 200:
+            time.sleep(stall)
         if status != 200:
             length = int(self.headers.get("Content-Length", "0"))
             self.rfile.read(length)
@@ -570,6 +579,22 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(f"data: {json.dumps(obj)}\n\n".encode())
 
 
+class _Server(ThreadingHTTPServer):
+    """Quiet about clients that walked away.
+
+    `stall_seconds` exists so a caller can give up on us, which means the
+    response is written to a socket the client already closed. That is the
+    expected outcome of a timeout test, not an error, and the default handler
+    prints a full traceback per occurrence.
+    """
+
+    daemon_threads = True
+
+    def handle_error(self, request, client_address):  # noqa: D102 - stdlib override
+        if not isinstance(sys.exc_info()[1], OSError):
+            super().handle_error(request, client_address)
+
+
 class MockServer:
     """Threaded context manager wrapping the mock HTTP server."""
 
@@ -581,6 +606,7 @@ class MockServer:
         arena_tools: Sequence[str] | None = None,
         faults: Sequence[int] = (),
         retry_after: int | None = None,
+        stall_seconds: float = 0.0,
     ):
         """`arena_tools` is the arena's declared tool list, when the caller knows it.
 
@@ -602,15 +628,23 @@ class MockServer:
         way a real provider tells you how long to wait. Left at `None` there is
         no header and every backoff is the client's own invention, which is the
         default because it is the harsher case.
+
+        `stall_seconds` holds every request open for that long before answering -
+        a hung provider rather than a failing one, which is what
+        `ArenaConfig.request_timeout_s` exists to bound.
         """
         self.script = script if isinstance(script, MockScript) else MockScript.load(script)
-        self._httpd = ThreadingHTTPServer((host, port), _Handler)
+        # `_Server` sets `daemon_threads`: a stalled request outlives the client
+        # that abandoned it, and without that `stop()` joins those sleeping
+        # threads and every timeout measurement pays the full stall on the way out.
+        self._httpd = _Server((host, port), _Handler)
         self._httpd.script = self.script  # type: ignore[attr-defined]
         self._httpd.requests = []  # type: ignore[attr-defined]
         self._httpd.served = []  # type: ignore[attr-defined]
         self._httpd.arena_tools = list(arena_tools) if arena_tools is not None else None  # type: ignore[attr-defined]
         self._httpd.faults = list(faults)  # type: ignore[attr-defined]
         self._httpd.retry_after = retry_after  # type: ignore[attr-defined]
+        self._httpd.stall_seconds = float(stall_seconds)  # type: ignore[attr-defined]
         self._httpd.attempts = []  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
 
