@@ -1,15 +1,23 @@
 """Pydantic AI adapter for agentic-arena.
 
-A single `pydantic_ai.Agent` with the shared search / calculator tools. Pydantic AI
-talks to any OpenAI-compatible endpoint through `OpenAIChatModel` +
+A single `pydantic_ai.Agent` with the shared tools. Pydantic AI talks to any
+OpenAI-compatible endpoint through `OpenAIChatModel` +
 `OpenAIProvider(base_url=..., api_key=...)`, so the shared gateway (real provider in
 live mode, the stdlib mock server in mock mode) drives it unchanged.
+
+Suspend/resume (`arena.types.ResumableRunner`) uses Pydantic AI's own **deferred
+tools**: the interrupt tool raises `CallDeferred`, the run comes back with a
+`DeferredToolRequests` output instead of a string, and `resume` continues with
+`deferred_tool_results`. The conversation is carried across as JSON via
+`ModelMessagesTypeAdapter`, which is what lets it also satisfy `durable_state` —
+the harness discards the runner there, so nothing in memory survives.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
+from arena import tools as arena_tools
 from arena.config import ArenaConfig
 from arena.tools import calculator as _calculator
 from arena.tools import names_for as _tool_names
@@ -19,7 +27,7 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 class _Runner:
     def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
-        from pydantic_ai import Agent
+        from pydantic_ai import Agent, CallDeferred, DeferredToolRequests
         from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
         from pydantic_ai.providers.openai import OpenAIProvider
         from pydantic_ai.usage import UsageLimits
@@ -31,18 +39,23 @@ class _Runner:
             config.model,
             provider=OpenAIProvider(base_url=config.base_url, api_key=config.api_key),
         )
+        names = _tool_names(arena.tools)
+        # Only widen the output type for arenas that actually ask for a pause:
+        # `[str, DeferredToolRequests]` changes what a finished run returns, and
+        # every other arena expects a plain string.
+        self._pausable = any(n in names for n in arena_tools.SUSPEND_TOOLS)
+        output_type: Any = [str, DeferredToolRequests] if self._pausable else str
         self._agent = Agent(
             model,
             system_prompt=self.system_prompt,
             model_settings=OpenAIChatModelSettings(temperature=0.0),
+            output_type=output_type,
         )
         # `Agent(retries=...)` is a tool/output-validation retry budget, NOT an
         # agent-loop cap — setting it from max_tool_iterations left this adapter
         # effectively uncapped (it ran to the library's default request_limit of
         # 50). The loop cap is a per-run usage limit.
         self._limits = UsageLimits(request_limit=config.max_tool_iterations)
-
-        names = _tool_names(arena.tools)
 
         if "search" in names:
 
@@ -58,25 +71,103 @@ class _Runner:
                 """Evaluate a basic arithmetic expression such as '330 / 0.3048'."""
                 return _calculator(expr)
 
-    def run(self, item: EvalItem) -> AgentResult:
-        from pydantic_ai.messages import ToolCallPart
+        if "search_rooms" in names:
 
-        result = self._agent.run_sync(item.input, usage_limits=self._limits)
+            @self._agent.tool_plain
+            def search_rooms(capacity: int, day: str) -> str:
+                """List meeting rooms that seat at least `capacity` and are free on `day`."""
+                return arena_tools.search_rooms(capacity, day)
 
+        if "book_room" in names:
+
+            @self._agent.tool_plain
+            def book_room(room_id: str) -> str:
+                """Book a meeting room by id. Only call this after approval."""
+                return arena_tools.book_room(room_id)
+
+        if "request_approval" in names:
+
+            @self._agent.tool_plain
+            def request_approval(summary: str) -> str:
+                """Ask a human to approve a consequential action before taking it."""
+                # The native pause. Raising CallDeferred makes the run finish with a
+                # DeferredToolRequests output instead of executing this body.
+                raise CallDeferred
+
+        if "save_progress" in names:
+
+            @self._agent.tool_plain
+            def save_progress(note: str) -> str:
+                """Checkpoint what you have gathered so far, then stop."""
+                raise CallDeferred
+
+    def _result(self, result: Any, seen: int) -> AgentResult:
+        """Build a result from the messages added since `seen`.
+
+        Slicing matters: a resumed run returns the *whole* conversation, and the
+        harness sums cost across legs, so counting from zero twice would report
+        every tool call on a paused item twice.
+        """
+        from pydantic_ai import DeferredToolRequests
+        from pydantic_ai.messages import ModelMessagesTypeAdapter, ToolCallPart
+
+        history = result.all_messages()
         tool_calls: list[dict[str, Any]] = []
-        for message in result.all_messages():
+        for message in history[seen:]:
             for part in getattr(message, "parts", []):
                 if isinstance(part, ToolCallPart):
+                    # Asking for permission (or checkpointing) is the pause, not
+                    # an action taken - the other adapters do not log it either.
+                    if part.tool_name in arena_tools.SUSPEND_TOOLS:
+                        continue
                     tool_calls.append({"name": part.tool_name, "arguments": part.args})
 
         usage = result.usage
-        return AgentResult(
-            output_text=str(result.output),
+        out = AgentResult(
             tool_calls=tool_calls,
             prompt_tokens=int(getattr(usage, "input_tokens", 0) or 0),
             completion_tokens=int(getattr(usage, "output_tokens", 0) or 0),
             llm_calls=int(getattr(usage, "requests", 0) or 0),
         )
+
+        requests = result.output
+        if not isinstance(requests, DeferredToolRequests):
+            out.output_text = str(result.output)
+            return out
+
+        pending = list(requests.calls) + list(requests.approvals)
+        out.suspended = True
+        out.suspend_request = str(getattr(pending[0], "args", "")) if pending else ""
+        # Plain JSON on purpose: `durable_state` round-trips this through
+        # json.dumps and rebuilds the runner, so anything not in here is gone.
+        out.resume_state = {
+            "history": ModelMessagesTypeAdapter.dump_json(history).decode("utf-8"),
+            "call_ids": [c.tool_call_id for c in requests.calls],
+            "approval_ids": [c.tool_call_id for c in requests.approvals],
+            "seen": len(history),
+        }
+        return out
+
+    def run(self, item: EvalItem) -> AgentResult:
+        return self._result(self._agent.run_sync(item.input, usage_limits=self._limits), seen=0)
+
+    def resume(self, item: EvalItem, state: Any, decision: str) -> AgentResult:
+        from pydantic_ai import DeferredToolResults
+        from pydantic_ai.messages import ModelMessagesTypeAdapter
+
+        if not isinstance(state, dict) or "history" not in state:
+            return AgentResult(error=f"cannot resume: unusable state {type(state).__name__}")
+        history = ModelMessagesTypeAdapter.validate_json(state["history"])
+        results = DeferredToolResults(
+            calls={cid: f"Decision: {decision}." for cid in state.get("call_ids", [])},
+            approvals={cid: decision != "deny" for cid in state.get("approval_ids", [])},
+        )
+        result = self._agent.run_sync(
+            message_history=history,
+            deferred_tool_results=results,
+            usage_limits=self._limits,
+        )
+        return self._result(result, seen=int(state.get("seen", 0)))
 
 
 class Adapter:

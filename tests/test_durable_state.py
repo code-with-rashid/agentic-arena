@@ -124,3 +124,35 @@ def test_baseline_finishes_without_redoing_the_lookups():
     for it in fw["items"]:
         assert it["suspends"] == 1
         assert it["tool_calls"] == ["search", "search", "calculator"], it["tool_calls"]
+
+
+def _resumable_frameworks():
+    from arena.registry import available_frameworks, load_framework
+
+    out = []
+    for name in available_frameworks():
+        try:
+            agent = load_framework(name).build(ARENA, ArenaConfig(mode="mock"))
+        except Exception:  # noqa: BLE001 - stub, or dependency not installed
+            continue
+        if hasattr(agent, "resume"):
+            out.append(name)
+    return out
+
+
+RESUMABLE = _resumable_frameworks()
+
+
+@pytest.mark.parametrize("name", RESUMABLE)
+def test_every_resumable_adapter_survives_the_rebuild(name):
+    """Whatever the mechanism, the trace the scorer sees must be the same."""
+    record = run("durable_state", [name], config=ArenaConfig(mode="mock", repeat=1))
+    fw = record["frameworks"][0]
+    assert fw["available"], fw
+    failed = [it["item_id"] for it in fw["items"] if not it["passed"]]
+    assert not failed, f"{name} failed: {failed}"
+    for it in fw["items"]:
+        assert it["suspends"] == 1, f"{name}/{it['item_id']} did not checkpoint"
+        assert it["tool_calls"] == ["search", "search", "calculator"], (
+            f"{name}/{it['item_id']} did work twice or skipped some: {it['tool_calls']}"
+        )
