@@ -8,13 +8,15 @@ The harness half is done: `arena.types.ResumableRunner`, `EvalItem.resume_with`,
 leg-merging in `arena.runner`, and three check types (`suspended`,
 `no_tool_before_suspend`, `tool_not_used`). See `docs/methodology.md` §7.
 
-**Adapter coverage so far: `vanilla` only (emulated), 12/12.** The other four
-adapters report *unsupported* rather than failing — they have no `resume` method
-yet. That is deliberate: LangGraph and Agent Framework both have real interrupt
-mechanisms, and scoring them 0 because nobody has wired them up would be a
-misleading finding. Wiring them is the next step, and it is what turns the
-"Human-in-the-loop / interrupts" row of the feature matrix from judged into
-measured.
+**Adapter coverage:** `langgraph` 12/12 (native `interrupt` + checkpointer) and
+`vanilla` 12/12 (emulated — transcript carried back in). Both produce an
+identical trace to the scorer, which is the point: the arena measures the
+behaviour, not the bookkeeping.
+
+`crewai`, `openai_agents`, `pydantic_ai` and `microsoft_af` report *unsupported*
+rather than failing — they have no `resume` method yet. That is deliberate:
+Agent Framework ships tool-approval middleware, and scoring it 0 because nobody
+has wired it up would be a misleading finding.
 
 ## Goal
 
