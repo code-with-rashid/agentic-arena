@@ -22,10 +22,24 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 | 🟡 (`output_schema`) |
 | Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) | 🟡 (`arun`) | ✅ (async-first) |
 | Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) |
+| Retries a transient 429 | ❌ (measured) | ✅ 1 retry (measured) | ❓ | ✅ 2 retries (measured) | ❓ | ✅ 2 retries (measured) | ✅ 2 retries (measured) | ✅ retries until it wins, +2–4 min (measured) | ✅ 2 retries (measured) |
 | Licence | — | MIT | MIT | MIT | ❓ | MIT | MIT | Apache-2.0 | Apache-2.0 |
 
 The two `Recovers from ...` rows are measured, not judged — see the `resilience`
 arena and the comparison CI prints on every run.
+
+### Retrying the gateway
+
+The `Retries a transient 429` row is measured by scripting the **provider**
+failing rather than the model — see [transport.md](transport.md). It is the one
+dimension where the hand-rolled baseline loses outright: `vanilla` has no retry
+at all, so a single 429 loses the item, while every framework survives one.
+
+Two differences worth knowing. `langgraph` retries **once** where the others
+retry twice, giving up an attempt earlier against a provider that rate-limits in
+bursts. And `smolagents` is the only one that survives *three* consecutive 429s —
+by sleeping for **two to four minutes** on a single item, which the scorecard
+cannot see because the item passes.
 
 ### Batched tool calls, and a quieter failure mode
 

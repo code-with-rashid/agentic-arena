@@ -103,6 +103,13 @@ jobs:
         # compare them. Gates the two laws (a handoff chain costs N+1 model
         # calls, a sub-agent chain 2N) and that the gap widens with depth.
         run: pytest tests/test_delegation_depth.py -q
+      - name: What each framework does when the gateway fails
+        # Gates the invariants (a healthy gateway costs one attempt, nobody
+        # retries a 400, a 429 is survived or reported). Per-framework retry
+        # counts are findings in docs/transport.md, not test failures.
+        run: pytest tests/test_transport_faults.py -q
+      - name: Report retry behaviour per framework
+        run: python .github/scripts/report_transport.py
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
       - name: Report recovery, and fail only if the baseline broke

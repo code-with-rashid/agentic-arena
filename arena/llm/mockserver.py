@@ -422,6 +422,25 @@ class _Handler(BaseHTTPRequestHandler):
         if not self.path.endswith("/chat/completions"):
             self._send_json({"error": {"message": f"unhandled path {self.path}"}}, status=404)
             return
+
+        # Transport faults come first: a provider that returns 429 never reads
+        # the prompt, so a failed attempt must not consume a scripted turn or
+        # land in `requests`. `attempts` counts what actually reached the wire,
+        # which is the difference between "the framework retried" and "the
+        # framework gave up".
+        attempt = len(self.server.attempts)  # type: ignore[attr-defined]
+        self.server.attempts.append(time.perf_counter())  # type: ignore[attr-defined]
+        faults: list[int] = self.server.faults  # type: ignore[attr-defined]
+        status = faults[attempt] if attempt < len(faults) else 200
+        if status != 200:
+            length = int(self.headers.get("Content-Length", "0"))
+            self.rfile.read(length)
+            kind = "rate_limit_error" if status == 429 else "server_error"
+            self._send_json(
+                {"error": {"message": f"injected {status}", "type": kind}}, status=status
+            )
+            return
+
         length = int(self.headers.get("Content-Length", "0"))
         try:
             req = json.loads(self.rfile.read(length) or b"{}")
@@ -544,6 +563,7 @@ class MockServer:
         host: str = "127.0.0.1",
         port: int = 0,
         arena_tools: Sequence[str] | None = None,
+        faults: Sequence[int] = (),
     ):
         """`arena_tools` is the arena's declared tool list, when the caller knows it.
 
@@ -552,6 +572,14 @@ class MockServer:
         from a task tool the arena asked for. Without it only the explicit
         `transfer_to_*` shape is recognised, which is what a bare `MockServer` in
         a test gets and is deliberately the narrower behaviour.
+
+        `faults` is one HTTP status per attempt — `[429, 429, 200]` fails the
+        first two attempts and serves the third normally, and anything past the
+        end of the list succeeds. It exists because `resilience` scripts the
+        *model* misbehaving and nothing here scripted the *gateway* doing so,
+        which is what real deployments actually hit. A faulted attempt never
+        reads the prompt, so it consumes no scripted turn and does not appear in
+        `requests`; `attempts` counts everything that reached the wire.
         """
         self.script = script if isinstance(script, MockScript) else MockScript.load(script)
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
@@ -559,12 +587,28 @@ class MockServer:
         self._httpd.requests = []  # type: ignore[attr-defined]
         self._httpd.served = []  # type: ignore[attr-defined]
         self._httpd.arena_tools = list(arena_tools) if arena_tools is not None else None  # type: ignore[attr-defined]
+        self._httpd.faults = list(faults)  # type: ignore[attr-defined]
+        self._httpd.attempts = []  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
 
     @property
     def requests(self) -> list[dict[str, Any]]:
-        """Every chat-completions request body received, in order."""
+        """Every chat-completions request body *served*, in order.
+
+        Attempts rejected by an injected fault are not here — the gateway never
+        read them. Use `attempts` to count what reached the wire.
+        """
         return self._httpd.requests  # type: ignore[attr-defined,no-any-return]
+
+    @property
+    def attempts(self) -> list[float]:
+        """Monotonic timestamp of every attempt, faulted or served.
+
+        The gaps between them are the framework's backoff, which is as much a
+        finding as the retry count: a library that eventually succeeds by
+        sleeping for two minutes has not really handled the rate limit.
+        """
+        return self._httpd.attempts  # type: ignore[attr-defined,no-any-return]
 
     @property
     def served_usage(self) -> dict[str, int]:
