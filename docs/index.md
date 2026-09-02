@@ -4,6 +4,9 @@
   with the command that regenerates each number. Start here if you want the
   answers rather than the machinery.
 - [Methodology](methodology.md) — the fairness and reproducibility rules. Read first.
+- [Fairness controls](fairness-controls.md) — every control the arena owns and who
+  checks it actually reaches each adapter. Four bugs of that shape have been found
+  one at a time; this is the list that finds the next one by inspection.
 - [Decision guide](decision-guide.md) — how to pick a framework. Every claim tagged
   [measured] or [claimed]; nothing about answer quality until a live run exists.
 - [Feature matrix](feature-matrix.md) — capabilities that aren't scorecard numbers.
