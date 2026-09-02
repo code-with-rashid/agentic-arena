@@ -39,6 +39,9 @@ python -m arena scorecard --arena tool_use
 
 # 4. Statically check every arena spec, dataset, and mock script (no LLM, no network)
 python -m arena validate
+
+# 5. One cross-arena view: coverage, plus the measurements that actually compare
+python -m arena summary --print
 ```
 
 To run a real framework against a real model:

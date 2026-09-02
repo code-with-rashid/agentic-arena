@@ -84,6 +84,34 @@ def _cmd_scorecard(args: argparse.Namespace) -> int:
     return 0
 
 
+def _print_unicode(text: str) -> None:
+    """Write UTF-8 text to stdout without dying on a legacy console codepage.
+
+    The summary is markdown meant for GitHub, so it uses ✅ and ×. A Windows
+    console defaults to cp1252 and raises UnicodeEncodeError on both, which would
+    make `--print` unusable on the platform this is most often developed on.
+    """
+    try:
+        sys.stdout.buffer.write(text.encode("utf-8"))
+        sys.stdout.buffer.flush()
+    except (AttributeError, ValueError):  # captured / wrapped stdout
+        print(text.encode("utf-8", "replace").decode("utf-8", "replace"))
+
+
+def _cmd_summary(args: argparse.Namespace) -> int:
+    from .summary import render, write_summary
+
+    mode = args.mode or "mock"
+    path, records = write_summary(mode)
+    if not records:
+        print(f"no {mode} runs found in runs/ - run some arenas first", file=sys.stderr)
+        return 1
+    if args.print:
+        _print_unicode(render(records, mode) + "\n")
+    print(f"summary: {path}  ({len(records)} arena(s))")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="arena", description="agentic-arena harness")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -109,6 +137,11 @@ def main(argv: list[str] | None = None) -> int:
     p_sc.add_argument("--arena", required=True)
     p_sc.add_argument("--mode", choices=["mock", "live"], default=None)
     p_sc.set_defaults(func=_cmd_scorecard)
+
+    p_sum = sub.add_parser("summary", help="one cross-arena view from the latest run of each arena")
+    p_sum.add_argument("--mode", choices=["mock", "live"], default=None)
+    p_sum.add_argument("--print", action="store_true", help="also write it to stdout")
+    p_sum.set_defaults(func=_cmd_summary)
 
     args = parser.parse_args(argv)
     return int(args.func(args))

@@ -59,6 +59,8 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       restart, which the emulated pause deliberately does not
 - ⬜ `multi_agent` still needs real multi-agent adapter entries (`<fw>-multi`)
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
+- ✅ Cross-arena summary (`python -m arena summary`) — coverage grid plus the
+      three comparisons that hold offline; CI publishes it as an artifact
 - ⬜ Latency / token / cost charts generated into `results/charts/`
 
 ## Phase 4 — Polish + community ⬜
