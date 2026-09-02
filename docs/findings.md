@@ -446,6 +446,24 @@ reason the positive ones are believable.
   `langgraph` — batching is *not* neutral. It was replaced with the invariant
   that does hold: batching may rescue a fault, but must never make a framework
   worse than it is serially.
+- **Structured output — and this one is a finding about the arena.** No adapter
+  puts `response_format` on the wire; all seven ask for JSON in the prompt and
+  hand back whatever arrives. Given a record that is not JSON, has wrong types,
+  is missing a required field, or carries an extra one, every framework returns
+  it byte-for-byte in the *same two LLM calls* a valid record costs. Nobody
+  validates, nobody re-prompts, nobody repairs.
+
+  So `structured_output` is currently a `tool_use` arena whose answer is
+  JSON-shaped, and `arena/scorer.py` is the only thing standing between a
+  malformed record and a green scorecard — now gated, because nothing was
+  pinning it. Stated rather than quietly fixed: giving one adapter a native
+  mechanism and not the others would make the arena incomparable, so
+  [structured-output.md](structured-output.md#next) names what doing it properly
+  requires instead.
+
+  ```bash
+  python .github/scripts/report_structured_output.py
+  ```
 
 ---
 
