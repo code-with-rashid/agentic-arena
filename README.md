@@ -101,10 +101,27 @@ See [docs/methodology.md](docs/methodology.md) for the full rules. In short:
    not a quality signal — they only prove the adapter wires everything together.
    Only `--mode live` numbers go in published scorecards.
 
-Two things mock mode *can* compare honestly, because the model is held identical
-and only the framework varies: the `resilience` arena's recovery rates, and
+Three things mock mode *can* compare honestly, because the model is held identical
+and only the framework varies: the `resilience` arena's recovery rates,
 [how much each framework puts on the wire](docs/overhead.md) for the same task
-(a ~1.15× spread, driven by tool-schema serialisation). CI prints both on every run.
+(a ~1.15× spread, driven by tool-schema serialisation), and whether an adapter can
+genuinely pause for a human. CI prints all three on every run, and
+`python -m arena summary` collects them.
+
+## What has been measured so far
+
+No live scorecard exists yet, so **nothing here is about answer quality**. What
+*is* measured, offline and reproducibly:
+
+- The hand-rolled baseline is **not** the cheapest on the wire — three of four
+  frameworks serialise the same tool schemas more compactly.
+- Under eight scripted faults, LangGraph and the OpenAI Agents SDK each lose one
+  item; the other three recover from all eight.
+- Only LangGraph has a demonstrated durable human-in-the-loop pause.
+
+[**docs/decision-guide.md**](docs/decision-guide.md) has the tables, the adoption
+gotchas found while writing each adapter, and a clear split between what is
+measured and what is merely claimed upstream.
 
 ## Repo layout
 

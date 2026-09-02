@@ -35,7 +35,8 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - 🚧 `docs/feature-matrix.md` — filled for every built adapter; `❓` cells remain for
       capabilities no arena exercises yet
 - ✅ Per-framework deep dives in `docs/frameworks/` for the built adapters
-- ⬜ `docs/decision-guide.md` "if you need X, pick Y" flowchart
+- ✅ `docs/decision-guide.md` — filled in from measured offline evidence, every
+      claim tagged [measured] or [claimed]; revisit once a live scorecard exists
 
 ## Phase 3 — Breadth of arenas 🚧
 
