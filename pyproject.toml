@@ -22,7 +22,13 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
-dev = ["ruff>=0.16.5", "pytest>=9.1.1"]
+# ruff is pinned exactly, pytest is floored, and the difference is deliberate.
+# `ruff format --check .` is a CI gate, and both the formatter's output and the
+# rule set behind `select = [E, F, I, UP, B, SIM]` change across ruff releases —
+# so a range means a contributor's local `ruff format` can disagree with CI and
+# produce a diff nobody asked for. pytest has no such gate: it runs the tests and
+# either they pass or they do not, so a floor is enough.
+dev = ["ruff==0.16.5", "pytest>=9.1.1"]
 
 [project.scripts]
 arena = "arena.__main__:main"

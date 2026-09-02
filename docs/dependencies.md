@@ -11,6 +11,11 @@
   stay fast and installable everywhere. The consequence is that the wire-level
   contract tests can only see `vanilla` there, which is why they also run in the
   `comparison` CI job — see [methodology.md](methodology.md) §4.
+- **`ruff` is pinned exactly; `pytest` is floored.** `ruff format --check .` is a
+  CI gate, and both the formatter's output and the rules behind
+  `select = [E, F, I, UP, B, SIM]` change across releases — a range lets a
+  contributor's local `ruff format` disagree with CI and produce a diff nobody
+  asked for. `pytest` has no such gate: the tests pass or they don't.
 - **Every adapter pins exactly.** A scorecard records the library version it was
   produced with, so a bump invalidates that scorecard until it is re-run. Ranges
   are used only for adapters that are not yet verified (`crewai`).
@@ -42,6 +47,26 @@ not to keep `main` on latest. A bump PR is reviewed by running the contract test
 and the mock sweep, and by checking the `comparison` job's overhead table — a jump
 there means the library changed how it serialises tool schemas, which is itself a
 finding worth recording in [overhead.md](overhead.md).
+
+## What CI does and does not exercise
+
+A green CI run on a bump PR is not the same as "this bump is verified". The gap
+worth knowing about:
+
+| action | used in | exercised by CI? |
+|---|---|---|
+| `actions/checkout` | every workflow | yes |
+| `actions/setup-python` | every workflow | yes |
+| `actions/upload-artifact` | `full-run.yml` only | **no** — that workflow is `workflow_dispatch` and needs `OPENAI_API_KEY` |
+
+So an `upload-artifact` bump lands untested and first runs when someone triggers
+a live run. It is a low-risk action, but if a `full-run` fails at the upload step
+right after a bump, that is the first place to look.
+
+`actions/checkout@v7` carries a breaking change — it blocks checking out fork PRs
+under `pull_request_target` and `workflow_run`. This repo's workflows trigger on
+`push`, `pull_request` and `workflow_dispatch` only, so it does not apply. Worth
+re-checking if a workflow ever adopts one of those triggers.
 
 ## Deprecation register
 
