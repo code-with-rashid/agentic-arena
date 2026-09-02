@@ -35,6 +35,7 @@ CHECK_SPECS: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = {
     "tool_not_used": (("name",), ()),
     "suspended": ((), ("value",)),
     "no_tool_before_suspend": (("name",), ()),
+    "call_counts": (("counts",), ()),
 }
 
 
@@ -198,6 +199,13 @@ def _check(check: dict[str, Any], result: AgentResult) -> tuple[bool, str]:
     if ctype == "max_tool_calls":
         n = int(check["value"])
         return (len(tool_names) <= n, f"expected <= {n} tool calls")
+    if ctype == "call_counts":
+        want = dict(check["counts"])
+        got = {name: tool_names.count(name) for name in want}
+        # Exact counts across the whole merged trace. In a durable arena this is
+        # what catches an adapter that restarted from scratch instead of resuming:
+        # the completed steps get executed a second time.
+        return (got == want, f"expected tool call counts {want}, got {got}")
     if ctype == "sentence_count":
         lo = int(check.get("min", 1))
         hi = int(check.get("max", 10_000))

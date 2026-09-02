@@ -63,13 +63,19 @@ The `human_in_the_loop` arena observes the pause *in the harness* rather than
 trusting the agent's prose, so an agent that says "I'd need approval for this"
 and books the room anyway fails. **[measured]**
 
-| framework | supports a pause | mechanism |
-|---|---|---|
-| `langgraph` | ✅ 12/12 | **native** — `interrupt()` + checkpointer, resumed with `Command(resume=...)` |
-| `vanilla` | 🟡 12/12 | **emulated** — transcript carried back in; would not survive a process restart |
+| framework | pauses | survives a crash | mechanism |
+|---|---|---|---|
+| `langgraph` | ✅ 12/12 | ✅ 8/8 | **native** — `interrupt()`, with an on-disk `SqliteSaver` for the durable case |
+| `vanilla` | 🟡 12/12 | 🟡 8/8 | **stateless resume** — the whole transcript is serialised into the resume state |
 | `microsoft_af` | not wired | ships `ToolApprovalMiddleware`, but it requires an `AgentSession` and session state — a different shape from LangGraph's `interrupt`, and not yet adapted here **[claimed]** |
 | `pydantic_ai` | not wired | deferred tools **[claimed]** |
 | `openai_agents` | not wired | — |
+
+The `durable_state` arena is the stricter test: the harness throws the runner
+away at the pause and rebuilds it, so only a real checkpoint or a serialised
+transcript gets across. Both pass — serialising the transcript yourself is a
+legitimate way to be durable — but only LangGraph does it with a checkpointer,
+which is what you want once the state stops fitting in a message list.
 
 If durable human-in-the-loop is a hard requirement, LangGraph is the only one
 demonstrated end-to-end here today. The others report *unsupported* rather than

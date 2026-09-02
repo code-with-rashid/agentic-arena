@@ -149,37 +149,38 @@ def _overhead(records, names, out) -> None:
     )
 
 
-def _pauses(records, names, out) -> None:
-    record = next(
-        (
-            r
-            for r in records
-            if any(it.get("suspends") for fw in r["frameworks"] for it in fw["items"])
-        ),
-        None,
-    )
+def _pause_cell(record: dict[str, Any] | None, name: str) -> str:
     if record is None:
+        return "—"
+    fw = _by_name(record).get(name)
+    if fw is None:
+        return " "
+    if not fw.get("available"):
+        return "no" if _NOT_SUPPORTED in str(fw.get("reason", "")) else "—"
+    items = fw["items"]
+    paused = sum(1 for it in items if it.get("suspends"))
+    if paused == len(items) and all(it["passed"] for it in items):
+        return f"yes ({paused}/{len(items)})"
+    return f"**{paused}/{len(items)}**"
+
+
+def _pauses(records, names, out) -> None:
+    hitl = next((r for r in records if r["arena"] == "human_in_the_loop"), None)
+    durable = next((r for r in records if r["arena"] == "durable_state"), None)
+    if hitl is None and durable is None:
         return
-    out.append("## Comparable: pausing for a human\n")
+    out.append("## Comparable: pausing, and surviving a crash\n")
     out.append(
         "The pause is observed by the harness, not claimed by the agent — see "
-        "`docs/methodology.md` §7. An adapter with no `resume` method is reported "
-        "as not supported rather than as failing.\n"
+        "`docs/methodology.md` §7. `durable_state` goes further: it throws the "
+        "runner away at the pause and rebuilds it, so only a real checkpoint or a "
+        "serialised transcript survives. An adapter with no `resume` method is "
+        "reported as not supported rather than as failing.\n"
     )
-    out.append("| framework | supports a pause | items | paused before acting |")
-    out.append("|---|---|--:|---|")
+    out.append("| framework | pauses for a human | survives a crash |")
+    out.append("|---|---|---|")
     for name in names:
-        fw = _by_name(record).get(name)
-        if not fw:
-            continue
-        if not fw.get("available"):
-            supported = "no" if _NOT_SUPPORTED in str(fw.get("reason", "")) else "—"
-            out.append(f"| `{name}` | {supported} | — | — |")
-            continue
-        items = fw["items"]
-        paused = sum(1 for it in items if it.get("suspends"))
-        clean = all("book_room" not in (it.get("tool_calls_before_suspend") or []) for it in items)
-        out.append(f"| `{name}` | yes | {paused}/{len(items)} | {'yes' if clean else '**no**'} |")
+        out.append(f"| `{name}` | {_pause_cell(hitl, name)} | {_pause_cell(durable, name)} |")
     out.append("")
 
 

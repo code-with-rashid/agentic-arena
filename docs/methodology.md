@@ -219,8 +219,28 @@ then calls `resume(item, state, decision)`. Three rules make that comparable:
 Adapters may satisfy the contract natively (a framework with real interrupts and
 a checkpointer) or by **emulation** (carrying the transcript back in, which is
 what the `vanilla` baseline does). Both are valid entries; which one an adapter
-uses is a feature-matrix fact, and the emulated ones are labelled as such,
-because emulation does not survive a process restart and a real checkpointer does.
+uses is a feature-matrix fact.
+
+### Durable arenas: the runner is thrown away
+
+`arena.toml` can set `durable = true`. At the pause the harness then
+
+1. **JSON round-trips `resume_state`**, exactly as a crash would. An adapter that
+   tried to hand back a live object gets a clear error instead of a pass, because
+   no restarted process could ever hold that reference.
+2. **Discards the runner and builds a new one** from the same adapter and config.
+
+So only two things cross the gap: what the adapter wrote to
+`config.checkpoint_dir` (a store the harness owns and hands identically to every
+framework), and what it serialised into `resume_state`. Stateless resume — putting
+the whole transcript in the state — is a legitimate way to be durable and the
+baseline does exactly that; a framework checkpointer is a different mechanism
+reaching the same bar, and the feature matrix records which is which.
+
+The check that makes this real is `call_counts`: exact tool-call counts across the
+merged legs. An adapter that starts over after the crash reaches the right answer
+by redoing both lookups, and fails on the counts. Measured: an adapter patched to
+restart instead of resume goes from 8/8 to **0/8**.
 
 ## 8. Reproducing a published scorecard
 

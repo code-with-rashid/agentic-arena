@@ -14,6 +14,9 @@ and checkpoints it, and `resume` continues the same thread with
 
 from __future__ import annotations
 
+import contextlib
+from contextlib import ExitStack
+from pathlib import Path
 from typing import Any
 
 from arena import tools as arena_tools
@@ -57,12 +60,22 @@ def _make_tools(names: list[str]) -> list[Any]:
         decision = interrupt({"request": summary})
         return f"Decision: {decision}."
 
+    @tool
+    def save_progress(note: str) -> str:
+        """Checkpoint what you have gathered so far, then stop."""
+        # Same primitive, different arena. In `durable_state` the harness throws
+        # the runner away here, so the checkpoint has to be on disk for the graph
+        # to still exist when a fresh runner reconnects to the same thread.
+        decision = interrupt({"request": note})
+        return f"Resumed: {decision}."
+
     available = {
         "search": search,
         "calculator": calculator,
         "search_rooms": search_rooms,
         "book_room": book_room,
         "request_approval": request_approval,
+        "save_progress": save_progress,
     }
     return [available[name] for name in names if name in available]
 
@@ -85,9 +98,19 @@ class _Runner:
         )
         # `interrupt` needs somewhere to checkpoint, and a checkpointer needs a
         # thread id, so both only appear for arenas that actually ask for a pause.
-        self._pausable = arena_tools.SUSPEND_TOOL in (arena.tools or [])
+        self._pausable = any(name in (arena.tools or []) for name in arena_tools.SUSPEND_TOOLS)
+        self._stack = ExitStack()
         checkpointer = None
-        if self._pausable:
+        if self._pausable and arena.durable:
+            # A durable arena discards this runner at the pause, so an in-memory
+            # saver would take the graph with it. SqliteSaver writes to the
+            # harness-owned checkpoint dir, which the next runner reopens.
+            from langgraph.checkpoint.sqlite import SqliteSaver
+
+            store = Path(config.checkpoint_dir or ".") / "langgraph.sqlite"
+            store.parent.mkdir(parents=True, exist_ok=True)
+            checkpointer = self._stack.enter_context(SqliteSaver.from_conn_string(str(store)))
+        elif self._pausable:
             from langgraph.checkpoint.memory import MemorySaver
 
             checkpointer = MemorySaver()
@@ -105,6 +128,10 @@ class _Runner:
             self._threads += 1
             cfg["configurable"] = {"thread_id": f"{item.id}-{self._threads}"}
         return cfg
+
+    def __del__(self) -> None:  # pragma: no cover - best-effort cleanup
+        with contextlib.suppress(Exception):
+            self._stack.close()
 
     def _result(self, state: dict[str, Any], cfg: dict[str, Any], seen: int) -> AgentResult:
         """Build a result from the messages added since `seen`.
@@ -129,7 +156,7 @@ class _Runner:
                 # Asking permission is the pause, not an action taken - the
                 # baseline does not log it either, and the arena's
                 # `no_tool_before_suspend` check compares the two.
-                if call.get("name") == arena_tools.SUSPEND_TOOL:
+                if call.get("name") in arena_tools.SUSPEND_TOOLS:
                     continue
                 tool_calls.append({"name": call.get("name", ""), "arguments": call.get("args", {})})
             if msg.__class__.__name__ == "AIMessage" and getattr(msg, "content", ""):

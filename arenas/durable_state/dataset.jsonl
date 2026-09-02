@@ -1,0 +1,12 @@
+# durable_state - two lookups, a checkpoint, then the arithmetic.
+# call_counts is the crux: exactly two searches and one calculation across BOTH
+# legs. An adapter that restarts from scratch after the crash re-runs the
+# searches and lands on four, which fails even though the answer is right.
+{"id": "dur-01", "input": "How much taller is the Burj Khalifa than the Eiffel Tower, in metres?", "checks": [{"type": "numeric_equals", "value": 498, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}
+{"id": "dur-02", "input": "How much taller is the CN Tower than the Space Needle, in metres?", "checks": [{"type": "numeric_equals", "value": 369, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}
+{"id": "dur-03", "input": "How much taller is the Empire State Building than the Chrysler Building, in metres?", "checks": [{"type": "numeric_equals", "value": 124, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}
+{"id": "dur-04", "input": "How much taller is the Taipei 101 than the The Shard, in metres?", "checks": [{"type": "numeric_equals", "value": 198, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}
+{"id": "dur-05", "input": "How much taller is the Petronas Towers than the Tokyo Tower, in metres?", "checks": [{"type": "numeric_equals", "value": 119, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}
+{"id": "dur-06", "input": "How much taller is the One World Trade Center than the Willis Tower, in metres?", "checks": [{"type": "numeric_equals", "value": 99, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}
+{"id": "dur-07", "input": "How much taller is the Golden Gate Bridge than the Gateway Arch, in metres?", "checks": [{"type": "numeric_equals", "value": 35, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}
+{"id": "dur-08", "input": "How much taller is the Burj Khalifa than the CN Tower, in metres?", "checks": [{"type": "numeric_equals", "value": 275, "tol": 0.5}, {"type": "call_counts", "counts": {"search": 2, "calculator": 1}}, {"type": "suspended"}]}

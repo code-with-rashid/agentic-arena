@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 from .calculator import calculator
+from .progress import save_progress
 from .rooms import book_room, request_approval, search_rooms
 from .search import search
 
@@ -20,18 +21,28 @@ __all__ = [
     "search_rooms",
     "book_room",
     "request_approval",
+    "save_progress",
     "OPENAI_TOOL_SPECS",
     "SUSPEND_TOOL",
+    "SUSPEND_TOOLS",
     "dispatch",
     "TOOL_FUNCS",
     "specs_for",
     "names_for",
 ]
 
-# The tool whose invocation means "pause and ask a human", rather than "run this".
-# An arena that declares it is asking for a suspend/resume cycle; adapters that
-# cannot provide one are reported as unsupported for that arena.
-SUSPEND_TOOL = "request_approval"
+# Tools whose invocation means "stop here", rather than "run this". An arena that
+# declares one is asking for a suspend/resume cycle; adapters that cannot provide
+# one are reported as unsupported for that arena.
+#
+#   request_approval - stop and ask a human (human_in_the_loop)
+#   save_progress    - stop and checkpoint  (durable_state)
+#
+# Adapters intercept either and suspend. What happens at the pause is the arena's
+# business, not the adapter's: `durable = true` in arena.toml makes the harness
+# throw the runner away and rebuild it before resuming.
+SUSPEND_TOOLS = ("request_approval", "save_progress")
+SUSPEND_TOOL = SUSPEND_TOOLS[0]
 
 TOOL_FUNCS = {
     "search": lambda args: search(str(args.get("query", "")), int(args.get("k", 3))),
@@ -41,6 +52,7 @@ TOOL_FUNCS = {
     ),
     "book_room": lambda args: book_room(str(args.get("room_id", ""))),
     "request_approval": lambda args: request_approval(str(args.get("summary", ""))),
+    "save_progress": lambda args: save_progress(str(args.get("note", ""))),
 }
 
 OPENAI_TOOL_SPECS: list[dict[str, Any]] = [
@@ -102,6 +114,23 @@ OPENAI_TOOL_SPECS: list[dict[str, Any]] = [
                     "summary": {"type": "string", "description": "What you want approved."},
                 },
                 "required": ["summary"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "save_progress",
+            "description": (
+                "Checkpoint what you have gathered so far, then stop. You will be "
+                "resumed and can carry on from where you left off."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "note": {"type": "string", "description": "What you have established so far."},
+                },
+                "required": ["note"],
             },
         },
     },

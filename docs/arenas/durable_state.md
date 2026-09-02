@@ -1,5 +1,27 @@
 # Arena design: `durable_state`
 
+## Status
+
+Shipped as `arenas/durable_state/` — 8 items. `langgraph` 8/8 and `vanilla` 8/8;
+the other adapters report *unsupported* (no `resume` method).
+
+Two decisions differ from the draft below:
+
+- **No process is actually killed.** `arena.toml` sets `durable = true`, and the
+  harness JSON round-trips `resume_state` and then **discards the runner and
+  builds a new one**. That reproduces what matters about a crash — nothing in
+  memory survives, and no live reference can be handed across — without the
+  complexity of a real subprocess. An adapter that tries to smuggle a live object
+  through gets a clear error rather than a pass.
+- **`vanilla` is not `n/a`.** It serialises the whole transcript into
+  `resume_state`, which crosses the gap intact. Stateless resume is a legitimate
+  way to be durable, so it scores 8/8 — but it is not a checkpointer, and the
+  feature matrix keeps the two apart.
+
+`call_counts` is what makes the arena real: an adapter patched to restart from
+scratch still reaches the right answer, and still drops from 8/8 to **0/8**,
+because it redoes both lookups.
+
 ## Goal
 
 A multi-step task is interrupted mid-run (simulated crash); a fresh process must

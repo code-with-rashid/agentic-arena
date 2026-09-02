@@ -6,7 +6,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 ## What works right now
 
 - `pip install -e ".[dev]"` on Python 3.11–3.14, **zero runtime deps** for the core.
-- Six arenas run offline against the stdlib mock LLM:
+- Seven arenas run offline against the stdlib mock LLM:
   - `tool_use` — 15 items, search + calculator
   - `structured_output` — 15 items, search + a schema-checked JSON record
   - `resilience` — 8 scripted model/tool faults; the agent must recover
@@ -17,6 +17,9 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   - `human_in_the_loop` — 12 items, the agent must pause for approval before
     booking. `langgraph` 12/12 (native interrupt) and `vanilla` 12/12 (emulated);
     the other adapters report unsupported because they have no `resume` method
+  - `durable_state` — 8 items; the harness throws the runner away at the
+    checkpoint and rebuilds it. `langgraph` 8/8 via an on-disk SqliteSaver,
+    `vanilla` 8/8 via stateless resume
 - Five adapters run green in mock mode on every arena:
   `vanilla`, `langgraph` (LangGraph 1.2.11), `pydantic_ai` (pydantic-ai-slim 2.37),
   `openai_agents` (openai-agents 0.22), `microsoft_af` (agent-framework 1.16).
@@ -38,7 +41,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | First **live** scorecard | none — no API key wired in; `results/` holds only a mock `tool_use` sample | add repo secret `OPENAI_API_KEY`, run the `full-run` workflow, commit `results/` |
 | `frameworks/crewai/adapter.py` | written, **not mock-verified** — CrewAI's transitive tree (chromadb/onnxruntime) has no Python 3.14 wheels, and a first 3.12 CI attempt scored 0/15 (telemetry prompt + an internal `'list' object has no attribute 'rstrip'`). Kept out of the required matrix. | debug on a 3.12 venv, pin the exact version, add its CI cell, refresh results |
 | `frameworks/claude_agent_sdk` | deliberate stub — drives the `claude` CLI (Node) over the Anthropic Messages API, not one OpenAI-compatible endpoint | see `frameworks/claude_agent_sdk/README.md` for the three ways to close it |
-| Arena `durable_state` | design doc only, in `docs/arenas/` | needs a checkpoint API that survives a process restart — the emulated pause deliberately does not |
+| Real multi-agent entries for `multi_agent` | only single-agent role-play entries exist | add `<fw>-multi` adapters using each framework's own graph/crew/handoff mechanism, compared on token and LLM-call cost |
 | Native interrupts for `microsoft_af` and the rest | Agent Framework ships tool-approval middleware; not wired to `ResumableRunner` | implement `resume` (see `frameworks/langgraph/adapter.py` for the pattern), then `human_in_the_loop` measures those cells too |
 | `multi_agent` real orchestration | only the single-agent role-play entry exists | add `<fw>-multi` adapter entries that use each framework's own graph/crew/handoff mechanism; compare tokens + LLM calls against the single-agent run |
 | `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |

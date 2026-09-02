@@ -56,8 +56,9 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       `Command`) — the HITL feature-matrix row is now measured, not judged
 - ⬜ Native interrupts for `microsoft_af` (tool-approval middleware) and the
       remaining adapters
-- ⬜ Arena 7 `durable_state` — needs a checkpoint API that survives a process
-      restart, which the emulated pause deliberately does not
+- ✅ Arena 7 `durable_state` — the harness discards the runner at the pause and
+      JSON round-trips the resume state, so only a real checkpoint or a
+      serialised transcript survives. `langgraph` (SqliteSaver) + `vanilla` 8/8
 - ⬜ `multi_agent` still needs real multi-agent adapter entries (`<fw>-multi`)
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
 - ✅ Cross-arena summary (`python -m arena summary`) — coverage grid plus the

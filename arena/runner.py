@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import platform
+import shutil
 import time
 import traceback
 from dataclasses import replace
@@ -15,7 +16,7 @@ from .config import REPO_ROOT, ArenaConfig
 from .llm.mockserver import MockServer
 from .registry import load_arena, load_framework
 from .scorer import score_item
-from .tools import SUSPEND_TOOL
+from .tools import SUSPEND_TOOLS
 from .types import AgentResult, ArenaSpec, EvalItem
 
 RUNS_DIR = REPO_ROOT / "runs"
@@ -51,17 +52,45 @@ def _merge_legs(legs: list[AgentResult]) -> AgentResult:
     )
 
 
-def _run_item(agent: Any, item: EvalItem) -> AgentResult:
-    """Run one item, driving any suspend/resume cycle to completion."""
+def _across_the_gap(state: Any) -> Any:
+    """Round-trip the resume state through JSON, as a crash would.
+
+    This is the whole test in a `durable` arena. A live object handed straight
+    back would let an adapter "resume" through a reference that no restarted
+    process could ever hold, and the item would pass while proving nothing.
+    """
+    return json.loads(json.dumps(state))
+
+
+def _run_item(agent: Any, item: EvalItem, rebuild: Any = None) -> AgentResult:
+    """Run one item, driving any suspend/resume cycle to completion.
+
+    `rebuild` is passed for a `durable` arena: the runner is discarded at the
+    pause and a fresh one is built, so only what the adapter persisted to
+    `config.checkpoint_dir` - or serialised into `resume_state` - survives.
+    """
     legs = [agent.run(item)]
     while legs[-1].suspended and len(legs) <= MAX_RESUMES:
+        state = legs[-1].resume_state
+        if rebuild is not None:
+            try:
+                state = _across_the_gap(state)
+            except (TypeError, ValueError) as exc:
+                return replace(
+                    _merge_legs(legs),
+                    error=(
+                        "resume_state is not JSON-serialisable, so nothing could "
+                        f"survive a restart: {exc}"
+                    ),
+                )
+            agent = rebuild()
         if not hasattr(agent, "resume"):
             return replace(
                 _merge_legs(legs),
                 error="adapter suspended but does not implement resume()",
             )
         decision = item.resume_with or "approve"
-        legs.append(agent.resume(item, legs[-1].resume_state, decision))
+        legs.append(agent.resume(item, state, decision))
     if legs[-1].suspended:
         return replace(
             _merge_legs(legs),
@@ -97,22 +126,26 @@ def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> d
     # "This framework has no interrupt mechanism wired up" and "this framework
     # tried to pause and got it wrong" are different findings, and scoring them
     # both as a pile of failed items would conflate them.
-    if SUSPEND_TOOL in arena.tools and not hasattr(agent, "resume"):
+    if any(name in arena.tools for name in SUSPEND_TOOLS) and not hasattr(agent, "resume"):
         return {
             **record,
             "available": False,
             "reason": (
-                "arena requires a pause for human approval, but this adapter does "
+                "arena requires the run to pause and resume, but this adapter does "
                 "not implement the resume API (arena.types.ResumableRunner)"
             ),
         }
+
+    # A durable arena discards the runner at the pause and builds a new one, so
+    # an adapter cannot resume through anything it kept in memory.
+    rebuild = (lambda: adapter.build(arena, config)) if arena.durable else None
 
     for rep in range(config.repeat):
         for item in arena.dataset:
             started = time.perf_counter()
             error_tb: str | None = None
             try:
-                result = _run_item(agent, item)
+                result = _run_item(agent, item, rebuild)
             except Exception as exc:  # noqa: BLE001
                 # Keep the traceback: an adapter that fails every item otherwise
                 # reports one unhelpful line, and the frame that actually raised
@@ -159,6 +192,15 @@ def run(
 ) -> dict[str, Any]:
     config = config or ArenaConfig.from_env()
     arena = load_arena(arena_id)
+
+    if arena.durable and not config.checkpoint_dir:
+        # The harness owns the store and hands the same path to every framework,
+        # so no adapter gets a private one the others do not have.
+        checkpoints = RUNS_DIR / "checkpoints" / arena.id
+        if checkpoints.exists():
+            shutil.rmtree(checkpoints, ignore_errors=True)
+        checkpoints.mkdir(parents=True, exist_ok=True)
+        config = replace(config, checkpoint_dir=str(checkpoints))
 
     mock: MockServer | None = None
     if config.mode == "mock":

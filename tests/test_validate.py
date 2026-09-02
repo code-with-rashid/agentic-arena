@@ -147,7 +147,7 @@ def test_every_registered_check_type_is_implemented(ctype):
     from arena.types import AgentResult
 
     required, _optional = CHECK_SPECS[ctype]
-    stub = {"value": 0, "name": "search", "path": "a", "schema": {"type": "object"}}
+    stub = {"value": 0, "name": "search", "path": "a", "schema": {"type": "object"}, "counts": {}}
     check = {"type": ctype, **{k: stub[k] for k in required}}
     _ok, detail = _check(check, AgentResult(output_text="{}"))
     assert "unknown check type" not in detail

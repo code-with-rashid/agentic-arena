@@ -1,0 +1,20 @@
+id = "durable_state"
+description = "A four-step job - look up two facts, checkpoint, then combine them - where the harness throws the runner away at the checkpoint and builds a fresh one before resuming. Only what the adapter persisted, or serialised into its resume state, survives the gap. Tests whether a framework's pause is durable rather than merely in-memory, and whether resuming re-executes work that was already done."
+tools = ["search", "calculator", "save_progress"]
+durable = true
+
+system_prompt_intent = """
+You answer height-comparison questions using two tools: `search` (a small factual
+knowledge base) and `calculator` (basic arithmetic). Work in this order: search for
+the first structure, search for the second, then call `save_progress` with a note
+of the two heights you found and stop. You will be resumed. After resuming, use
+`calculator` to work out the difference and give the answer in metres. Do not
+repeat a search you have already done, and do not do the arithmetic in your head.
+"""
+
+# `durable = true` is what makes this arena different from `human_in_the_loop`.
+# Both pause; here the harness discards the runner at the pause, JSON round-trips
+# the resume state as a crash would, and rebuilds the adapter from scratch. An
+# adapter that kept the conversation in memory cannot get across that gap, and an
+# adapter that restarts from the beginning re-runs both searches, which the
+# `call_counts` check catches.
