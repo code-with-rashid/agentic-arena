@@ -69,11 +69,21 @@ ruff check . && ruff format --check .
 5. Add `frameworks/<name>/requirements.txt` (pinned) and a short
    `frameworks/<name>/README.md` noting anything non-obvious.
 
-6. Confirm it runs:
+6. Confirm it runs, then confirm it plays fair:
 
    ```bash
    python -m arena run --arena tool_use --framework <name> --mode mock
+   pytest tests/test_adapters_contract.py -q
    ```
+
+   The second command is the one that matters. A green mock run only proves the
+   adapter wires together; the contract tests assert on the actual request bodies
+   that your adapter sends the arena's prompt, advertises only the arena's tools,
+   stops at the shared iteration budget, hands the model the tool result
+   byte-for-byte, runs the arguments the model asked for, and replays the whole
+   transcript each turn. They run automatically in the `comparison` CI job, which
+   is the only one that installs every framework — add your framework to that
+   job's install loop and to its `ARENA_EXPECT_FRAMEWORKS` list.
 
 7. Add a row to the framework table in the top-level `README.md` and a deep-dive
    stub in `docs/frameworks/<name>.md`.

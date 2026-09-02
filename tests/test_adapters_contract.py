@@ -4,6 +4,7 @@ a clean NotImplementedError. This keeps stubs honest and catches import-time typ
 
 import contextlib
 import json
+import os
 from dataclasses import replace
 
 import pytest
@@ -11,6 +12,7 @@ import pytest
 from arena.config import ArenaConfig
 from arena.llm.mockserver import MockScript, MockServer
 from arena.registry import available_frameworks, load_arena, load_framework
+from arena.tools import TOOL_FUNCS
 from arena.types import ArenaSpec, EvalItem
 
 STUBS = {"claude_agent_sdk"}
@@ -136,6 +138,97 @@ def test_adapter_respects_the_shared_iteration_budget(name):
     assert calls > 1, f"{name}: made {calls} calls — the probe never reached the tool loop"
 
 
+def _tool_round_trip(name):
+    """Run one search item and return (what the tool was asked, what came back)."""
+    arena = _sentinel_arena(["search"])
+    arena.dataset = [EvalItem(id="t-01", input="How tall is the Eiffel Tower?", checks=[])]
+    script = MockScript(
+        {
+            "default": {
+                "turns": [
+                    {"tool_calls": [{"name": "search", "arguments": {"query": "Eiffel Tower"}}]},
+                    {"content": "330 metres."},
+                ]
+            }
+        }
+    )
+    with MockServer(script) as server:
+        config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        load_framework(name).build(arena, config).run(arena.dataset[0])
+        assert len(server.requests) >= 2, f"{name}: never sent the tool result back"
+        return server.requests
+
+
+def _tool_result_text(name, requests):
+    """The tool output as the framework handed it back to the model."""
+    for msg in reversed(requests[-1].get("messages", [])):
+        if msg.get("role") == "tool":
+            return str(msg.get("content", ""))
+    raise AssertionError(f"{name}: no role='tool' message in the follow-up request")
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_adapter_returns_the_tool_result_verbatim(name):
+    """The model must see exactly what the tool returned.
+
+    A framework that truncates, re-wraps or summarises tool output would still
+    look green in mock mode — the script replays the next scripted turn no matter
+    what came back — while scoring near zero live. Same blind spot that hid the
+    hard-coded-prompt bug, so it gets the same wire-level treatment.
+    """
+    requests = _tool_round_trip(name)
+    sent = _tool_result_text(name, requests)
+    truth = TOOL_FUNCS["search"]({"query": "Eiffel Tower"})
+    assert sent == truth, (
+        f"{name}: tool result altered on the way to the model "
+        f"({len(truth)} chars out, {len(sent)} chars in) -> {sent[:200]!r}"
+    )
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_adapter_executes_the_arguments_the_model_asked_for(name):
+    """The query the model requested must be the query the tool actually ran."""
+    requests = _tool_round_trip(name)
+    sent = _tool_result_text(name, requests)
+    # 'Eiffel Tower' is the top hit for that query and for nothing else in the corpus.
+    assert "Eiffel Tower" in sent, (
+        f"{name}: the tool ran on different arguments than the model requested -> {sent[:200]!r}"
+    )
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_adapter_replays_the_whole_transcript(name):
+    """Each request must carry the prior turns, not just the newest message.
+
+    The mock picks its scenario from the first user message and counts assistant
+    turns to decide what to serve next, so an adapter that sent only the latest
+    delta would desync and read as a mysterious wrong answer. STATUS.md carried
+    this as an untested assumption; this is the test.
+    """
+    requests = _tool_round_trip(name)
+    roles = [m.get("role") for m in requests[-1].get("messages", [])]
+    assert "user" in roles, f"{name}: dropped the original question -> {roles}"
+    assert "assistant" in roles, f"{name}: dropped its own tool-call turn -> {roles}"
+    assert "tool" in roles, f"{name}: dropped the tool result -> {roles}"
+
+
 def test_at_least_one_adapter_was_actually_exercised():
     """Guard against the parametrised contract tests silently collapsing to zero."""
     assert "vanilla" in BUILDABLE, BUILDABLE
+
+
+def test_every_expected_framework_is_contract_tested():
+    """In an environment that has the frameworks installed, all of them must run.
+
+    `pip install -e '.[dev]'` deliberately pulls no framework, so a plain CI test
+    job can only ever contract-test `vanilla` — which meant the wire-level checks
+    that caught the arena-spec and iteration-budget bugs were not actually
+    guarding the frameworks they were written for. The job that does install them
+    sets ARENA_EXPECT_FRAMEWORKS so a broken install fails loudly instead of
+    quietly reducing the matrix to one adapter.
+    """
+    expected = [n for n in os.environ.get("ARENA_EXPECT_FRAMEWORKS", "").split(",") if n.strip()]
+    if not expected:
+        pytest.skip("ARENA_EXPECT_FRAMEWORKS not set (no frameworks installed here)")
+    missing = sorted(set(expected) - set(BUILDABLE))
+    assert not missing, f"expected to contract-test {expected}, but could not build {missing}"
