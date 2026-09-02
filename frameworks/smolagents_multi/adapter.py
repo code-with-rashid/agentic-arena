@@ -93,6 +93,7 @@ class _Runner:
             model_id=config.model,
             api_base=config.base_url,
             api_key=config.api_key,
+            client_kwargs={"timeout": config.request_timeout_s},
             temperature=0.0,
         )
         # smolagents makes one model call beyond `max_steps`, same as the

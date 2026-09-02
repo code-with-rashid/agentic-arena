@@ -54,6 +54,7 @@ tightly anyway. Reproduce it with
 """
 
 import contextlib
+import time
 from dataclasses import replace
 
 import pytest
@@ -250,3 +251,109 @@ def test_smolagents_stacks_a_second_retry_layer_that_ignores_retry_after():
         f"base={base}) — docs/transport.md quotes 120-240s and needs updating"
     )
     assert attempts > 1, "the outer retry layer is gone; docs/transport.md needs updating"
+
+
+# ---------------------------------------------------------------------------
+# A hung gateway, which is a different failure from a fast error.
+# ---------------------------------------------------------------------------
+
+BUDGET = 1.0
+STALL = 20.0
+
+
+def _hung(name, budget=BUDGET, stall=STALL):
+    """Run one item against a gateway that accepts the request and never answers.
+
+    Returns `(outcome, attempt_stamps)`. The gap between attempts is the useful
+    number: a runner that abandoned the hung request at its budget starts the
+    next attempt at `budget + backoff`, while one that sat through the hang has
+    no second attempt inside the stall at all.
+    """
+    with MockServer(SCRIPT, arena_tools=["search"], stall_seconds=stall) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            request_timeout_s=budget,
+            max_tool_iterations=4,
+        )
+        started = time.perf_counter()
+        try:
+            result = load_framework(name).build(_arena(), config).run(ITEM)
+            outcome = "answered" if ANSWER in (result.output_text or "") else "gave up"
+        except Exception as exc:  # noqa: BLE001 - the outcome under test
+            outcome = f"raised {type(exc).__name__}"
+        return outcome, [t - started for t in server.attempts]
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_a_hung_gateway_does_not_hang_the_run(name):
+    """`request_timeout_s` is a shared knob, so every adapter has to wire it through.
+
+    Five of the seven adapters silently did not: `pydantic_ai`, `openai_agents`,
+    `microsoft_af`, `smolagents` and `google_adk` all built their client without
+    a timeout and inherited the library default (ten minutes, for anything on the
+    official OpenAI client). Against a gateway hung for 20 s they each waited the
+    full 20 s and then answered, on a configured budget of 1 s.
+
+    That is the same class of unfairness as an unwired iteration budget: a
+    scorecard's latency column would have been measuring library defaults rather
+    than the arena's configuration. It is a harness bug, so it is a gate.
+    """
+    outcome, stamps = _hung(name)
+    assert outcome != "answered", (
+        f"{name}: answered through a {STALL}s hang on a {BUDGET}s budget "
+        f"— request_timeout_s is not reaching the client"
+    )
+    assert stamps, f"{name}: never reached the gateway at all"
+    if len(stamps) > 1:
+        # It retried, so the first attempt was abandoned: that moment is
+        # observable as the start of the second. A runner that does not retry
+        # gives no second stamp, and for it the outcome above is the whole check.
+        gap = stamps[1] - stamps[0]
+        assert gap < STALL - 1, f"{name}: waited {gap:.1f}s for a {BUDGET}s budget"
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_the_timeout_is_per_attempt_and_the_budget_moves_it(name):
+    """Doubling the budget doubles the wait — proof the knob is the one being read.
+
+    Without this, an adapter that hard-coded *any* short timeout would pass the
+    test above while still ignoring the configuration.
+
+    Note what is being asserted: the budget bounds a single **attempt**, not the
+    item. A framework that retries twice spends `timeout x attempts + backoff`
+    before giving up, so the default 60 s is a three-minute worst case per item
+    rather than a one-minute one. That is a finding, in docs/transport.md.
+    """
+    _, slow = _hung(name, budget=3.0)
+    _, fast = _hung(name, budget=1.0)
+    if len(slow) < 2 or len(fast) < 2:
+        # A runner that does not retry gives no second stamp to compare. Its
+        # budget is checked by the outcome assertion above.
+        return
+    assert (slow[1] - slow[0]) > (fast[1] - fast[0]) + 1.0, (
+        f"{name}: a 3s budget abandoned the request in {slow[1] - slow[0]:.1f}s and a 1s budget "
+        f"in {fast[1] - fast[0]:.1f}s — the configured value is not what is timing out"
+    )
+
+
+def test_smolagents_outer_retry_layer_does_not_cover_timeouts():
+    """The minutes-long stall is rate-limit-only, and a hung provider is not that.
+
+    `smolagents.models` wraps every client call in its own `Retrying`, which is
+    what turns three 429s into a two-to-four-minute sleep. It is built with
+    `retry_predicate=is_rate_limit_error`, so a timeout falls straight through
+    to the caller and the outer layer never engages — measured as 3 attempts in
+    8.5 s against a hung gateway, which is the inner OpenAI client alone.
+
+    Worth pinning because the obvious reading of docs/transport.md is "smolagents
+    retries for minutes", and that is only true of one status code.
+    """
+    models = pytest.importorskip("smolagents.models")
+    predicate = getattr(models, "is_rate_limit_error", None)
+    assert predicate is not None, (
+        "smolagents' outer retry is no longer gated on rate limits — "
+        "docs/transport.md says a hung provider fails fast and needs re-measuring"
+    )
+    assert not predicate(TimeoutError("hung")), "a timeout now triggers the 2-4 minute outer sleep"

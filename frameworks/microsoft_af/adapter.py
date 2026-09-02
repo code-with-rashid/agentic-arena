@@ -143,7 +143,11 @@ class _Runner:
 
         client = OpenAIChatCompletionClient(
             model=self.config.model,
-            async_client=AsyncOpenAI(base_url=self.config.base_url, api_key=self.config.api_key),
+            async_client=AsyncOpenAI(
+                base_url=self.config.base_url,
+                api_key=self.config.api_key,
+                timeout=self.config.request_timeout_s,
+            ),
             # Without this the tool loop is uncapped: measured against a mock
             # that never stops calling tools, this adapter made 41 LLM calls on
             # a budget of 6. `max_iterations` counts tool-calling roundtrips and

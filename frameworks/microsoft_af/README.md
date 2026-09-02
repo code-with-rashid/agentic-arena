@@ -12,7 +12,8 @@ Semantic Kernel line) with the shared search / calculator tools.
   base_url=config.base_url, api_key=config.api_key))`. Note the client class:
   `OpenAIChatClient` defaults to the OpenAI **Responses** API (`/v1/responses`),
   which the arena gateway / mock server does not speak — `OpenAIChatCompletionClient`
-  uses Chat Completions.
+  uses Chat Completions. The inner client carries `timeout=config.request_timeout_s`
+  so a hung gateway is bounded by the arena's budget.
 - **Async:** the framework is async-only. The adapter builds a fresh client, agent,
   and event loop per item (`asyncio.run`) so the httpx client never outlives its
   loop.

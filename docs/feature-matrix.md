@@ -39,7 +39,13 @@ Two differences worth knowing. `langgraph` retries **once** where the others
 retry twice, giving up an attempt earlier against a provider that rate-limits in
 bursts. And `smolagents` is the only one that survives *three* consecutive 429s —
 by sleeping for **two to four minutes** on a single item, which the scorecard
-cannot see because the item passes.
+cannot see because the item passes. That sleep is rate-limits only: against a
+provider that simply hangs, smolagents fails as fast as everyone else.
+
+A hung provider is a separate row from a failing one, and it is the arena's own
+`request_timeout_s` that bounds it — a knob **five of seven adapters were
+ignoring** until it was wired through and gated. The budget bounds an attempt,
+not an item, so a framework that retries twice can spend three times it.
 
 ### Batched tool calls, and a quieter failure mode
 

@@ -27,6 +27,7 @@ from arena.types import AgentResult, ArenaSpec, EvalItem
 
 class _Runner:
     def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
+        from openai import AsyncOpenAI
         from pydantic_ai import Agent, CallDeferred, DeferredToolRequests
         from pydantic_ai.models.openai import OpenAIChatModel, OpenAIChatModelSettings
         from pydantic_ai.providers.openai import OpenAIProvider
@@ -37,7 +38,16 @@ class _Runner:
         self.system_prompt = arena.system_prompt
         model = OpenAIChatModel(
             config.model,
-            provider=OpenAIProvider(base_url=config.base_url, api_key=config.api_key),
+            # `OpenAIProvider(base_url=...)` builds its own client with the
+            # library default timeout, so the shared `request_timeout_s` would be
+            # ignored. Handing it a client is the only way to set it here.
+            provider=OpenAIProvider(
+                openai_client=AsyncOpenAI(
+                    base_url=config.base_url,
+                    api_key=config.api_key,
+                    timeout=config.request_timeout_s,
+                )
+            ),
         )
         names = _tool_names(arena.tools)
         # Only widen the output type for arenas that actually ask for a pause:

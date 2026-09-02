@@ -168,6 +168,24 @@ The outer one is `smolagents.models.Retrying`, whose first backoff is
 `RETRY_WAIT(60) × 2 × (1 + random())` — 120 to 240 s, bracketing every
 measurement, and it never consults the header.
 
+**But that minutes-long sleep is rate-limits only.** Against a provider that
+simply hangs, smolagents fails in 8.5 s like everyone else — its outer layer is
+built with `retry_predicate=is_rate_limit_error`, a substring check for `429` /
+`rate limit` in the exception text, and a timeout matches none of it.
+
+**A hung provider also caught a bug in this harness, not in the frameworks.**
+`ArenaConfig.request_timeout_s` has existed since the first commit, and **five of
+the seven adapters never passed it to their client** — `pydantic_ai`,
+`openai_agents`, `microsoft_af`, `smolagents` and `google_adk` each inherited
+their library's default (ten minutes, on the official OpenAI client) and answered
+happily through a 20-second hang on a one-second budget. Fixed, and gated twice:
+that a hang is abandoned, and that *doubling* the budget doubles the wait, which
+is what stops any hard-coded value passing.
+
+The knob turns out to bound an **attempt**, not an item. A framework that retries
+twice spends `timeout × attempts + backoff`, so the default 60 s is a
+three-minute worst case per item.
+
 → [transport.md](transport.md)
 
 ```bash

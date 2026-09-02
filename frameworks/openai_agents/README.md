@@ -8,7 +8,9 @@ tools.
 - **LLM:** an `AsyncOpenAI(base_url=config.base_url, api_key=config.api_key)` client
   wrapped in `OpenAIChatCompletionsModel(model=config.model, ...)`. The SDK is
   model-family-native but accepts any OpenAI-compatible client, which is what lets
-  the mock server stand in.
+  the mock server stand in. The client carries `timeout=config.request_timeout_s`
+  so a hung gateway is bounded by the arena's budget rather than the OpenAI
+  client's ten-minute default.
 - **Tracing:** disabled via `set_tracing_disabled(True)` — the SDK otherwise tries
   to upload traces to OpenAI, which fails and leaks against the mock or a
   third-party gateway.
