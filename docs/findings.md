@@ -195,19 +195,32 @@ in §1: each sub-agent is described **twice**, once as a JSON schema and once in
 prose. Both frameworks bill you for options rather than actions; they do not bill
 the same amount.
 
-**Measured from one role to five, both model-decided mechanisms follow an exact
-law**, so the choice between them is a slope rather than a premium:
+**Measured from one role to five, across four implementations in three
+libraries, every one follows an exact law:**
 
-| roles | 1 | 2 | 3 | 4 | 5 | |
-|---|--:|--:|--:|--:|--:|---|
-| handoff (speaker swap) | 2 | 3 | 4 | 5 | 6 | **N + 1** calls |
-| sub-agent as tool | 2 | 4 | 6 | 8 | 10 | **2N** calls |
+| roles | | 1 | 2 | 3 | 4 | 5 | |
+|---|---|--:|--:|--:|--:|--:|---|
+| `handoffs` (openai_agents) | speaker swap | 2 | 3 | 4 | 5 | 6 | **N + 1** |
+| `sub_agents` (google_adk) | transfer, returns to parent | 2 | 4 | 5 | 6 | 7 | **N + 2** |
+| `managed_agents` (smolagents) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
+| `AgentTool` (google_adk) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
 
-The gap is N − 1 extra model calls and never stops growing. Prompt cost grows
-faster than call count in both: at five roles, 7.80× the prompt for 5× the calls
-(sub-agent) and 5.46× for 3× (handoff), each normalised to its own single-agent
-run. Later stages re-send their own scaffolding *and* carry more accumulated
-context than earlier ones.
+**2N is the mechanism, not the library** — smolagents and ADK share no code and
+agree at every depth. **"Handoff" is not one thing** — both the OpenAI SDK and
+ADK call theirs a transfer, and ADK's costs one call more because it returns
+control to the parent, which then speaks again.
+
+**And you pay in calls or in prompt, not both — the call law alone points the
+wrong way.** Inside ADK at four roles: `sub_agents` costs 6 calls and 7375 prompt
+tokens; `AgentTool` costs 8 calls and 1722. A transfer keeps one conversation
+every agent sees all of, so the prompt compounds (15.4× against 3× the calls); a
+sub-agent starts fresh, so the prompt stays flat and the calls compound instead
+(3.59× against 4×). Cheaper in calls is dearer in prompt, and prompt is usually
+the larger bill.
+
+Restarting only helps if there is little to re-send: smolagents restarts too and
+still compounds (5.68×), because each sub-agent carries its own ~4 KB templated
+system prompt — the scaffolding from §1.
 
 Two things this deliberately does *not* say. The lower completion tokens on the
 handoff chain (140 vs 198) are not efficiency — the researcher emits a short

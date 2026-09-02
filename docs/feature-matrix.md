@@ -16,7 +16,7 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) | ✅ (through LiteLLM) |
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) | ✅ (event stream) |
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) | ✅ (per-event `usage_metadata`) |
-| Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | ✅ (`managed_agents`, measured) | ✅ (sub-agents) |
+| Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | ✅ (`managed_agents`, measured) | ✅ (`sub_agents` **and** `AgentTool`, both measured) |
 | Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | ✅ (`approval_mode`, measured) | ❌ (no interrupt primitive) | 🟡 (reported, not enforced, measured) |
 | Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❌ (session store does not round-trip, measured) | ❌ | ✅ (`DatabaseSessionService`, measured) |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 | 🟡 (`output_schema`) |
@@ -121,11 +121,18 @@ the `transfer_to_*` schemas riding on every request** rather than the transfers
 themselves — you pay for a handoff by advertising it, not by taking it. A
 supervisor offering N handoffs pays for N schemas on every request in the run.
 
-A sub-agent invoked *as a tool* (`managed_agents`) is a third shape, and it is
-the only one that costs **3x** the model calls rather than 2x: its reply is a
-tool result, not the end of the run, so every delegator has to wake up and
-produce its own final answer afterwards. That cost scales with the depth of the
-chain rather than with the work in it.
+A sub-agent invoked *as a tool* (`managed_agents`, `AgentTool`) is a third shape,
+and it is the only one that costs **3x** the model calls rather than 2x: its
+reply is a tool result, not the end of the run, so every delegator has to wake up
+and produce its own final answer afterwards.
+
+Measured from one role to five across four implementations, each follows an exact
+law - `handoffs` N+1, ADK `sub_agents` N+2, sub-agent-as-tool 2N - and the 2N law
+**replicates in two libraries that share no code**, so it is a property of the
+mechanism. But the call count is only half the bill: a transfer keeps one growing
+conversation (prompt compounds 15.4x over four roles) while a sub-agent starts
+fresh (3.59x). Inside ADK, `AgentTool` costs a third more calls and a quarter of
+the prompt than `sub_agents`. See [multi-agent.md](multi-agent.md).
 
 Still judged: CrewAI crews, the same sub-agent-as-tool shape, blocked on an
 adapter that has never been mock-verified.

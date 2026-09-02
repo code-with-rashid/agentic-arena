@@ -158,11 +158,22 @@ def _advertised(req: dict[str, Any]) -> list[str]:
     return names
 
 
-def _already_called(req: dict[str, Any], tool: str) -> bool:
-    """Has this conversation already called `tool`?
+def _already_called(
+    req: dict[str, Any], tool: str, arguments: dict[str, Any] | None = None
+) -> bool:
+    """Has this conversation already made *this* call?
 
     Read off the transcript rather than tracked in the server, so the mock stays
     stateless and two runs cannot contaminate each other.
+
+    Keyed on the arguments as well as the name, because the two handoff shapes
+    put the target in different places. One tool per target
+    (`transfer_to_writer`, `transfer_to_editor`) is distinguished by name; a
+    single tool parameterised by target (`transfer_to_agent(agent_name=…)`, which
+    is what Google ADK's `sub_agents` produces) is only distinguished by its
+    arguments, and matching on the name alone would stop a chain after its first
+    hop. Where a delegation carries the same arguments every time - a sub-agent
+    invoked as a tool, handed the same task - this still blocks the repeat.
 
     Both encodings have to be checked. Most clients send a structured
     `tool_calls` field, but smolagents replays its own calls as assistant
@@ -172,16 +183,32 @@ def _already_called(req: dict[str, Any], tool: str) -> bool:
     rather than a bare substring, so an agent merely mentioning "editor" in prose
     is not mistaken for having called it.
     """
+    wanted = json.dumps(arguments, sort_keys=True) if arguments else None
+
+    def _same_arguments(raw: Any) -> bool:
+        if wanted is None:
+            return True
+        if isinstance(raw, str):
+            try:
+                raw = json.loads(raw)
+            except ValueError:
+                return False
+        return json.dumps(raw, sort_keys=True) == wanted
+
     needles = (f"'name': '{tool}'", f'"name": "{tool}"')
     for message in req.get("messages", []):
         if message.get("role") != "assistant":
             continue
         for call in message.get("tool_calls") or []:
-            if call.get("function", {}).get("name") == tool:
+            function = call.get("function", {})
+            if function.get("name") == tool and _same_arguments(function.get("arguments")):
                 return True
         content = message.get("content") or ""
         if not isinstance(content, str):
             content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
+        # The text encoding carries the arguments too, but not in a form worth
+        # parsing; a client that replays calls as prose only ever produces the
+        # one-tool-per-target shape, where the name is already decisive.
         if any(needle in content for needle in needles):
             return True
     return False
@@ -244,35 +271,52 @@ HANDOFF_PREFIX = "transfer_to_"
 FINAL_ANSWER_TOOLS = (FINAL_ANSWER_TOOL,)
 
 
-def _delegation_tool(req: dict[str, Any], arena_tools: list[str] | None) -> str | None:
-    """A delegate this client is offering that it has not already used.
+def _delegation_tool(
+    req: dict[str, Any], arena_tools: list[str] | None, task: str = ""
+) -> tuple[str, dict[str, Any]] | None:
+    """A delegate this client is offering that it has not already used, and its arguments.
 
-    Two ways a framework can express model-decided delegation, and the mock
-    recognises both:
+    Three ways a framework expresses model-decided delegation, and the mock
+    recognises all of them:
 
-      * a `transfer_to_<agent>` tool that swaps the speaker (OpenAI Agents SDK
-        `handoffs`) - matched by prefix, always;
-      * a sub-agent advertised as an ordinary tool named after itself
-        (smolagents `managed_agents`) - which can only be told apart from a task
-        tool by knowing what the arena actually declared, so this half is active
-        only when the harness has told the server the arena's tool list.
+      * **one tool per target** — `transfer_to_<agent>` swaps the speaker (OpenAI
+        Agents SDK `handoffs`). Matched by prefix, always, and takes no arguments.
+      * **one tool parameterised by target** — `transfer_to_agent(agent_name=…)`
+        (Google ADK `sub_agents`). Also matched by the prefix, but the target
+        lives in an `enum` on the parameter, so the call is only distinguishable
+        from the previous hop by its arguments.
+      * **a sub-agent advertised as an ordinary tool named after itself**
+        (smolagents `managed_agents`, ADK `AgentTool`) — which can only be told
+        apart from a task tool by knowing what the arena declared, so this half is
+        active only when the harness has told the server the arena's tool list.
 
-    "Not already used" is what terminates a nested pipeline. The handoff chain
-    terminates on its own, because after a transfer the receiving agent is the
-    one talking and it offers its own handoffs or none. A manager holding
-    managed agents keeps advertising them forever, so without this it would
+    "Not already used" is what terminates a nested pipeline. A one-tool-per-target
+    handoff chain terminates on its own, because after a transfer the receiving
+    agent is the one talking and it offers its own handoffs or none. The other two
+    shapes keep advertising the same tool name forever, so without this they would
     delegate on every turn and never answer. Reading it off the transcript keeps
     the server stateless.
     """
+
+    def _candidate(name: str) -> tuple[str, dict[str, Any]] | None:
+        arguments = _delegation_arguments(req, name, task)
+        if _already_called(req, name, arguments):
+            return None
+        return name, arguments
+
     for name in _advertised(req):
-        if name.startswith(HANDOFF_PREFIX) and not _already_called(req, name):
-            return name
+        if name.startswith(HANDOFF_PREFIX):
+            found = _candidate(name)
+            if found:
+                return found
     if arena_tools is None:
         return None
     known = set(arena_tools) | set(FINAL_ANSWER_TOOLS)
     for name in _advertised(req):
-        if name not in known and not _already_called(req, name):
-            return name
+        if name not in known:
+            found = _candidate(name)
+            if found:
+                return found
     return None
 
 
@@ -301,7 +345,16 @@ def _delegation_arguments(req: dict[str, Any], tool: str, task: str) -> dict[str
     properties = schema.get("properties") or {}
     arguments: dict[str, Any] = {}
     for name in required:
-        if properties.get(name, {}).get("type") == "string":
+        spec = properties.get(name, {})
+        choices = spec.get("enum")
+        if choices:
+            # A constrained parameter names the *target*, not the task. Google
+            # ADK's `sub_agents` produces a single `transfer_to_agent` tool whose
+            # `agent_name` enumerates the agents this stage may hand to, so the
+            # only correct value is one of them - filling it with the task text
+            # fails with "Transfer target agent '<the whole question>' not found".
+            arguments[name] = choices[0]
+        elif spec.get("type") == "string":
             arguments[name] = task
         else:
             arguments[name] = {}
@@ -407,11 +460,9 @@ class _Handler(BaseHTTPRequestHandler):
             # `final_answer` is how the answer itself is delivered. A client
             # offering both hands off now and answers after, which is the order a
             # real run would take.
-            delegate = _delegation_tool(req, arena_tools)
+            delegate = _delegation_tool(req, arena_tools, first_user)
             if delegate:
-                turn = _as_handoff_call(
-                    turn, delegate, _delegation_arguments(req, delegate, first_user)
-                )
+                turn = _as_handoff_call(turn, delegate[0], delegate[1])
             elif _wants_final_answer_tool(req):
                 turn = _as_final_answer_call(turn)
             message, finish_reason = _build_message(turn)

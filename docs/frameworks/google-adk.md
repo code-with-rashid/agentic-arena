@@ -149,6 +149,38 @@ lives in the session service, not in the `Runner`. Caching it is what took
 `human_in_the_loop` from 0/12 to 12/12. On a durable arena the bug is invisible,
 because the store is on disk.
 
+## Two delegation mechanisms, and they cost in different currencies
+
+ADK is the only framework here that ships **both** shapes of model-decided
+delegation, which makes it the cleanest place to compare them — same library,
+same model, same task, so nothing else can explain the difference.
+
+| | delegates by | 4-role chain |
+|---|---|---|
+| `sub_agents` | `transfer_to_agent(agent_name=…)` | 6 calls, 7375 prompt tokens |
+| `AgentTool(agent=…)` | the sub-agent advertised as a tool | 8 calls, 1722 prompt tokens |
+
+**`AgentTool` costs a third more calls and a quarter of the prompt.** A transfer
+keeps one conversation that every agent sees all of, so the prompt compounds
+(15.4x from one role to four, against 3x the calls). An `AgentTool` sub-agent
+starts a *fresh* conversation, so the prompt stays nearly flat and the calls
+compound instead — the only mechanism measured here where prompt grows *slower*
+than call count.
+
+Since prompt tokens are usually the larger bill, the call count alone points the
+wrong way. Worth deciding on purpose rather than by which appeared first in the
+docs.
+
+Two more things worth knowing about `sub_agents`:
+
+- **It is not a clean speaker swap.** Control comes *back* to the parent when the
+  sub-agent finishes, and the parent then speaks again. That is one extra call
+  the OpenAI Agents SDK never makes (N+2 rather than N+1), constant with depth.
+- **The transfer tool is parameterised by target**, not one tool per target:
+  a single `transfer_to_agent` whose `agent_name` parameter carries an `enum` of
+  the agents that stage may hand to. Both shapes are described in
+  [multi-agent.md](../multi-agent.md#how-this-scales-three-laws-four-implementations).
+
 ## Not yet done
 
 - **Gemini itself is unmeasured.** Everything above is ADK driving an
