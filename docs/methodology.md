@@ -50,9 +50,17 @@ from the "only declared tools" rule, excluded from an adapter's reported
 a fixed list, not a pattern: a framework cannot smuggle a capability past the
 arena by naming a tool cleverly.
 
+Handoff tools (`transfer_to_<agent>`) are exempt on the same grounds: delegating
+grants no capability, because the receiving agent carries the same arena prompt
+and only its own declared tools. They have to be matched by prefix rather than by
+an exact name, since the target agent's name is part of the tool name, and
+`arena/tools/__init__.py` records that weakening and what bounds it.
+
 They are **not** excluded from prompt-size accounting. A framework that must
-advertise an extra tool on every request really does pay for it, and
-[overhead.md](overhead.md) reports what that costs.
+advertise an extra tool on every request really does pay for it — for handoffs
+that turns out to be *most* of what delegation costs, see
+[multi-agent.md](multi-agent.md) — and [overhead.md](overhead.md) reports what it
+costs elsewhere.
 
 ## 3b. One iteration budget
 

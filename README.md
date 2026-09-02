@@ -130,7 +130,11 @@ No live scorecard exists yet, so **nothing here is about answer quality**. What
 - Splitting one agent into a three-role pipeline costs **2× the LLM calls and
   ~2.5× the prompt tokens** — and costs that whether you build it with a graph
   library or a `for` loop. LangGraph's orchestration machinery itself adds
-  nothing measurable ([multi-agent.md](docs/multi-agent.md)).
+  nothing measurable.
+- A native handoff chain costs ~10% more again, and **94% of that is the
+  `transfer_to_*` schemas riding on every request** rather than the transfers
+  themselves: you pay for a handoff by advertising it, not by taking it
+  ([multi-agent.md](docs/multi-agent.md)).
 
 [**docs/decision-guide.md**](docs/decision-guide.md) has the tables, the adoption
 gotchas found while writing each adapter, and a clear split between what is

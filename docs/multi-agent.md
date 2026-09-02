@@ -103,14 +103,86 @@ fails it with `['researcher', 'researcher', 'researcher', 'researcher']`.
 overhead table at 2.5× would read as a framework being wasteful, when it is a
 different structure being measured.
 
+## Two kinds of delegation, and they do not cost the same
+
+The pipelines above are **structural**: the graph always visits all three roles,
+so delegation is a property of the wiring. The other kind is **model-decided** —
+each agent is handed a `transfer_to_<agent>` tool and *chooses* to delegate.
+`openai_agents_multi` is that: a native `handoffs` chain,
+`researcher -> writer -> editor`.
+
+| entry | prompt tok | completion | LLM calls | pass |
+|---|--:|--:|--:|--:|
+| `openai_agents` | 686.7 | 86.2 | 2.00 | 10/10 |
+| `openai_agents_multi` | 1894.8 | 140.2 | 4.00 | 10/10 |
+
+| kind | comparison | prompt | LLM calls |
+|---|---|--:|--:|
+| structural | `vanilla` → `vanilla_multi` | 2.50× | 2.00× |
+| model-decided | `openai_agents` → `openai_agents_multi` | **2.76×** | 2.00× |
+
+Same number of LLM calls, ~10% more prompt. Where that goes is the interesting
+part — decomposing one item's four requests:
+
+| | messages | tool schemas |
+|---|--:|--:|
+| `vanilla_multi` | 6767 | 722 |
+| `openai_agents_multi` | 6818 | 1495 |
+| difference | **+51** | **+773** |
+
+**You pay for a handoff mostly by advertising it, not by taking it.** The
+transfer call and its result add 51 characters to the whole conversation. The
+`transfer_to_*` schemas add 773 — `transfer_to_writer` rides on every one of the
+researcher's requests (262 chars × 2) and `transfer_to_editor` on the writer's
+(249), whether or not anyone ever delegates. That is 94% of the difference, and
+it accounts for the gap exactly.
+
+The practical consequence: a supervisor with N possible handoffs pays for N tool
+schemas on *every* request in the run. The option costs more than the act, and it
+scales with how many options you offer rather than with how many you use.
+
+One more difference worth not misreading: `openai_agents_multi` has *lower*
+completion tokens (140.2 vs 198.0). That is not efficiency. In the structural
+pipeline the writer and the editor each emit a full brief; in the handoff chain
+the researcher emits a short transfer call instead of a draft, so only the last
+agent writes a brief. Different work, not cheaper work.
+
+### How a scripted mock delegates at all
+
+Model-decided delegation cannot be measured against a mock that only replays a
+scripted answer: the model never *chooses* anything, so the adapter would simply
+never hand off and would silently report the single-agent numbers.
+
+So the mock renders the scripted "the research is done, now write it up" step as
+a transfer, for clients that advertise one — the same accommodation already made
+for text-ReAct clients and for `final_answer`. The scripted *decision* is
+identical for everyone; only its wire format follows the client.
+
+It needs no state to terminate: after a transfer the receiving agent is the one
+talking, and it advertises its own handoffs or none. The last agent in the chain
+offers no transfer, so it answers. On the wire:
+
+```
+req1: stage=researcher  tools=['search','transfer_to_writer']
+req2: stage=researcher  tools=['search','transfer_to_writer']
+req3: stage=writer      tools=['transfer_to_editor']
+req4: stage=editor      tools=[]                      <- answers
+```
+
+A single-agent adapter never advertises a transfer tool and is unaffected.
+
+`transfer_to_` is exempt from the "only declared tools" rule for the same reason
+`final_answer` is: delegating grants no arena capability, because the receiving
+agent carries the same arena prompt and only its own declared tools. Unlike
+`final_answer` it has to be a *prefix*, since the target agent's name is in the
+tool name — `arena/tools/__init__.py` names that weakening and what bounds it.
+
 ## Still open
 
-- **Model-decided delegation.** These two pipelines are *structural* — the graph
-  always visits all three roles. Handoff-style mechanisms (OpenAI Agents SDK
-  `handoffs`, smolagents `managed_agents`, CrewAI crews) let the *model* choose to
-  delegate, which a scripted mock will never spontaneously do. Measuring those
-  needs the mock to render a scripted step as a delegation call for clients that
-  advertise one, the same accommodation already made for text-ReAct and
-  `final_answer` clients. That is the next step for this row.
-- **More than three roles.** The compounding above predicts the prompt cost grows
-  faster than the call count. Two data points do not establish a curve.
+- **The rest of the handoff frameworks.** smolagents `managed_agents` and CrewAI
+  crews are also model-decided but express it differently (a sub-agent invoked as
+  a tool, rather than a transfer that swaps the speaker). The mock accommodation
+  above is keyed on `transfer_to_*` and will not pick those up as they stand.
+- **More than three roles.** The compounding above predicts prompt cost grows
+  faster than call count, and the handoff finding predicts it grows with the
+  number of *offered* transfers too. Two points do not establish a curve.

@@ -26,7 +26,9 @@ __all__ = [
     "SUSPEND_TOOL",
     "SUSPEND_TOOLS",
     "CONTROL_TOOLS",
+    "CONTROL_TOOL_PREFIXES",
     "FINAL_ANSWER_TOOL",
+    "is_control_tool",
     "dispatch",
     "TOOL_FUNCS",
     "specs_for",
@@ -51,6 +53,27 @@ __all__ = [
 # subtracts exactly this set and nothing else.
 FINAL_ANSWER_TOOL = "final_answer"
 CONTROL_TOOLS = (FINAL_ANSWER_TOOL,)
+
+# Handoff tools are the same idea, but they cannot be an exact list: the target
+# agent's name is part of the tool name, so a chain produces `transfer_to_writer`,
+# `transfer_to_editor`, and so on. Delegating grants no arena capability either -
+# the receiving agent carries the same arena prompt and its own declared tools,
+# which the advertise check still applies to.
+#
+# Being a prefix rather than a fixed list is a real weakening, and worth naming:
+# an adapter could hide a capability behind a tool called `transfer_to_calculator`.
+# Two things bound that. Handoff calls are excluded from an adapter's reported
+# `tool_calls`, so they cannot satisfy a `tool_used` check or move a
+# `max_tool_calls` count; and the tools that actually *do* the work still come
+# from `arena.tools`, which only knows the declared set. The exemption buys a
+# framework the right to delegate, not the right to act.
+CONTROL_TOOL_PREFIXES = ("transfer_to_",)
+
+
+def is_control_tool(name: str) -> bool:
+    """Is `name` a framework loop-control tool rather than a task capability?"""
+    return name in CONTROL_TOOLS or name.startswith(CONTROL_TOOL_PREFIXES)
+
 
 SUSPEND_TOOLS = ("request_approval", "save_progress")
 SUSPEND_TOOL = SUSPEND_TOOLS[0]

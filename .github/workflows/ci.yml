@@ -47,8 +47,9 @@ jobs:
     #     Report-only; fails only if the stdlib baseline stops recovering, which
     #     would mean the arena is broken.
     #   delegation — the same 10 items run as one agent and as a three-role
-    #     pipeline, hand-rolled and in a graph library, which separates the cost
-    #     of the structure from the cost of the framework. Report-only.
+    #     pipeline: hand-rolled, in a graph library, and as a native handoff
+    #     chain. Separates the cost of the structure from the cost of the
+    #     framework, and structural delegation from model-decided. Report-only.
     #   overhead   — every framework gets the same prompt and the same two tool
     #     definitions and the mock replays identical turns, so the prompt size
     #     each one puts on the wire is its own serialisation cost. Report-only;

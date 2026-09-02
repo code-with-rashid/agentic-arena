@@ -30,6 +30,7 @@
 | `openai_agents` | `openai-agents==0.22.0` |
 | `microsoft_af` | `agent-framework-core==1.16.0`, `agent-framework-openai==1.14.1` |
 | `smolagents` | `smolagents[openai]==1.26.0` |
+| `openai_agents_multi` | `-r ../openai_agents/requirements.txt` — same reason as `langgraph_multi` |
 | `langgraph_multi` | `-r ../langgraph/requirements.txt` — the pipeline contrast entry shares the single-agent adapter's pins, so the two cannot drift apart |
 | `vanilla_multi` | none — stdlib |
 | `crewai` | `crewai>=0.130,<1.0` — a range, because the adapter is not yet verified |

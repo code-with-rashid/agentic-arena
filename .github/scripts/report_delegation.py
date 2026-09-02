@@ -14,8 +14,15 @@ import pathlib
 import sys
 
 # (single-agent entry, pipeline entry) - the pipeline is the same library and the
-# same role wording, differing only in being split across three agents.
-PAIRS = [("vanilla", "vanilla_multi"), ("langgraph", "langgraph_multi")]
+# same role wording, differing only in being split across three agents. The two
+# kinds of pipeline are marked because they are not the same experiment:
+# structural delegation is a property of the wiring, model-decided delegation is
+# a choice the model makes.
+PAIRS = [
+    ("vanilla", "vanilla_multi", "structural"),
+    ("langgraph", "langgraph_multi", "structural"),
+    ("openai_agents", "openai_agents_multi", "model-decided"),
+]
 
 runs = sorted(pathlib.Path("runs").glob("*__multi_agent__mock.json"))
 if not runs:
@@ -33,7 +40,7 @@ def mean(name: str, field: str) -> float:
 print("\nmulti_agent - cost of delegation, mean per item, mock mode\n")
 print(f"  {'entry':<18}{'prompt tok':>11}{'completion':>12}{'llm calls':>11}{'tool calls':>12}")
 seen = []
-for single, multi in PAIRS:
+for single, multi, kind in PAIRS:
     if single not in by_name or multi not in by_name:
         missing = [n for n in (single, multi) if n not in by_name]
         print(f"  (skipped {single} / {multi}: not in this run - {missing})")
@@ -44,17 +51,17 @@ for single, multi in PAIRS:
             f"{mean(name, 'completion_tokens'):>12.1f}"
             f"{mean(name, 'llm_calls'):>11.2f}{len(by_name[name]['items'][0]['tool_calls']):>12}"
         )
-    seen.append((single, multi))
+    seen.append((single, multi, kind))
 
 if not seen:
     sys.exit("no single/pipeline pairing present - cannot report delegation cost")
 
 print()
-for single, multi in seen:
+for single, multi, kind in seen:
     if mean(single, "llm_calls") == 0:
         sys.exit(f"{single} reported zero LLM calls - the run is broken")
     print(
-        f"  {single} -> {multi}: "
+        f"  {single} -> {multi} ({kind}): "
         f"prompt {mean(multi, 'prompt_tokens') / mean(single, 'prompt_tokens'):.2f}x, "
         f"llm calls {mean(multi, 'llm_calls') / mean(single, 'llm_calls'):.2f}x"
     )

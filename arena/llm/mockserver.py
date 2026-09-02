@@ -147,6 +147,48 @@ def _as_final_answer_call(turn: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+HANDOFF_PREFIX = "transfer_to_"
+
+
+def _handoff_tool(req: dict[str, Any]) -> str | None:
+    """The delegation tool this client is offering, if any.
+
+    Handoff-style multi-agent (OpenAI Agents SDK `handoffs`) is *model-decided*:
+    the framework exposes a `transfer_to_<agent>` tool and the model chooses to
+    call it. A scripted mock never spontaneously chooses anything, so without
+    this a handoff adapter simply never delegates and there is nothing to
+    measure - it would silently report the single-agent numbers.
+
+    So the scripted decision "the research is done, now produce the brief" is
+    rendered as a transfer for clients that offer one, exactly as it is rendered
+    as `final_answer` for clients that end by calling a tool. The decision is the
+    same for everyone; only its wire format follows the client.
+
+    This terminates on its own without the mock tracking any state: after a
+    handoff the receiving agent is the one talking, and it advertises its own
+    handoffs or none. The last agent in a chain offers no transfer, so it
+    answers. A single-agent adapter never advertises one and is unaffected.
+    """
+    for spec in req.get("tools") or []:
+        name = spec.get("function", {}).get("name", "")
+        if name.startswith(HANDOFF_PREFIX):
+            return str(name)
+    return None
+
+
+def _as_handoff_call(turn: dict[str, Any], tool: str) -> dict[str, Any]:
+    """Rewrite a content turn as a delegation call to `tool`.
+
+    Only content turns: a turn that still wants a tool has work left to do, and
+    handing off before it would change the scripted decision rather than restate
+    it. The brief itself is not thrown away - the next agent is served the same
+    content turn once it stops offering a transfer.
+    """
+    if turn.get("tool_calls"):
+        return turn
+    return {"tool_calls": [{"name": tool, "arguments": {}}]}
+
+
 def _build_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Return (assistant message dict, finish_reason)."""
     tool_calls = turn.get("tool_calls")
@@ -222,7 +264,14 @@ class _Handler(BaseHTTPRequestHandler):
             message, finish_reason = _build_react_message(turn)
         else:
             turn = script.turn_for(scenario, assistant_turns)
-            if _wants_final_answer_tool(req):
+            # Delegation first: a handoff is a step *before* the answer, whereas
+            # `final_answer` is how the answer itself is delivered. A client
+            # offering both hands off now and answers after, which is the order a
+            # real run would take.
+            handoff = _handoff_tool(req)
+            if handoff:
+                turn = _as_handoff_call(turn, handoff)
+            elif _wants_final_answer_tool(req):
                 turn = _as_final_answer_call(turn)
             message, finish_reason = _build_message(turn)
 

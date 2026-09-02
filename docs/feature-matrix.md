@@ -15,7 +15,7 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) |
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) |
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) |
-| Built-in multi-agent | ❌ | ✅ (graph) | ✅ (crew) | 🟡 (handoffs) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) |
+| Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) |
 | Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | 🟡 (tool-approval middleware) | ❌ (no interrupt primitive) |
 | Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❓ | ❌ |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 |
@@ -43,6 +43,7 @@ two real three-role pipelines alongside the single-agent entries:
 | `vanilla` -> `vanilla_multi` (hand-rolled pipeline) | 2.50x | 2.00x |
 | `langgraph` -> `langgraph_multi` (`StateGraph`) | 2.62x | 2.00x |
 | `vanilla_multi` -> `langgraph_multi` (graph machinery alone) | **0.97x** | **1.00x** |
+| `openai_agents` -> `openai_agents_multi` (native `handoffs`) | 2.76x | 2.00x |
 
 The cost of multi-agent is the structure, not the framework: three roles double
 the LLM calls and ~2.5x the prompt tokens whether you build them with a graph
@@ -53,10 +54,16 @@ This measures cost with benefit held at zero — the mock scripts identical turn
 so all four entries return the same brief. Whether delegation improves the answer
 needs a live run. See [multi-agent.md](multi-agent.md).
 
-Still judged for the rest: handoff-style mechanisms (OpenAI Agents SDK, smolagents,
-CrewAI) let the *model* decide to delegate, which a scripted mock will not do
-spontaneously. Those cells stay claims until the mock renders a scripted step as a
-delegation call, the same accommodation already made for text-ReAct clients.
+Model-decided delegation (a native `handoffs` chain) costs ~10% more prompt than
+the structural pipelines at the same call count, and **94% of that difference is
+the `transfer_to_*` schemas riding on every request** rather than the transfers
+themselves — you pay for a handoff by advertising it, not by taking it. A
+supervisor offering N handoffs pays for N schemas on every request in the run.
+
+Still judged for the rest: smolagents `managed_agents` and CrewAI crews are also
+model-decided but express delegation as a sub-agent invoked like a tool rather
+than a transfer that swaps the speaker, which the current mock accommodation does
+not pick up.
 
 The `Human-in-the-loop / interrupts` row is now **measured for four adapters**.
 `human_in_the_loop` observes the pause in the harness rather than trusting the
