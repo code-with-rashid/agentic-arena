@@ -1,0 +1,6 @@
+# Same library, different wiring: smolagents_multi is the managed-agent pipeline
+# contrast entry for the single-agent `smolagents` adapter. It deliberately does
+# NOT carry its own pins - a second copy of the same versions would drift from
+# the first, and then the two entries would no longer be comparable, which is the
+# only reason this entry exists.
+-r ../smolagents/requirements.txt

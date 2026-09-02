@@ -8,6 +8,7 @@ by name and is what the vanilla loop (and the mock server's expectations) rely o
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from typing import Any
 
 from .calculator import calculator
@@ -29,6 +30,7 @@ __all__ = [
     "CONTROL_TOOL_PREFIXES",
     "FINAL_ANSWER_TOOL",
     "is_control_tool",
+    "check_declared_delegates",
     "dispatch",
     "TOOL_FUNCS",
     "specs_for",
@@ -70,9 +72,37 @@ CONTROL_TOOLS = (FINAL_ANSWER_TOOL,)
 CONTROL_TOOL_PREFIXES = ("transfer_to_",)
 
 
-def is_control_tool(name: str) -> bool:
-    """Is `name` a framework loop-control tool rather than a task capability?"""
-    return name in CONTROL_TOOLS or name.startswith(CONTROL_TOOL_PREFIXES)
+def is_control_tool(name: str, declared_delegates: Sequence[str] = ()) -> bool:
+    """Is `name` a framework loop-control tool rather than a task capability?
+
+    `declared_delegates` covers the one shape that cannot be matched by name:
+    smolagents' `managed_agents` advertises a sub-agent as a tool **named after
+    the sub-agent**, so there is no prefix or fixed name to key on. An adapter
+    that does this must list those names on itself (`Adapter.delegates`), which
+    is a deliberately awkward, reviewable declaration rather than a pattern -
+    the reviewer sees exactly which extra names an adapter is claiming.
+
+    The exemption is bounded the same way the others are. Delegating grants no
+    arena capability, because the sub-agent carries the same arena prompt and
+    only its own declared tools. `check_declared_delegates` refuses a declaration
+    that would exempt a real arena tool, so an adapter cannot smuggle `search`
+    past the fairness rule by calling it a delegate.
+    """
+    return (
+        name in CONTROL_TOOLS
+        or name.startswith(CONTROL_TOOL_PREFIXES)
+        or name in tuple(declared_delegates)
+    )
+
+
+def check_declared_delegates(declared: Sequence[str], arena_tools: Sequence[str]) -> None:
+    """Refuse a delegate declaration that would exempt a real arena tool."""
+    overlap = sorted(set(declared) & set(arena_tools))
+    if overlap:
+        raise ValueError(
+            f"adapter declared {overlap} as delegates, but the arena declares them as tools — "
+            f"a delegate exemption may not cover a task capability"
+        )
 
 
 SUSPEND_TOOLS = ("request_approval", "save_progress")

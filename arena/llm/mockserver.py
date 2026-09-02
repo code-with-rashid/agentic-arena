@@ -17,6 +17,7 @@ import json
 import threading
 import time
 import uuid
+from collections.abc import Sequence
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -147,36 +148,169 @@ def _as_final_answer_call(turn: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _advertised(req: dict[str, Any]) -> list[str]:
+    """Tool names this client put on the wire, in order."""
+    names = []
+    for spec in req.get("tools") or []:
+        name = spec.get("function", {}).get("name")
+        if name:
+            names.append(str(name))
+    return names
+
+
+def _already_called(req: dict[str, Any], tool: str) -> bool:
+    """Has this conversation already called `tool`?
+
+    Read off the transcript rather than tracked in the server, so the mock stays
+    stateless and two runs cannot contaminate each other.
+
+    Both encodings have to be checked. Most clients send a structured
+    `tool_calls` field, but smolagents replays its own calls as assistant
+    *content* — `Calling tools: [{'function': {'name': 'editor', ...}}]` — so
+    looking only at the field finds nothing and the manager delegates again on
+    every turn until its step budget is gone. Matched on the quoted `name` key
+    rather than a bare substring, so an agent merely mentioning "editor" in prose
+    is not mistaken for having called it.
+    """
+    needles = (f"'name': '{tool}'", f'"name": "{tool}"')
+    for message in req.get("messages", []):
+        if message.get("role") != "assistant":
+            continue
+        for call in message.get("tool_calls") or []:
+            if call.get("function", {}).get("name") == tool:
+                return True
+        content = message.get("content") or ""
+        if not isinstance(content, str):
+            content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
+        if any(needle in content for needle in needles):
+            return True
+    return False
+
+
+def _holds_no_task_tools(advertised: list[str], arena_tools: list[str] | None) -> bool:
+    """Does this client hold *none* of the arena's tools?
+
+    True only for an agent whose whole role is to write or delegate — a
+    smolagents managed sub-agent carries `final_answer` and maybe another
+    sub-agent, and nothing else. A normal adapter always holds at least one
+    arena tool and is never in this state.
+
+    Without a declared tool list to compare against, fall back to "advertises
+    nothing but control tools", which is the same question asked more weakly.
+    """
+    if arena_tools is None:
+        return all(
+            name == FINAL_ANSWER_TOOL or name.startswith(HANDOFF_PREFIX) for name in advertised
+        )
+    return not (set(advertised) & set(arena_tools))
+
+
+def turn_for_client(
+    script: MockScript,
+    scenario: dict[str, Any],
+    turns_so_far: int,
+    advertised: list[str],
+    arena_tools: list[str] | None,
+) -> dict[str, Any]:
+    """The first turn at or after `turns_so_far` that this client could perform.
+
+    Normally this is exactly `MockScript.turn_for`. It differs in one narrow
+    case: an agent holding none of the arena's tools skips forward past scripted
+    tool-call turns to the first content turn.
+
+    That case exists for nested sub-agents. A smolagents managed sub-agent gets
+    a *fresh* conversation, so it is served turn 1 — the researcher's `search`
+    call — even though the whole point of the writer role is that it has no
+    tools. Skipping is what lets one script drive every stage of a pipeline.
+
+    Deliberately **not** the more obvious rule "skip any turn whose tool this
+    client did not advertise". That rule breaks the `resilience` arena outright:
+    `res-02` scripts a call to a tool that *deliberately* does not exist, and
+    skipping it would quietly delete the fault instead of measuring how the
+    framework handles it. Requiring the client to hold no arena tools at all
+    keeps every normal adapter, and every scripted fault, exactly as it was.
+    """
+    turns = scenario.get("turns", [])
+    if not turns or not _holds_no_task_tools(advertised, arena_tools):
+        return script.turn_for(scenario, turns_so_far)
+    index = min(turns_so_far, len(turns) - 1)
+    while index < len(turns) - 1 and turns[index].get("tool_calls"):
+        index += 1
+    return turns[index]
+
+
 HANDOFF_PREFIX = "transfer_to_"
 
+FINAL_ANSWER_TOOLS = (FINAL_ANSWER_TOOL,)
 
-def _handoff_tool(req: dict[str, Any]) -> str | None:
-    """The delegation tool this client is offering, if any.
 
-    Handoff-style multi-agent (OpenAI Agents SDK `handoffs`) is *model-decided*:
-    the framework exposes a `transfer_to_<agent>` tool and the model chooses to
-    call it. A scripted mock never spontaneously chooses anything, so without
-    this a handoff adapter simply never delegates and there is nothing to
-    measure - it would silently report the single-agent numbers.
+def _delegation_tool(req: dict[str, Any], arena_tools: list[str] | None) -> str | None:
+    """A delegate this client is offering that it has not already used.
 
-    So the scripted decision "the research is done, now produce the brief" is
-    rendered as a transfer for clients that offer one, exactly as it is rendered
-    as `final_answer` for clients that end by calling a tool. The decision is the
-    same for everyone; only its wire format follows the client.
+    Two ways a framework can express model-decided delegation, and the mock
+    recognises both:
 
-    This terminates on its own without the mock tracking any state: after a
-    handoff the receiving agent is the one talking, and it advertises its own
-    handoffs or none. The last agent in a chain offers no transfer, so it
-    answers. A single-agent adapter never advertises one and is unaffected.
+      * a `transfer_to_<agent>` tool that swaps the speaker (OpenAI Agents SDK
+        `handoffs`) - matched by prefix, always;
+      * a sub-agent advertised as an ordinary tool named after itself
+        (smolagents `managed_agents`) - which can only be told apart from a task
+        tool by knowing what the arena actually declared, so this half is active
+        only when the harness has told the server the arena's tool list.
+
+    "Not already used" is what terminates a nested pipeline. The handoff chain
+    terminates on its own, because after a transfer the receiving agent is the
+    one talking and it offers its own handoffs or none. A manager holding
+    managed agents keeps advertising them forever, so without this it would
+    delegate on every turn and never answer. Reading it off the transcript keeps
+    the server stateless.
     """
-    for spec in req.get("tools") or []:
-        name = spec.get("function", {}).get("name", "")
-        if name.startswith(HANDOFF_PREFIX):
-            return str(name)
+    for name in _advertised(req):
+        if name.startswith(HANDOFF_PREFIX) and not _already_called(req, name):
+            return name
+    if arena_tools is None:
+        return None
+    known = set(arena_tools) | set(FINAL_ANSWER_TOOLS)
+    for name in _advertised(req):
+        if name not in known and not _already_called(req, name):
+            return name
     return None
 
 
-def _as_handoff_call(turn: dict[str, Any], tool: str) -> dict[str, Any]:
+def _delegation_arguments(req: dict[str, Any], tool: str, task: str) -> dict[str, Any]:
+    """Fill whatever the delegation tool requires, with the task being delegated.
+
+    A `transfer_to_<agent>` tool takes no arguments — the conversation goes with
+    it. A sub-agent advertised as a tool takes the task as a string, because it
+    is about to start a *fresh* conversation and this is the only thing it will
+    be told.
+
+    Passing the original user message is what a manager delegating this task
+    would actually send, and it has a second effect worth naming: the sub-agent's
+    new conversation opens with the same question, so the mock picks the same
+    scenario for it and the pipeline stays on the same item. Anything else — the
+    brief, a summary — would either hand the sub-agent the answer or lose the
+    item.
+    """
+    schema: dict[str, Any] = {}
+    for spec in req.get("tools") or []:
+        function = spec.get("function", {})
+        if function.get("name") == tool:
+            schema = function.get("parameters", {}) or {}
+            break
+    required = schema.get("required") or []
+    properties = schema.get("properties") or {}
+    arguments: dict[str, Any] = {}
+    for name in required:
+        if properties.get(name, {}).get("type") == "string":
+            arguments[name] = task
+        else:
+            arguments[name] = {}
+    return arguments
+
+
+def _as_handoff_call(
+    turn: dict[str, Any], tool: str, arguments: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Rewrite a content turn as a delegation call to `tool`.
 
     Only content turns: a turn that still wants a tool has work left to do, and
@@ -186,7 +320,7 @@ def _as_handoff_call(turn: dict[str, Any], tool: str) -> dict[str, Any]:
     """
     if turn.get("tool_calls"):
         return turn
-    return {"tool_calls": [{"name": tool, "arguments": {}}]}
+    return {"tool_calls": [{"name": tool, "arguments": arguments or {}}]}
 
 
 def _build_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
@@ -263,14 +397,21 @@ class _Handler(BaseHTTPRequestHandler):
             turn = script.turn_for(scenario, served)
             message, finish_reason = _build_react_message(turn)
         else:
-            turn = script.turn_for(scenario, assistant_turns)
+            advertised = _advertised(req)
+            arena_tools = getattr(self.server, "arena_tools", None)
+            # Normally just `turn_for`. A sub-agent holding none of the arena's
+            # tools skips forward to the first content turn, so one script can
+            # drive every stage of a nested pipeline.
+            turn = turn_for_client(script, scenario, assistant_turns, advertised, arena_tools)
             # Delegation first: a handoff is a step *before* the answer, whereas
             # `final_answer` is how the answer itself is delivered. A client
             # offering both hands off now and answers after, which is the order a
             # real run would take.
-            handoff = _handoff_tool(req)
-            if handoff:
-                turn = _as_handoff_call(turn, handoff)
+            delegate = _delegation_tool(req, arena_tools)
+            if delegate:
+                turn = _as_handoff_call(
+                    turn, delegate, _delegation_arguments(req, delegate, first_user)
+                )
             elif _wants_final_answer_tool(req):
                 turn = _as_final_answer_call(turn)
             message, finish_reason = _build_message(turn)
@@ -346,12 +487,27 @@ class _Handler(BaseHTTPRequestHandler):
 class MockServer:
     """Threaded context manager wrapping the mock HTTP server."""
 
-    def __init__(self, script: MockScript | str | Path, host: str = "127.0.0.1", port: int = 0):
+    def __init__(
+        self,
+        script: MockScript | str | Path,
+        host: str = "127.0.0.1",
+        port: int = 0,
+        arena_tools: Sequence[str] | None = None,
+    ):
+        """`arena_tools` is the arena's declared tool list, when the caller knows it.
+
+        It is what lets the server tell a *delegate* advertised as an ordinary
+        tool (smolagents `managed_agents` names the tool after the sub-agent)
+        from a task tool the arena asked for. Without it only the explicit
+        `transfer_to_*` shape is recognised, which is what a bare `MockServer` in
+        a test gets and is deliberately the narrower behaviour.
+        """
         self.script = script if isinstance(script, MockScript) else MockScript.load(script)
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
         self._httpd.script = self.script  # type: ignore[attr-defined]
         self._httpd.requests = []  # type: ignore[attr-defined]
         self._httpd.served = []  # type: ignore[attr-defined]
+        self._httpd.arena_tools = list(arena_tools) if arena_tools is not None else None  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
 
     @property

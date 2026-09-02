@@ -21,7 +21,7 @@ Because delegation is model-decided, it cannot be measured against a mock that
 only ever replays a scripted answer: the model would simply never choose to
 transfer, and this entry would silently report the single-agent numbers. The mock
 therefore renders the scripted "research is done, write it up" step as a transfer
-for clients that offer one - see `arena.llm.mockserver._handoff_tool`, and
+for clients that offer one - see `arena.llm.mockserver._delegation_tool`, and
 docs/multi-agent.md for why that is a restatement of the scripted decision rather
 than a new one.
 

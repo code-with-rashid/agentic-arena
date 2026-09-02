@@ -16,7 +16,7 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) | ✅ (through LiteLLM) |
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) | ✅ (event stream) |
 | Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) | ✅ (per-event `usage_metadata`) |
-| Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) | ✅ (sub-agents) |
+| Built-in multi-agent | ❌ | ✅ (graph, measured) | ✅ (crew) | ✅ (`handoffs`, measured) | 🟡 (subagents) | 🟡 | ✅ | ✅ (`managed_agents`, measured) | ✅ (sub-agents) |
 | Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | ✅ (`approval_mode`, measured) | ❌ (no interrupt primitive) | 🟡 (reported, not enforced, measured) |
 | Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❌ (session store does not round-trip, measured) | ❌ | ✅ (`DatabaseSessionService`, measured) |
 | Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 | 🟡 (`output_schema`) |
@@ -104,6 +104,7 @@ two real three-role pipelines alongside the single-agent entries:
 | `langgraph` -> `langgraph_multi` (`StateGraph`) | 2.62x | 2.00x |
 | `vanilla_multi` -> `langgraph_multi` (graph machinery alone) | **0.97x** | **1.00x** |
 | `openai_agents` -> `openai_agents_multi` (native `handoffs`) | 2.76x | 2.00x |
+| `smolagents` -> `smolagents_multi` (`managed_agents`) | **4.03x** | **3.00x** |
 
 The cost of multi-agent is the structure, not the framework: three roles double
 the LLM calls and ~2.5x the prompt tokens whether you build them with a graph
@@ -120,10 +121,14 @@ the `transfer_to_*` schemas riding on every request** rather than the transfers
 themselves — you pay for a handoff by advertising it, not by taking it. A
 supervisor offering N handoffs pays for N schemas on every request in the run.
 
-Still judged for the rest: smolagents `managed_agents` and CrewAI crews are also
-model-decided but express delegation as a sub-agent invoked like a tool rather
-than a transfer that swaps the speaker, which the current mock accommodation does
-not pick up.
+A sub-agent invoked *as a tool* (`managed_agents`) is a third shape, and it is
+the only one that costs **3x** the model calls rather than 2x: its reply is a
+tool result, not the end of the run, so every delegator has to wake up and
+produce its own final answer afterwards. That cost scales with the depth of the
+chain rather than with the work in it.
+
+Still judged: CrewAI crews, the same sub-agent-as-tool shape, blocked on an
+adapter that has never been mock-verified.
 
 The `Human-in-the-loop / interrupts` row is now **measured for six adapters**.
 `human_in_the_loop` observes the pause in the harness rather than trusting the

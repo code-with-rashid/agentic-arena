@@ -148,6 +148,7 @@ questions come apart:
 | `langgraph` → `langgraph_multi` — the same, inside a framework | 2.62× | 2.00× |
 | `vanilla_multi` → `langgraph_multi` — **the graph machinery alone** | **0.97×** | **1.00×** |
 | `openai_agents` → `openai_agents_multi` — native `handoffs` | 2.76× | 2.00× |
+| `smolagents` → `smolagents_multi` — sub-agent invoked as a tool | **4.03×** | **3.00×** |
 
 **The cost of multi-agent is the structure, not the framework.** Three roles
 double the LLM calls and roughly 2.5× the prompt tokens, and cost that whether
@@ -173,6 +174,16 @@ The `transfer_to_*` schemas add 773 — 94% of the difference — because they r
 on every request whether or not anyone delegates. **A supervisor offering N
 handoffs pays for N schemas on every request in the run: the cost scales with the
 options you offer, not the ones you use.**
+
+**Three roles cost 2× the calls in every mechanism except one.** A sub-agent
+invoked *as a tool* costs **3×**, because its reply is a tool result rather than
+the end of the run: the manager is still running and has to produce its own final
+answer afterwards. Visible on the wire as six requests, down the chain and back
+up it — the last two are pure mechanism. So this cost grows with the *depth* of a
+chain rather than with the work in it. (The 4.03× is a floor: the mock forwards
+only the task, so the writer never receives the researcher's findings. With a
+speaker swap the transcript comes along free; with a sub-agent you pass context
+by hand and pay for it again.)
 
 **And it generalises to a second, structurally different mechanism — at 3.3× the
 price.** smolagents' `managed_agents` advertises a sub-agent as an ordinary tool
@@ -319,7 +330,6 @@ fine" is where benchmarks mislead:
 - **Multi-agent beyond three roles.** The compounding in §3 predicts prompt cost
   grows faster than call count, and the handoff result predicts it grows with the
   number of *offered* transfers. Two points do not establish a curve.
-- **An end-to-end pipeline number for smolagents `managed_agents`.** What
-  *offering* a sub-agent costs is measured; what a full three-role run costs is
-  not. The blocker is the mock, not the adapter, and
-  [multi-agent.md](multi-agent.md#still-open) names exactly what it would take.
+- **Whether forwarding context between roles changes the ranking.** Every
+  pipeline measured here passes the minimum down the chain, which favours the
+  mechanisms that carry the transcript for free.
