@@ -17,8 +17,8 @@ jobs:
       matrix:
         python-version: ["3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install harness + dev tools
@@ -52,8 +52,8 @@ jobs:
     #     fails only if the baseline is missing.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
       - name: Install harness + every verified adapter
@@ -111,8 +111,8 @@ jobs:
           - { python-version: "3.13", framework: pydantic_ai, arena: rag }
           - { python-version: "3.13", framework: microsoft_af, arena: rag }
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install harness + ${{ matrix.framework }}
