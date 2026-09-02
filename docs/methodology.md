@@ -108,27 +108,45 @@ Mock mode proves an adapter wires the model, the tools, and the loop together
 correctly. It is **not** a quality signal:
 
 - Pass rate in mock mode is ~100% by construction (the script feeds correct turns).
-- Token and latency numbers in mock mode reflect how the framework's client
-  serialises requests and its own overhead — not real model usage.
+- Latency in mock mode is loopback plus framework startup, not model time.
 
-Only `--mode live` runs produce numbers worth publishing. `results/` should only
-ever contain live scorecards.
+Only `--mode live` runs produce quality numbers worth publishing. `results/`
+should only ever contain live scorecards.
 
-### The one exception: `resilience`
+There are exactly two exceptions, and both work for the same reason: the thing
+that varies between adapters is the framework, not the model.
 
-The `resilience` arena is a deliberate exception, and it is worth being precise
-about why. Its mock script injects **scripted faults** — malformed tool
+### Exception 1: `resilience` pass rates
+
+The `resilience` arena's mock script injects **scripted faults** — malformed tool
 arguments, a tool that does not exist, a required argument omitted. The fault is
 byte-identical for every framework and the mock is deterministic, so nothing
 about the *model* varies. Any difference in outcome is the framework's own error
 handling, which is exactly what is being measured.
 
 So mock-mode `resilience` results *are* comparable, while mock-mode `tool_use`
-and `structured_output` results are not. The distinction is not mock-vs-live; it
-is whether the thing that varies between adapters is the framework or the model.
-Frameworks are expected to score differently here, so CI reports the table rather
-than requiring a clean sweep — it fails only if the stdlib baseline stops
-recovering, which would mean the arena itself is broken.
+and `structured_output` pass rates are not. Frameworks are expected to score
+differently here, so CI reports the table rather than requiring a clean sweep —
+it fails only if the stdlib baseline stops recovering, which would mean the arena
+itself is broken.
+
+### Exception 2: prompt size
+
+Every adapter is handed the same arena prompt and the same tool definitions, and
+the mock replays identical turns, so the size of the request each framework puts
+on the wire is the framework's own serialisation cost. A provider bills for it.
+Measured on `tool_use`, the spread is ~1.15× end to end, driven entirely by how
+verbosely each library renders the same two tool schemas — see
+[overhead.md](overhead.md) and the `comparison` CI job.
+
+This only holds because the mock counts what a provider would bill: `messages`
+**and** `tools`. Counting messages alone — which is what it did until
+`arena/llm/mockserver.py` was fixed — understated every prompt by ~1.8× and
+reported all five frameworks as identical, because the tool block was the only
+thing that differed.
+
+Completion tokens and LLM-call counts in mock mode are scripted, so they are
+identical by construction and carry no signal at all.
 
 ## 6. Metrics
 
@@ -139,7 +157,7 @@ Per adapter, per arena:
 | Pass rate | scorer, over `dataset x repeat` |
 | Errors | items where the adapter raised or timed out |
 | Mean latency | wall-clock per item, measured by the harness |
-| Mean tokens | prompt + completion, from gateway `usage` (summed across LLM calls) |
+| Mean tokens | prompt + completion, from gateway `usage` (summed across LLM calls). Prompt covers `messages` **and** the `tools` schemas, because both are billed |
 | Mean LLM calls | number of chat completions per item |
 | Est. cost | `mean_tokens` split by `ARENA_PRICE_*` per-1M rates |
 

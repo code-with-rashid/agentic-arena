@@ -26,6 +26,23 @@ def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
 
 
+def _prompt_tokens(req: dict[str, Any]) -> int:
+    """Estimate the billable prompt: the messages **and** the tool schemas.
+
+    Counting only `messages` was a real distortion. A provider bills for the tool
+    definitions too, and they are not small — for the two shared arena tools the
+    schema block is larger than the whole conversation on the first turn. Worse,
+    leaving it out erased the one framework difference mock mode can legitimately
+    measure: every framework describes the *same* two tools, but they serialise
+    them differently, and that spread is a real cost difference.
+
+    Control fields (`model`, `temperature`, `stream`, `tool_choice`) are excluded
+    because a provider does not bill for them.
+    """
+    billable = json.dumps(req.get("messages", [])) + json.dumps(req.get("tools", []) or [])
+    return _estimate_tokens(billable)
+
+
 class MockScript:
     def __init__(self, data: dict[str, Any]):
         self.scenarios: list[dict[str, Any]] = data.get("scenarios", [])
@@ -176,7 +193,7 @@ class _Handler(BaseHTTPRequestHandler):
             message, finish_reason = _build_message(turn)
 
         completion_text = message.get("content") or json.dumps(message.get("tool_calls", []))
-        prompt_tokens = _estimate_tokens(json.dumps(messages))
+        prompt_tokens = _prompt_tokens(req)
         completion_tokens = _estimate_tokens(completion_text)
 
         response = {
