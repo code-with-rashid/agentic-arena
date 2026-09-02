@@ -54,8 +54,10 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       unsupported until they implement `resume`
 - ✅ Native interrupts for `langgraph` (`interrupt` + `MemorySaver`, resumed with
       `Command`) — the HITL feature-matrix row is now measured, not judged
-- ⬜ Native interrupts for `microsoft_af` (tool-approval middleware) and the
-      remaining adapters
+- ✅ Native deferred tools for `pydantic_ai` (`CallDeferred` +
+      `deferred_tool_results`), passing both pause arenas
+- ⬜ Pause support for `microsoft_af` (tool-approval middleware, needs an
+      `AgentSession`) and `openai_agents`
 - ✅ Arena 7 `durable_state` — the harness discards the runner at the pause and
       JSON round-trips the resume state, so only a real checkpoint or a
       serialised transcript survives. `langgraph` (SqliteSaver) + `vanilla` 8/8

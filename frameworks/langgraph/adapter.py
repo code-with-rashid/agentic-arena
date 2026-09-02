@@ -15,6 +15,7 @@ and checkpoints it, and `resume` continues the same thread with
 from __future__ import annotations
 
 import contextlib
+import tempfile
 from contextlib import ExitStack
 from pathlib import Path
 from typing import Any
@@ -107,7 +108,11 @@ class _Runner:
             # harness-owned checkpoint dir, which the next runner reopens.
             from langgraph.checkpoint.sqlite import SqliteSaver
 
-            store = Path(config.checkpoint_dir or ".") / "langgraph.sqlite"
+            # Never fall back to the working directory: a contract test builds
+            # this adapter with no checkpoint_dir set, and a stray sqlite file in
+            # the repo root is the kind of thing that gets committed by accident.
+            base = config.checkpoint_dir or tempfile.mkdtemp(prefix="arena-langgraph-")
+            store = Path(base) / "langgraph.sqlite"
             store.parent.mkdir(parents=True, exist_ok=True)
             checkpointer = self._stack.enter_context(SqliteSaver.from_conn_string(str(store)))
         elif self._pausable:
