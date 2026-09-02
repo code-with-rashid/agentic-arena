@@ -60,7 +60,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
-          for fw in langgraph pydantic_ai openai_agents microsoft_af; do
+          for fw in langgraph pydantic_ai openai_agents microsoft_af smolagents; do
             python -m pip install -r "frameworks/$fw/requirements.txt"
           done
       - name: Wire-level adapter contract (the only job where every adapter is installed)
@@ -70,7 +70,7 @@ jobs:
         # the real libraries. ARENA_EXPECT_FRAMEWORKS makes a broken install fail
         # loudly rather than quietly shrinking the matrix back to one adapter.
         env:
-          ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af
+          ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af,smolagents
         run: pytest tests/test_adapters_contract.py -q
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
@@ -121,6 +121,8 @@ jobs:
           - { python-version: "3.13", framework: langgraph, arena: rag }
           - { python-version: "3.13", framework: pydantic_ai, arena: rag }
           - { python-version: "3.13", framework: microsoft_af, arena: rag }
+          - { python-version: "3.13", framework: smolagents, arena: tool_use }
+          - { python-version: "3.13", framework: smolagents, arena: rag }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v7

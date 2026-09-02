@@ -115,6 +115,38 @@ def _build_react_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
     return {"role": "assistant", "content": text}, "stop"
 
 
+FINAL_ANSWER_TOOL = "final_answer"
+
+
+def _wants_final_answer_tool(req: dict[str, Any]) -> bool:
+    """Does this client end its loop by *calling a tool* rather than by replying?
+
+    smolagents advertises its own `final_answer` tool and treats a plain content
+    reply as "the model did not finish" - it keeps looping until it runs out of
+    steps. Serving it a bare content turn would burn the whole iteration budget
+    on every item and make its token and LLM-call numbers meaningless, even
+    though the text checks would still pass.
+
+    Same principle as `_looks_like_react`: the scripted *decision* is identical
+    for everyone, only its wire format follows the client.
+    """
+    for spec in req.get("tools") or []:
+        if spec.get("function", {}).get("name") == FINAL_ANSWER_TOOL:
+            return True
+    return False
+
+
+def _as_final_answer_call(turn: dict[str, Any]) -> dict[str, Any]:
+    """Rewrite a content turn as a `final_answer` tool call."""
+    if turn.get("tool_calls"):
+        return turn
+    return {
+        "tool_calls": [
+            {"name": FINAL_ANSWER_TOOL, "arguments": {"answer": turn.get("content", "")}}
+        ]
+    }
+
+
 def _build_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """Return (assistant message dict, finish_reason)."""
     tool_calls = turn.get("tool_calls")
@@ -190,6 +222,8 @@ class _Handler(BaseHTTPRequestHandler):
             message, finish_reason = _build_react_message(turn)
         else:
             turn = script.turn_for(scenario, assistant_turns)
+            if _wants_final_answer_tool(req):
+                turn = _as_final_answer_call(turn)
             message, finish_reason = _build_message(turn)
 
         completion_text = message.get("content") or json.dumps(message.get("tool_calls", []))

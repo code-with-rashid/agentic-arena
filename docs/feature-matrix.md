@@ -5,26 +5,35 @@ experience writing the adapter — link to the adapter code or an upstream doc.
 
 Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet assessed
 
-| Capability | vanilla | LangGraph | CrewAI | OpenAI Agents SDK | Claude Agent SDK | Pydantic AI | MS Agent Framework |
-|---|---|---|---|---|---|---|---|
-| Language | Python | Python | Python | Python | Python | Python | Python / .NET |
-| OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ✅ | ❓ | ✅ | ✅ (Chat Completions client) |
-| Streaming tokens | ❌ | ✅ | 🟡 | ❓ | ❓ | ❓ | ❓ |
-| Recovers from malformed tool args | ✅ | ❌ | ✅ | ✅ | ❓ | ✅ | ✅ |
-| Recovers from an unknown tool name | ✅ | ✅ | ✅ | ❌ (raises) | ❓ | ✅ | ✅ |
-| Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ |
-| Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) |
-| Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) |
-| Built-in multi-agent | ❌ | ✅ (graph) | ✅ (crew) | 🟡 (handoffs) | 🟡 (subagents) | 🟡 | ✅ |
-| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | 🟡 (tool-approval middleware) |
-| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❓ |
-| Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 |
-| Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) |
-| Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) |
-| Licence | — | MIT | MIT | MIT | ❓ | MIT | MIT |
+| Capability | vanilla | LangGraph | CrewAI | OpenAI Agents SDK | Claude Agent SDK | Pydantic AI | MS Agent Framework | smolagents |
+|---|---|---|---|---|---|---|---|---|
+| Language | Python | Python | Python | Python | Python | Python | Python / .NET | Python |
+| OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ✅ | ❓ | ✅ | ✅ (Chat Completions client) | ✅ (`OpenAIServerModel`, needs the `[openai]` extra) |
+| Streaming tokens | ❌ | ✅ | 🟡 | ❓ | ❓ | ❓ | ❓ | ❓ |
+| Recovers from malformed tool args | ✅ | ❌ | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ |
+| Recovers from an unknown tool name | ✅ | ✅ | ✅ | ❌ (raises) | ❓ | ✅ | ✅ | ❌ (not written back) |
+| Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) |
+| Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) |
+| Token usage exposed | ✅ | ✅ (`usage_metadata`) | ✅ (`usage_metrics`) | ✅ (`context_wrapper.usage`) | ❓ | ✅ (`result.usage`) | ✅ (`usage_details`) | ✅ (per-step `token_usage`) |
+| Built-in multi-agent | ❌ | ✅ (graph) | ✅ (crew) | 🟡 (handoffs) | 🟡 (subagents) | 🟡 | ✅ | 🟡 (managed agents) |
+| Human-in-the-loop / interrupts | 🟡 (emulated, measured) | ✅ (`interrupt`, measured) | ❓ | ✅ (`needs_approval`, measured) | ❓ | ✅ (deferred tools, measured) | 🟡 (tool-approval middleware) | ❌ (no interrupt primitive) |
+| Durable state / checkpointing | 🟡 (stateless resume, measured) | ✅ (`SqliteSaver`, measured) | ❓ | ✅ (`RunState.to_json`, measured) | ❓ | 🟡 (stateless resume, measured) | ❓ | ❌ |
+| Typed / schema-validated output | 🟡 | 🟡 | 🟡 | 🟡 (`output_type`) | ❓ | ✅ | 🟡 | 🟡 |
+| Async API | ❌ | ✅ | 🟡 | ✅ (`run_sync` wraps it) | ❓ | ✅ | ✅ (async-only) | 🟡 (`arun`) |
+| Observability hooks / tracing | ❌ | ✅ (LangSmith) | ✅ (events) | ✅ (built-in; disabled for the arena) | ❓ | 🟡 (Logfire) | ✅ (OpenTelemetry) | ✅ (OpenTelemetry) |
+| Licence | — | MIT | MIT | MIT | ❓ | MIT | MIT | Apache-2.0 |
 
 The two `Recovers from ...` rows are measured, not judged — see the `resilience`
 arena and the comparison CI prints on every run.
+
+Those two rows do not fully capture `smolagents`, which loses **four** of the
+eight faults. The unknown-tool-name row is the visible one, but the real boundary
+is its tool-validation layer: any failure raised *before* the tool body runs
+(unknown name, missing argument, unexpected argument, `null` arguments) is never
+written back into the conversation, so the model cannot see it and repeats the
+identical call until the step budget is gone. Faults that get as far as running
+the tool come back as observations and it recovers from all of them. See
+[smolagents.md](frameworks/smolagents.md#resilience-48-split-exactly-along-one-line).
 
 The `Built-in multi-agent` row is still judged, not measured: the `multi_agent`
 arena runs today with single-agent role-play entries only. It starts measuring
@@ -60,11 +69,13 @@ An adapter patched to restart from scratch instead of resuming drops to **0/8**:
 it reaches the right answer by redoing both lookups, and the `call_counts` check
 catches the duplicated work.
 
-`crewai` and `microsoft_af` have no `resume` method yet and report *unsupported*
-on both arenas. Read their cells as unmeasured claims from upstream docs, not as
-results — Agent Framework ships `ToolApprovalMiddleware`, but it requires an
-`AgentSession` and session state, a different shape again from the three
-mechanisms wired up so far.
+`crewai`, `microsoft_af` and `smolagents` have no `resume` method and report
+*unsupported* on both arenas. Read the first two cells as unmeasured claims from
+upstream docs, not as results — Agent Framework ships `ToolApprovalMiddleware`,
+but it requires an `AgentSession` and session state, a different shape again from
+the four mechanisms wired up so far. `smolagents` is marked ❌ rather than ❓
+because it ships no interrupt or approval primitive to adapt: emulating one by
+hand, as `vanilla` does, would measure the adapter instead of the framework.
 
 > The ❓ cells are the backlog. Each one gets resolved when its adapter is written
 > or when an arena exercises that capability directly.

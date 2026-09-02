@@ -77,6 +77,16 @@ updates:
       agent-framework:
         patterns: ["*"]
 
+  - package-ecosystem: pip
+    directory: /frameworks/smolagents
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(smolagents)"
+    groups:
+      smolagents:
+        patterns: ["*"]
+
   # crewai is deliberately excluded: its adapter is not yet mock-verified and its
   # requirement is a range rather than a pin, so a bump PR would carry no signal.
   # Add it here once the adapter is green and pinned.

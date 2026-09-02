@@ -1,0 +1,5 @@
+# Pinned so scorecards are reproducible. Bump deliberately, then refresh results/.
+#
+# The `openai` extra is what provides OpenAIServerModel; without it the model
+# class raises at construction time. The bare `smolagents` package is not enough.
+smolagents[openai]==1.26.0

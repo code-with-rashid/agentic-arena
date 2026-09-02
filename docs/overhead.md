@@ -23,15 +23,22 @@ A local run on `tool_use`, 15 items, mean per item:
 | microsoft_af | 732 | 0.97× |
 | `vanilla` (stdlib baseline) | 754 | 1.00× |
 | openai_agents | 787 | 1.04× |
+| smolagents | 2845 | **3.77×** |
 
-Completion tokens and LLM calls are identical across all five (45.1 and 2.07),
-which is the point: the mock scripts the same turns for everyone, so the only
-thing that varies is the request.
+Completion tokens and LLM calls are identical across the first five (45.1 and
+2.07), which is the point: the mock scripts the same turns for everyone, so the
+only thing that varies is the request. `smolagents` matches on LLM calls (2.07)
+but not on completion tokens (74.7) — see below.
 
 ## What drives it
 
-The conversation is identical — all five send exactly the same 472 characters of
-`messages` on the first turn, which is what PR #3's wire-level contract tests
+Five of the six are within a 1.15× band of each other, and `smolagents` sits
+right outside it. They are two different stories, so take them separately.
+
+### The 1.15× band
+
+The conversation is identical — those five send exactly the same 472 characters
+of `messages` on the first turn, which is what PR #3's wire-level contract tests
 enforce. The whole spread comes from the tool block: the same two tools,
 described in the same OpenAI schema format, come out at
 
@@ -51,6 +58,46 @@ Worth stating plainly: the hand-rolled stdlib baseline is **not** the leanest.
 Three of the four frameworks serialise these tools more compactly than the
 by-hand version does. Whatever a framework costs you, on this axis it is not
 obviously wasteful.
+
+### smolagents: 3.77×, and it is all system prompt
+
+`smolagents` is the exception that shows what the band is actually measuring.
+Its extra cost is **not** the tool schema — it is a templated system prompt that
+the framework prepends to whatever the arena asked for. The arena's own
+instruction is still in there verbatim (the contract tests check that), but it is
+under 10% of what goes out:
+
+| section of the system prompt | chars |
+|---|---:|
+| framework preamble ("you are an expert assistant...") | 1065 |
+| two worked ReAct-style examples | 1361 |
+| **the same tools, re-described in prose** | 591 |
+| the arena's own system prompt | **384** |
+| trailing rules | 531 |
+| total | 3932 |
+
+against `vanilla`'s 384 — the arena's prompt and nothing else. That is 3548 extra
+characters, resent on every request, and at 2.07 requests per item it accounts
+for essentially the entire gap (~1966 of the 2091 estimated-token difference).
+
+Two details in that table are worth pulling out:
+
+- **The tools are transmitted twice.** Every request carries both the 831-char
+  OpenAI `tools` schema *and* a 591-char prose restatement of the same three
+  tools inside the system prompt. Nothing reconciles them; a provider bills for
+  both.
+- **`final_answer` is a real cost.** `smolagents` ends its loop by calling a tool
+  rather than by replying, so it must advertise a third tool the arena never
+  declared. That is why its `tools` block is 831 chars against `vanilla`'s 637,
+  and it is why its completion tokens are 74.7 against everyone else's 45.1 —
+  the final answer goes out as a JSON tool call instead of as plain content.
+  Methodology §3 exempts control tools from the fairness rule; it does not exempt
+  them from the bill.
+
+None of this is a bug, and the prompt is doing real work — it is what lets
+`smolagents` drive weaker models through a tool loop without native tool-calling
+support. But if you are pairing it with a model that already tool-calls well, you
+are paying ~3.5 KB per request for scaffolding you do not need.
 
 ## How to read these numbers
 

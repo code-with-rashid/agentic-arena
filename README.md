@@ -80,11 +80,14 @@ when its output satisfies every check for that item.
 | OpenAI Agents SDK | ✅ | Python | `openai-agents`; tracing disabled for the arena |
 | Pydantic AI | ✅ | Python | `pydantic-ai-slim`; typed, model-agnostic |
 | Microsoft Agent Framework | ✅ | Python | `agent-framework-openai` (merged AutoGen + Semantic Kernel) |
+| smolagents | ✅ | Python | `smolagents[openai]`; `ToolCallingAgent` — ends its loop by calling `final_answer` |
 | Claude Agent SDK | 🚫 stub | Python | drives the `claude` CLI over the Anthropic Messages API — doesn't fit the shared OpenAI-compatible gateway ([why](frameworks/claude_agent_sdk/README.md)) |
 
-`vanilla`, `langgraph`, `pydantic_ai`, `openai_agents`, and `microsoft_af` all run
-15/15 against the mock for both arenas. The next contribution steps are a live
-scorecard (needs an API key) and promoting arenas 3–6 from design docs.
+Six adapters run against the mock across seven arenas. `vanilla` and
+`pydantic_ai` are green on all seven; `langgraph` and `openai_agents` are green on
+all but one `resilience` item each; `microsoft_af` and `smolagents` run five of
+seven and report *unsupported* on the two pause arenas rather than failing them.
+The next contribution step is a live scorecard (needs an API key).
 
 ## How comparison stays fair
 
@@ -104,8 +107,8 @@ See [docs/methodology.md](docs/methodology.md) for the full rules. In short:
 Three things mock mode *can* compare honestly, because the model is held identical
 and only the framework varies: the `resilience` arena's recovery rates,
 [how much each framework puts on the wire](docs/overhead.md) for the same task
-(a ~1.15× spread, driven by tool-schema serialisation), and whether an adapter can
-genuinely pause for a human. CI prints all three on every run, and
+(a ~1.15× spread among five, and **3.77×** for smolagents), and whether an adapter
+can genuinely pause for a human. CI prints all three on every run, and
 `python -m arena summary` collects them.
 
 ## What has been measured so far
@@ -113,11 +116,17 @@ genuinely pause for a human. CI prints all three on every run, and
 No live scorecard exists yet, so **nothing here is about answer quality**. What
 *is* measured, offline and reproducibly:
 
-- The hand-rolled baseline is **not** the cheapest on the wire — three of four
+- The hand-rolled baseline is **not** the cheapest on the wire — three of five
   frameworks serialise the same tool schemas more compactly.
+- Prompt overhead is a 1.15× band for five frameworks, and **3.77×** for
+  smolagents, whose templated system prompt is resent on every request and
+  re-describes the tools it has already sent as a schema.
 - Under eight scripted faults, LangGraph and the OpenAI Agents SDK each lose one
-  item; the other three recover from all eight.
-- Only LangGraph has a demonstrated durable human-in-the-loop pause.
+  item and smolagents loses four — exactly the four its tool validator rejects
+  before the tool body runs, which it never writes back into the conversation.
+- Four frameworks have a demonstrated durable human-in-the-loop pause, by four
+  genuinely different mechanisms; all four produce an identical trace to the
+  scorer.
 
 [**docs/decision-guide.md**](docs/decision-guide.md) has the tables, the adoption
 gotchas found while writing each adapter, and a clear split between what is
