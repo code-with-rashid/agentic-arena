@@ -47,7 +47,7 @@ shape from LangGraph's `interrupt`:
 ```python
 @agent.tool_plain
 def request_approval(summary: str) -> str:
-    raise CallDeferred          # the run stops here
+    raise CallDeferred  # the run stops here
 ```
 
 The run then finishes with a `DeferredToolRequests` output instead of a string —
@@ -56,8 +56,10 @@ which is why the adapter only widens `output_type` to
 passes the decision back:
 
 ```python
-agent.run_sync(message_history=history,
-               deferred_tool_results=DeferredToolResults(calls={call_id: "Decision: approve."}))
+agent.run_sync(
+    message_history=history,
+    deferred_tool_results=DeferredToolResults(calls={call_id: "Decision: approve."}),
+)
 ```
 
 There is no checkpointer. Pydantic AI hands you the conversation and leaves
