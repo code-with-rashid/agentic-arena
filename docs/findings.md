@@ -174,6 +174,16 @@ on every request whether or not anyone delegates. **A supervisor offering N
 handoffs pays for N schemas on every request in the run: the cost scales with the
 options you offer, not the ones you use.**
 
+**And it generalises to a second, structurally different mechanism — at 3.3× the
+price.** smolagents' `managed_agents` advertises a sub-agent as an ordinary tool
+rather than as a transfer that swaps the speaker. Offering one, with no
+delegation happening at all, costs **~875 characters on every request** (linear
+after a ~385-char one-off preamble), against the OpenAI Agents SDK's 262-char
+`transfer_to_writer` schema. The reason is the same one behind smolagents' 3.77×
+in §1: each sub-agent is described **twice**, once as a JSON schema and once in
+prose. Both frameworks bill you for options rather than actions; they do not bill
+the same amount.
+
 Two things this deliberately does *not* say. The lower completion tokens on the
 handoff chain (140 vs 198) are not efficiency — the researcher emits a short
 transfer instead of a draft, so only the last agent writes a brief. And the mock
@@ -309,3 +319,7 @@ fine" is where benchmarks mislead:
 - **Multi-agent beyond three roles.** The compounding in §3 predicts prompt cost
   grows faster than call count, and the handoff result predicts it grows with the
   number of *offered* transfers. Two points do not establish a curve.
+- **An end-to-end pipeline number for smolagents `managed_agents`.** What
+  *offering* a sub-agent costs is measured; what a full three-role run costs is
+  not. The blocker is the mock, not the adapter, and
+  [multi-agent.md](multi-agent.md#still-open) names exactly what it would take.

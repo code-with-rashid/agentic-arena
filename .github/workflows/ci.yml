@@ -92,6 +92,12 @@ jobs:
         # sibling is a finding, documented in docs/feature-matrix.md, not a
         # test failure — same rule as the resilience arena.
         run: pytest tests/test_parallel_tool_calls.py -q
+      - name: What offering a delegate costs before anyone delegates
+        # Gates the invariants behind "you pay to advertise a handoff, not to
+        # take it": the cost lands on every request, and it scales with how
+        # many delegates are offered. The byte counts are findings and live in
+        # docs/multi-agent.md.
+        run: pytest tests/test_delegation_advertising.py -q
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
       - name: Report recovery, and fail only if the baseline broke

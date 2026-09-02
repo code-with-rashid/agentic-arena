@@ -157,8 +157,39 @@ So this is not about error severity, and `res-01` proves it: malformed JSON is t
 parse time and written back. Self-correction is impossible without the feedback,
 and four of these eight faults never produce any.
 
+### `managed_agents`: the same design decision, again
+
+`managed_agents` advertises a sub-agent as an ordinary tool named after itself;
+calling it runs a whole nested agent and returns its answer. Measured with no
+delegation happening at all, characters of system prompt plus tool schema:
+
+| sub-agents offered | system prompt | tool schemas | total | marginal |
+|---:|---:|---:|---:|---:|
+| 0 | 3311 | 518 | 3829 | — |
+| 1 | 4102 | 982 | 5084 | +1255 |
+| 2 | 4498 | 1455 | 5953 | +869 |
+| 3 | 4900 | 1934 | 6834 | +881 |
+
+**~875 characters per offered sub-agent, on every request, whether or not anyone
+delegates.** (The larger first step is a ~385-char preamble that switches
+delegation on and is paid once.)
+
+The marginal cost splits into ~400 characters of prose and ~475 of JSON schema,
+because each sub-agent is described **twice** — the same double transmission as
+the tools above, in a second place. It is the single most consistent thing about
+this framework's wire behaviour.
+
+For scale: the OpenAI Agents SDK charges 262 characters to offer a handoff, so
+this is 3.3× to hold open the same option. See
+[multi-agent.md](../multi-agent.md#a-third-shape-the-sub-agent-invoked-as-a-tool).
+
 ## Not yet done
 
+- **The end-to-end `managed_agents` pipeline.** Only the advertising cost above
+  is measured. The mock cannot yet drive a nested sub-agent — it gets a fresh
+  conversation, so the script replays from turn 1 — and
+  [multi-agent.md](../multi-agent.md#still-open) records exactly what would fix
+  it.
 - **No pause support.** `smolagents` has no interrupt/approval primitive
   equivalent to LangGraph's `interrupt()` or the OpenAI SDK's `needs_approval`, so
   the adapter implements no `resume` and the two pause arenas report *unsupported*

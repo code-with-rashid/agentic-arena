@@ -177,12 +177,58 @@ agent carries the same arena prompt and only its own declared tools. Unlike
 `final_answer` it has to be a *prefix*, since the target agent's name is in the
 tool name — `arena/tools/__init__.py` names that weakening and what bounds it.
 
+## A third shape: the sub-agent invoked as a tool
+
+smolagents' `managed_agents` is model-decided like a handoff, but structurally
+different: the sub-agent is advertised as an ordinary tool named after itself, and
+calling it runs a whole nested agent whose result comes back as the tool's return
+value. The speaker never changes.
+
+"You pay to advertise, not to take" **generalises to it — and costs 3.3× more.**
+Measured with no delegation happening at all, characters of system prompt plus
+tool schema on the *first* request:
+
+| sub-agents offered | system prompt | tool schemas | total | marginal |
+|---:|---:|---:|---:|---:|
+| 0 | 3311 | 518 | 3829 | — |
+| 1 | 4102 | 982 | 5084 | +1255 |
+| 2 | 4498 | 1455 | 5953 | +869 |
+| 3 | 4900 | 1934 | 6834 | +881 |
+
+Linear after the first, at **~875 characters per offered sub-agent, on every
+request**. The step down after the first is a ~385-character preamble ("You can
+also give tasks to team members…") that switches delegation on and is paid once.
+
+The marginal ~875 splits into ~400 characters of prose in the system prompt and
+~475 of JSON tool schema, because **each sub-agent is described twice** — exactly
+as smolagents describes its tools twice, which is most of its 3.77× prompt
+overhead in [overhead.md](overhead.md). The same design decision shows up in both
+places.
+
+Against the OpenAI Agents SDK's 262-character `transfer_to_writer` schema, that
+is 3.3× to hold open the same option. Both frameworks charge you for options
+rather than actions; they do not charge the same amount.
+
+The invariants are gated in `tests/test_delegation_advertising.py` — the cost is
+paid on every request rather than only the delegating one, it scales with how
+many delegates are offered, and each sub-agent really is described twice. The
+byte counts stay findings.
+
 ## Still open
 
-- **The rest of the handoff frameworks.** smolagents `managed_agents` and CrewAI
-  crews are also model-decided but express it differently (a sub-agent invoked as
-  a tool, rather than a transfer that swaps the speaker). The mock accommodation
-  above is keyed on `transfer_to_*` and will not pick those up as they stand.
+- **An end-to-end pipeline number for `managed_agents`.** The advertising cost
+  above is measured; the full three-role cost is not, and the blocker is the
+  mock rather than the adapter. The handoff accommodation terminates without any
+  state because a transfer swaps the speaker inside *one* conversation, so the
+  assistant-turn count keeps climbing and the last agent — offering no
+  transfer — answers. A managed sub-agent instead gets a **fresh** conversation,
+  so the mock would replay the script from turn 1 and serve it a `search` call it
+  has no tool for, and the manager goes on advertising the sub-agent forever, so
+  nothing terminates. Making this work needs the mock to skip scripted tool calls
+  a client never advertised, and to delegate at most once per tool per
+  conversation. Both look reasonable and neither is written.
+- **CrewAI crews**, the same shape again, and still blocked on an adapter that
+  has never been mock-verified.
 - **More than three roles.** The compounding above predicts prompt cost grows
   faster than call count, and the handoff finding predicts it grows with the
   number of *offered* transfers too. Two points do not establish a curve.
