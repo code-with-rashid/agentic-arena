@@ -329,6 +329,43 @@ merged legs. An adapter that starts over after the crash reaches the right answe
 by redoing both lookups, and fails on the counts. Measured: an adapter patched to
 restart instead of resume goes from 8/8 to **0/8**.
 
+#### …and both of those still happen inside one interpreter
+
+That was the gap. Rebuilding the runner and JSON round-tripping the state rules
+out handing a **live object** across; it does not rule out an adapter stashing
+the state in a **module-level cache** keyed by item id and sending only the key.
+That survives the rebuild and the JSON gap, and could not survive the restart the
+arena is named after.
+
+Measured rather than supposed: `tests/_cheating_adapter.py` does exactly that and
+scores `durable_state` **8/8**, with `['search', 'search', 'calculator']` and one
+suspend — indistinguishable in the scorecard from the honest baseline it wraps.
+
+So durability is now tested against a real process boundary.
+[`tests/test_durable_across_a_restart.py`](../tests/test_durable_across_a_restart.py)
+runs the two legs in **two interpreters**, with nothing between them but a JSON
+file and `checkpoint_dir`:
+
+| adapter | leg 2 in a fresh process | files written to `checkpoint_dir` |
+|---|---|---|
+| `vanilla` | ok | none — the transcript is in the state |
+| `pydantic_ai` | ok | none — message history as JSON |
+| `openai_agents` | ok | none — `RunState.to_json()` |
+| `langgraph` | ok | `langgraph.sqlite` (+`-wal`, `-shm`) |
+| `google_adk` | ok | `adk_sessions.sqlite` |
+| `__cheater__` | **`KeyError: 'dur-01'`** | none |
+
+All five real adapters pass, which is the point of running it: the published
+8/8s mean what they say. The cheat ships as a test fixture so a green file cannot
+come to mean "the probe ran and asserted nothing".
+
+That table is also the honest version of the stateless-resume / real-checkpointer
+distinction above — read off what lands on disk, not off the adapter source. And
+it gates one thing beyond durability: a checkpointing adapter must write into the
+directory the harness owns. `langgraph` once wrote its sqlite file into the repo
+root instead, which works, passes, and is the kind of thing that gets committed
+by accident.
+
 ## 8. Reproducing a published scorecard
 
 Every `results/<arena>/scorecard.md` records the model, harness version, Python

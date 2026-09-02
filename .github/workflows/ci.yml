@@ -84,6 +84,12 @@ jobs:
         env:
           ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af,smolagents,google_adk
         run: pytest tests/test_adapters_contract.py -q
+      - name: Durability survives an actual process restart
+        # The other durability tests rebuild the runner inside one interpreter,
+        # which a process-global cache survives. Measured: such a cheat scores
+        # durable_state 8/8. This runs the two legs in two interpreters, and
+        # ships the cheat as a fixture so the check cannot rot into vacuity.
+        run: pytest tests/test_durable_across_a_restart.py -q
       - name: Every framework describes the same tool
         # A hard gate. Two adapters were declaring `search(query)` where the arena
         # declares `search(query, k=3)`, and four sent bare types where the arena
