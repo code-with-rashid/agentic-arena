@@ -97,6 +97,23 @@ def _buildable():
 BUILDABLE = _buildable()
 
 
+def _gaps(name, faults, retry_after=None):
+    """Seconds between successive attempts — the framework's actual backoff."""
+    with MockServer(
+        SCRIPT, arena_tools=["search"], faults=faults, retry_after=retry_after
+    ) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            max_tool_iterations=6,
+        )
+        with contextlib.suppress(Exception):
+            load_framework(name).build(_arena(), config).run(ITEM)
+        stamps = server.attempts
+        return [b - a for a, b in zip(stamps, stamps[1:], strict=False)]
+
+
 def _run(name, faults):
     """Run one item against a gateway that fails on `faults`. Returns (outcome, attempts)."""
     with MockServer(SCRIPT, arena_tools=["search"], faults=faults) as server:
@@ -173,3 +190,63 @@ def test_a_faulted_attempt_consumes_no_scripted_turn():
             load_framework("vanilla").build(_arena(), config).run(ITEM)
         assert len(server.attempts) == 1
         assert server.requests == [], "a faulted attempt was recorded as a served request"
+
+
+RETRY_AFTER_SECONDS = 3
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_a_framework_that_retries_honours_retry_after(name):
+    """If the provider says how long to wait, wait that long.
+
+    Every framework here that retries at all honours the header exactly — the
+    measured gap lands within a tenth of a second of what was asked for. That
+    uniformity is why this is a gate rather than a finding: a library that
+    ignored a server-directed delay would hammer a rate-limited endpoint, and
+    that is unambiguous enough to fail CI over.
+
+    `vanilla` never retries, so there is no gap to check and the test passes
+    trivially for it — pinned separately by
+    `test_the_stdlib_baseline_has_no_retry_at_all`.
+    """
+    gaps = _gaps(name, [429, 200], retry_after=RETRY_AFTER_SECONDS)
+    if not gaps:
+        return
+    assert abs(gaps[0] - RETRY_AFTER_SECONDS) < 0.5, (
+        f"{name}: asked to wait {RETRY_AFTER_SECONDS}s, waited {gaps[0]:.2f}s"
+    )
+
+
+def test_smolagents_stacks_a_second_retry_layer_that_ignores_retry_after():
+    """The 2-4 minute stall is an outer retry loop, not the HTTP client.
+
+    Two layers are at work, and only the inner one listens to the provider:
+
+      * the OpenAI client retries twice and honours `Retry-After` (capped at two
+        minutes) — visible above, and in the gaps here as two prompt retries;
+      * `smolagents.models` then wraps that client in its own `Retrying` with
+        `RETRY_MAX_ATTEMPTS = 3`, `RETRY_WAIT = 60`,
+        `RETRY_EXPONENTIAL_BASE = 2` and jitter, computing
+        `delay *= base * (1 + random())`. The first outer sleep is therefore
+        `60 x 2 x (1 + random())` — **120 to 240 seconds** — and nothing in that
+        path consults the header.
+
+    So a provider saying "retry in 3 seconds" cannot shorten a wait of minutes.
+    Five measurements of that outer sleep landed at 139, 160, 213, 220 and 225
+    seconds, all inside the predicted bracket.
+
+    This asserts the *constants*, not the sleep: reproducing it costs two to four
+    minutes of wall clock, and `report_transport.py --deep` is there for that.
+    Reading them from the installed module is what makes this a real check — if
+    upstream lowers `RETRY_WAIT`, this fails and the docs get corrected.
+    """
+    models = pytest.importorskip("smolagents.models")
+    wait = models.RETRY_WAIT
+    base = models.RETRY_EXPONENTIAL_BASE
+    attempts = models.RETRY_MAX_ATTEMPTS
+    low, high = wait * base, wait * base * 2
+    assert (low, high) == (120, 240), (
+        f"smolagents' outer backoff is now {low}-{high}s (RETRY_WAIT={wait}, "
+        f"base={base}) — docs/transport.md quotes 120-240s and needs updating"
+    )
+    assert attempts > 1, "the outer retry layer is gone; docs/transport.md needs updating"

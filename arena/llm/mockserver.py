@@ -404,11 +404,15 @@ class _Handler(BaseHTTPRequestHandler):
     def log_message(self, *_args: Any) -> None:  # noqa: D401
         return
 
-    def _send_json(self, obj: dict[str, Any], status: int = 200) -> None:
+    def _send_json(
+        self, obj: dict[str, Any], status: int = 200, headers: dict[str, str] | None = None
+    ) -> None:
         blob = json.dumps(obj).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(blob)))
+        for name, value in (headers or {}).items():
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(blob)
 
@@ -436,8 +440,20 @@ class _Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", "0"))
             self.rfile.read(length)
             kind = "rate_limit_error" if status == 429 else "server_error"
+            # A real provider usually tells you how long to wait. Whether a
+            # framework honours that, ignores it, or invents its own backoff is
+            # the difference between a predictable delay and an unpredictable
+            # one - see docs/transport.md.
+            retry_after = self.server.retry_after  # type: ignore[attr-defined]
+            headers = (
+                {"Retry-After": str(retry_after)}
+                if retry_after is not None and status in (429, 503)
+                else None
+            )
             self._send_json(
-                {"error": {"message": f"injected {status}", "type": kind}}, status=status
+                {"error": {"message": f"injected {status}", "type": kind}},
+                status=status,
+                headers=headers,
             )
             return
 
@@ -564,6 +580,7 @@ class MockServer:
         port: int = 0,
         arena_tools: Sequence[str] | None = None,
         faults: Sequence[int] = (),
+        retry_after: int | None = None,
     ):
         """`arena_tools` is the arena's declared tool list, when the caller knows it.
 
@@ -580,6 +597,11 @@ class MockServer:
         which is what real deployments actually hit. A faulted attempt never
         reads the prompt, so it consumes no scripted turn and does not appear in
         `requests`; `attempts` counts everything that reached the wire.
+
+        `retry_after` sets a `Retry-After` header on injected 429s and 503s, the
+        way a real provider tells you how long to wait. Left at `None` there is
+        no header and every backoff is the client's own invention, which is the
+        default because it is the harsher case.
         """
         self.script = script if isinstance(script, MockScript) else MockScript.load(script)
         self._httpd = ThreadingHTTPServer((host, port), _Handler)
@@ -588,6 +610,7 @@ class MockServer:
         self._httpd.served = []  # type: ignore[attr-defined]
         self._httpd.arena_tools = list(arena_tools) if arena_tools is not None else None  # type: ignore[attr-defined]
         self._httpd.faults = list(faults)  # type: ignore[attr-defined]
+        self._httpd.retry_after = retry_after  # type: ignore[attr-defined]
         self._httpd.attempts = []  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
 

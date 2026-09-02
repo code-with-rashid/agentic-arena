@@ -196,6 +196,30 @@ and receives only the task string, where a speaker-swapping handoff inherits the
 whole transcript. Passing findings down the chain is something you do by hand,
 and pay for again.
 
+### Two retry layers, and the outer one does not listen
+
+`OpenAIServerModel` wraps the OpenAI client in `smolagents.models.Retrying`, so a
+rate-limited call is retried at two levels:
+
+| layer | attempts | first backoff | honours `Retry-After`? |
+|---|---|---|---|
+| the OpenAI client | 2 retries | ~0.5 s | **yes** |
+| `Retrying` | `RETRY_MAX_ATTEMPTS = 3` | `RETRY_WAIT(60) x 2 x (1 + random())` = **120-240 s** | **no** |
+
+The effect is that `smolagents` is the only adapter here that survives three
+consecutive 429s - and it does so by blocking for **two to four minutes** on a
+single item. Measured five times at 139 s, 160 s, 213 s, 220 s and 225 s, all
+inside the bracket the constants predict.
+
+Setting `Retry-After: 2` shortens the first two gaps to exactly 2.0 s and leaves
+the third at 213 s, which is what pins the delay on the outer layer rather than
+the client. Nothing the provider says can shorten it; only passing
+`retry=False`, or a smaller `RETRY_WAIT`, would.
+
+For a batch job that is a throughput collapse the scorecard cannot see, because
+the item passes. For an interactive script it is arguably the right default. See
+[transport.md](../transport.md).
+
 ## Not yet done
 
 - **No pause support.** `smolagents` has no interrupt/approval primitive
