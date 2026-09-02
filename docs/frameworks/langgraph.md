@@ -6,7 +6,8 @@
   pinned `langgraph==1.2.11`, `langchain-core==1.6.1`, `langchain-openai==1.6.0`
 - Licence: MIT
 - Adapter: [`frameworks/langgraph/adapter.py`](../../frameworks/langgraph/adapter.py)
-- Status: mock-green on all six arenas; no live scorecard yet (no API key wired in)
+- Status: runs all seven arenas; loses one `resilience` item (`res-01`). No live
+  scorecard yet (no API key wired in)
 
 ## Wiring notes
 

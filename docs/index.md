@@ -1,5 +1,8 @@
 # agentic-arena docs
 
+- **[Findings](findings.md)** — every result the repo has measured, in one page,
+  with the command that regenerates each number. Start here if you want the
+  answers rather than the machinery.
 - [Methodology](methodology.md) — the fairness and reproducibility rules. Read first.
 - [Decision guide](decision-guide.md) — how to pick a framework. Every claim tagged
   [measured] or [claimed]; nothing about answer quality until a live run exists.

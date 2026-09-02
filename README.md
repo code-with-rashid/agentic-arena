@@ -84,12 +84,17 @@ when its output satisfies every check for that item.
 | Google ADK | ✅ | Python | `google-adk` + `litellm` (required to leave Gemini); the only real loop cap out of the box |
 | Claude Agent SDK | 🚫 stub | Python | drives the `claude` CLI over the Anthropic Messages API — doesn't fit the shared OpenAI-compatible gateway ([why](frameworks/claude_agent_sdk/README.md)) |
 
-Seven adapters run against the mock across seven arenas. `vanilla` and
-`pydantic_ai` are green on all seven; `langgraph` and `openai_agents` are green on
-all but one `resilience` item each; `microsoft_af` pauses (12/12) but is *unsupported* on `durable_state`;
-`smolagents` and `google_adk` are *unsupported* on both pause arenas rather than
-failing them.
-The next contribution step is a live scorecard (needs an API key).
+Seven adapters run against the mock across seven arenas. `vanilla`,
+`pydantic_ai` and `microsoft_af` recover from all eight `resilience` faults;
+`langgraph` and `openai_agents` lose one each, `google_adk` two, `smolagents`
+four. Six of the seven pause for a human (12/12); five of those also survive
+having the runner thrown away (8/8). `microsoft_af` pauses but is *unsupported*
+on `durable_state`, and `smolagents` is *unsupported* on both pause arenas —
+reported as unsupported rather than failed.
+
+**[What we found so far →](docs/findings.md)** — every measured result in one
+page, with the command that regenerates each number. The next contribution step
+is a live scorecard (needs an API key).
 
 ## How comparison stays fair
 

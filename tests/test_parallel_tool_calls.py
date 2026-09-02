@@ -5,23 +5,42 @@ quietly executes only the first would give the model half its evidence and still
 look fine — the answer is scripted in mock mode, so nothing else here would
 notice.
 
-**With two valid calls, all six adapters handle it correctly** — both run, both
+**With two valid calls, all seven adapters handle it correctly** — both run, both
 results reach the model. That half is a negative result and lives here as a test
 rather than as an arena: an arena everybody passes adds runtime and dilutes the
 scorecard without discriminating between anything.
 
 The half that *does* discriminate is what happens when one call in the batch is
-broken. Counting the tool results that actually reach the model:
+broken. For each fault, batched with one good call, asking two questions of the
+next request — did the *successful* call's result reach the model, and was the
+broken call reported at all:
 
-    malformed args        langgraph    1 of 2      <- silently dropped
-                          everyone else 2 of 2
-    missing required arg  smolagents   0 of 2      <- whole batch dropped
-                          everyone else 2 of 2
+                          | unknown tool | malformed args | missing arg |
+    vanilla               | both         | both           | both        |
+    pydantic_ai           | both         | both           | both        |
+    microsoft_af          | both         | both           | both        |
+    langgraph             | both         | good only  (1) | both        |
+    smolagents            | error only(2)| good only  (1) | error only  |
+    openai_agents         | raises    (3)| both           | both        |
+    google_adk            | raises    (3)| raises      (3)| both        |
 
-Both are *silent*: the run continues and answers from partial evidence, and the
-model is never told a call went missing. That is a different failure mode from
-the `resilience` arena, which asks whether a framework recovers; this asks
-whether it tells the truth about what happened on the way.
+Three distinct ways to mishandle a batch, and they are not equally bad:
+
+ (1) **Silent partial.** The broken call vanishes with no message of any kind.
+     The run continues and answers from partial evidence, and the model is never
+     told a call went missing. This is the quietest failure here.
+ (2) **The successful sibling is discarded.** smolagents reports the error, but
+     as a *rewritten task* ("New task: ... Error: ... Now let's retry") rather
+     than as a turn in the transcript — and the good call's observation is
+     dropped along with the history. The model then re-emits the identical batch,
+     because from its point of view it never ran anything.
+ (3) **Raises.** Loud, and the same root cause as those frameworks' `resilience`
+     losses (`res-02` for openai_agents; `res-01` and `res-02` for google_adk).
+     Nothing is silently wrong, which makes it the best of the three.
+
+That is a different question from the one the `resilience` arena asks, which is
+whether a framework recovers; this asks whether it tells the truth about what
+happened on the way.
 
 It also refines a published claim. `langgraph` losing malformed tool arguments
 (`res-01`) turns out to be conditional: alone, the malformed call produces no
@@ -35,7 +54,9 @@ invariants — valid batches must work, the baseline must surface every result, 
 batching must never make a framework *worse* than it is serially.
 """
 
+import json
 from dataclasses import replace
+from pathlib import Path
 
 import pytest
 
@@ -150,41 +171,87 @@ def test_batching_never_makes_a_framework_worse(name, fault):
         )
 
 
-def _results_reaching_model(request):
-    """Tool results in a follow-up request, however the framework encodes them.
+# The successful call in every batch below is `search("Burj Khalifa")`, and this
+# bracketed title appears in the corpus entry it returns and nowhere else.
+GOOD_MARKER = "[Burj Khalifa]"
 
-    Not keyed on `role == "tool"`: smolagents feeds results back as `user`
-    messages with an "Observation" prefix. Counting what the model can actually
-    read is the point.
+# How each framework words the broken call's outcome. Every one of these is
+# absent from `arena/tools/corpus.json`, checked by a test below, so a match
+# means the framework reported the fault rather than the corpus mentioning it.
+FAULT_MARKERS = ("error", "invalid", "unknown tool", "required", "no results")
+
+
+def _model_visible_text(request):
+    """Everything in a request the model can read that is not its own words.
+
+    System and assistant turns are skipped: the assistant turn is the framework
+    echoing back the tool call it just made, so the fault's own text appears
+    there whether or not a result ever came back.
     """
-    seen = 0
+    parts = []
     for message in request.get("messages", []):
-        role = message.get("role")
-        if role == "tool":
-            seen += 1
-        elif role == "user":
-            content = message.get("content", "")
-            if not isinstance(content, str):
-                content = "".join(p.get("text", "") for p in content if isinstance(p, dict))
-            seen += content.lower().count("observation")
-    return seen
+        if message.get("role") in ("system", "assistant"):
+            continue
+        content = message.get("content", "")
+        if isinstance(content, str):
+            parts.append(content)
+        elif isinstance(content, list):
+            parts.extend(p.get("text", "") for p in content if isinstance(p, dict))
+    return "\n".join(parts)
+
+
+def _outcomes_reaching_model(request):
+    """(good result seen, broken call reported) for a batch of one good + one broken call.
+
+    Matches each outcome's own text rather than counting messages, because no
+    count is correct across these protocols. Counting `role == "tool"` messages
+    reads 0 for smolagents, which feeds results back as `user` turns; counting
+    the word "observation" — which an earlier version of this helper did — reads
+    *3* for two results, because the corpus entry for Tokyo Tower calls it a
+    "communications and observation tower". That contamination inflated a
+    published number and is the reason this is two booleans and not an integer.
+
+    "observation" is the only one of these markers the corpus contains, which
+    `test_the_fault_markers_do_not_appear_in_the_corpus` pins.
+    """
+    text = _model_visible_text(request)
+    good = GOOD_MARKER in text
+    broken = any(marker in text.lower() for marker in FAULT_MARKERS)
+    return good, broken
+
+
+def test_the_fault_markers_do_not_appear_in_the_corpus():
+    """The instrument above is only sound while the corpus stays clear of its markers.
+
+    An earlier version of this file counted the word "observation" and read 3
+    for a batch of 2, because a corpus entry describes Tokyo Tower as a
+    "communications and observation tower". That is the failure this pins: if a
+    future corpus entry mentions an error or a requirement, the fault marker
+    would start matching the successful result and every number below would
+    quietly drift.
+    """
+    corpus = json.dumps(json.loads(Path("arena/tools/corpus.json").read_text(encoding="utf-8")))
+    found = [m for m in FAULT_MARKERS if m in corpus.lower()]
+    assert not found, f"corpus now contains fault marker(s) {found} — the probe would over-report"
+    assert GOOD_MARKER.strip("[]").lower() in corpus.lower(), "the good marker left the corpus"
 
 
 @pytest.mark.parametrize("fault", list(FAULTS))
 def test_the_baseline_tells_the_model_about_every_call_in_the_batch(fault):
     """The control must never answer from partial evidence in silence.
 
-    Two calls go out, so two results must come back — the broken one as an error
-    the model can read and correct from. Frameworks that return fewer are a
-    measured finding (see the module docstring); the baseline returning fewer
+    Two calls go out, so both outcomes must come back — the broken one as an
+    error the model can read and correct from. Frameworks that report fewer are
+    a measured finding (see the module docstring); the baseline reporting fewer
     would mean this probe is wrong.
     """
     outcome, requests = _run("vanilla", [GOOD[0], FAULTS[fault]])
     assert outcome == "answered", f"baseline lost '{fault}': {outcome}"
     assert len(requests) >= 2, f"baseline halted after one request on '{fault}'"
-    seen = _results_reaching_model(requests[1])
-    assert seen == 2, (
-        f"baseline sent {seen} of 2 tool results for '{fault}' — the model would be "
+    good, broken = _outcomes_reaching_model(requests[1])
+    assert good, f"baseline dropped the *successful* call's result on '{fault}'"
+    assert broken, (
+        f"baseline never told the model the second call failed on '{fault}' — it would be "
         f"answering from partial evidence without being told"
     )
 

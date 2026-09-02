@@ -5,10 +5,15 @@ terse index, this file records the reasoning and the current batch of work._
 
 ## Where things stand
 
-Phase 0 (scaffold) and the Phase 1 vertical slice are done: the `tool_use` arena
-runs green in mock mode for `vanilla` and `langgraph`, CI is green, and the
-harness core is stdlib-only. The gaps are breadth — only two of seven adapters are
-real, and only one of six arenas exists.
+Phases 0–2 are done and Phase 3 is largely there: seven arenas exist, seven
+adapters run against the mock, CI is green, and the harness core is still
+stdlib-only with zero runtime dependencies. What the repo has actually measured
+is collected in [findings.md](findings.md).
+
+The remaining gaps are no longer breadth. They are: no live scorecard (needs an
+API key — every number published so far is mock mode, so nothing says whether any
+framework gives *better answers*), `crewai` written but not mock-verified, and
+`claude_agent_sdk` still a stub.
 
 ## What the landscape says (Sept 2026)
 

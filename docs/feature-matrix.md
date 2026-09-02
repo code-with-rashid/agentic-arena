@@ -29,23 +29,42 @@ arena and the comparison CI prints on every run.
 
 ### Batched tool calls, and a quieter failure mode
 
-A model may return several tool calls in one turn. With two *valid* calls all six
-adapters do the right thing — both run, both results reach the model. The
-interesting case is when one call in the batch is broken. Counting the tool
-results that actually reach the model:
+A model may return several tool calls in one turn. With two *valid* calls all
+seven adapters do the right thing — both run, both results reach the model. The
+interesting case is when one call in the batch is broken. For each fault, batched
+with one good call, two questions of the next request: did the **successful**
+call's result reach the model, and was the broken call **reported** at all?
 
-| fault, batched with one good call | results reaching the model |
-|---|---|
-| malformed args — `langgraph` | **1 of 2** — the malformed call is silently dropped |
-| malformed args — everyone else | 2 of 2 |
-| missing required arg — `smolagents` | **0 of 2** — the whole batch is dropped |
-| missing required arg — everyone else | 2 of 2 |
+| | unknown tool | malformed args | missing required arg |
+|---|---|---|---|
+| `vanilla` | both | both | both |
+| `pydantic_ai` | both | both | both |
+| `microsoft_af` | both | both | both |
+| `langgraph` | both | **good only** | both |
+| `smolagents` | **error only** | **good only** | **error only** |
+| `openai_agents` | **raises** | both | both |
+| `google_adk` | **raises** | **raises** | both |
 
-Both are *silent*. The run continues, answers from partial evidence, and the model
-is never told a call went missing. That is a different question from the one
-`resilience` asks: not "does it recover?" but "does it tell the truth about what
-happened on the way?" A framework that drops a lookup without saying so produces
-a confident answer built on half the evidence.
+Three distinct ways to mishandle a batch, and they are not equally bad:
+
+- **Silent partial** (`langgraph`, and `smolagents` on malformed args). The
+  broken call vanishes with no message of any kind. The run continues, answers
+  from partial evidence, and the model is never told a call went missing. This is
+  the quietest failure here and the one worth watching for.
+- **The successful sibling is discarded** (`smolagents`, two faults). The error
+  *is* surfaced — but as a rewritten task (`New task: … Error: … Now let's
+  retry`) rather than as a turn in the transcript, and the good call's
+  observation is dropped along with the history. The model then re-emits the
+  identical batch, because from its point of view it never ran anything. This is
+  the same mechanism as its `resilience` losses, seen from a different angle.
+- **Raises** (`openai_agents`, `google_adk`). Loud, and the same root cause as
+  those frameworks' `resilience` losses. Nothing is silently wrong, which makes
+  it the best of the three.
+
+That is a different question from the one `resilience` asks: not "does it
+recover?" but "does it tell the truth about what happened on the way?" A
+framework that drops a lookup without saying so produces a confident answer built
+on half the evidence.
 
 It also refines the `res-01` row. `langgraph` losing malformed tool arguments is
 **conditional**: alone, the malformed call produces no tool message and the graph
@@ -57,6 +76,15 @@ Measured in `tests/test_parallel_tool_calls.py`, which gates the invariants
 (valid batches work, the baseline surfaces every result, batching never makes a
 framework worse than it is serially) and leaves the per-framework differences as
 findings, the same way `resilience` does.
+
+> An earlier version of this table read *"missing required arg — smolagents 0 of
+> 2, the whole batch is dropped"*. That was measured with a helper that counted
+> the word "observation" in the returned messages — and a corpus entry describes
+> Tokyo Tower as a "communications and observation tower", so it read 3 for a
+> batch of 2. The direction was right and the zero was real, but "the model is
+> never told" was wrong for `smolagents`: it *is* told, in a rewritten task, and
+> what it loses is the successful sibling. The probe now matches each outcome's
+> own text, and a test pins that none of those markers appear in the corpus.
 
 Those two rows do not fully capture `smolagents`, which loses **four** of the
 eight faults. The unknown-tool-name row is the visible one, but the real boundary
