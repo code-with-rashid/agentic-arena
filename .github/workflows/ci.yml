@@ -154,6 +154,15 @@ jobs:
         run: python -m arena run --arena tool_use --framework all --mode mock --no-scorecard
       - name: Report per-framework prompt overhead
         run: python .github/scripts/report_overhead.py tool_use
+      - name: The published numbers still match the run
+        # Must follow the tool_use run above: it compares the docs against that
+        # record, and this is the only job where every framework is installed so
+        # the record covers all seven. `lint-and-test` runs the same file and gets
+        # the half that needs no framework - that the pages agree with each other,
+        # which is the half that would have caught the real bug. A tool-schema fix
+        # once corrected four docs and missed four others, and two of those went on
+        # publishing a withdrawn claim for five iterations.
+        run: pytest tests/test_published_numbers.py -q
       - name: How that overhead behaves on a long tool loop
         # Report-only: the constants are findings. It fails only if a framework
         # started truncating history, which would make the table above a
