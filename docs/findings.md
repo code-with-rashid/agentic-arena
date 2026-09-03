@@ -450,6 +450,25 @@ is blind for a sharper reason here: the *script* decides when the pause happens,
 so `human_in_the_loop` read 12/12 for six adapters while five were being told
 materially less than the sixth. → [tool-schemas.md](tool-schemas.md)
 
+**The docs went on publishing a number after it had been withdrawn.** The
+tool-schema correction above rewrote this page, `overhead.md`, the decision guide
+and the README — and missed four per-framework pages. Two of them
+(`pydantic-ai.md` at 0.96×, `microsoft-agent-framework.md` at 0.97×) kept
+asserting that a framework is *cheaper than the hand-rolled baseline*, the exact
+claim that had just been retracted, for five iterations. Nothing caught it because
+`tests/test_doc_links.py` gates that a cross-reference **resolves**, and nothing
+gated that a **number** is still true — a worse failure, because a stale figure
+reads as current.
+
+`tests/test_published_numbers.py` now holds every page that quotes a `tool_use`
+overhead figure to the run record, and pins which pages must carry one so
+deleting or rewording a claim fails rather than quietly reducing coverage.
+Superseded numbers stay on the page inside a `>` block, which the gate skips
+deliberately: a benchmark that cannot write down that a number changed will stop
+writing it down. Half of it needs no framework installed — that the pages agree
+with *each other* — which is the half that would have caught this one.
+→ [`tests/test_published_numbers.py`](../tests/test_published_numbers.py)
+
 **One of the probes on this page was contaminated by its own corpus.** The
 batched-call measurement in §2b originally counted the word "observation" in the
 messages a framework returned — and a corpus entry describes Tokyo Tower as a
