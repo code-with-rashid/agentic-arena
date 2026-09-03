@@ -123,12 +123,19 @@ a quality signal. The comparable columns are marked.
 
 | Arena | Mode | Pass rate | Note |
 |---|---|--:|---|
-| `tool_use` | mock | 15/15 | 732 prompt tok/item, 0.97× baseline *(comparable)* |
+| `tool_use` | mock | 15/15 | 802 prompt tok/item, 1.06× baseline *(comparable)* |
 | `structured_output` | mock | 15/15 | |
 | `rag` | mock | 15/15 | |
 | `multi_agent` | mock | 10/10 | single-agent role-play entry |
 | `resilience` | mock | **8/8** | *(comparable)* — recovers from every scripted fault |
 | `human_in_the_loop` | mock | n/s | no `resume` method — see above |
 | `durable_state` | mock | n/s | no `resume` method — see above |
+
+> **Correction.** The `tool_use` row read *732 prompt tok/item, 0.97× baseline* —
+> i.e. cheaper than the hand-rolled loop. It was cheaper because it was **sending
+> less**: this adapter was shipping bare parameter types where the arena had
+> described every argument. With the schemas equalised it is 1.06×, and no
+> framework is leaner than the baseline. See
+> [tool-schemas.md](../tool-schemas.md).
 
 _Live numbers land here once a key is wired into the `full-run` workflow._

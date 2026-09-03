@@ -1,0 +1,6 @@
+# Same library, different wiring: pydantic_ai_multi is the agent-delegation
+# pipeline contrast entry for the single-agent `pydantic_ai` adapter. It
+# deliberately does NOT carry its own pins - a second copy of the same versions
+# would drift from the first, and then the two entries would no longer be
+# comparable, which is the only reason this entry exists.
+-r ../pydantic_ai/requirements.txt

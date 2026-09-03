@@ -144,6 +144,56 @@ def test_the_managed_agent_pipeline_pays_an_extra_call_per_delegation():
     assert [c["name"] for c in result.tool_calls] == ["search"], result.tool_calls
 
 
+def test_the_same_shape_costs_the_same_without_a_delegation_feature():
+    """`pydantic_ai_multi` is the sub-agent-as-tool shape, hand-built.
+
+    Pydantic AI has no `managed_agents` and no `AgentTool`: the delegate is an
+    ordinary async tool whose body happens to `await sub_agent.run(...)`, and
+    nothing in the library knows a sub-agent is involved. It costs the same six
+    calls as `smolagents_multi` and puts the *same six stages* on the wire, in the
+    same order.
+
+    That is what makes the 2N law a property of the mechanism rather than of
+    anyone's implementation of it, so it is asserted here rather than described.
+    The scorecard cannot see it — a pipeline that quietly collapsed into a single
+    agent would still post 10/10 — and the depth measurements in
+    `tests/test_delegation_depth.py` use generic stages, so this is the only place
+    the arena's own three roles are pinned for this entry.
+    """
+    pytest.importorskip("pydantic_ai")
+    arena = load_arena("multi_agent")
+    script = MockScript.load(arena.mock_script_path)
+    with MockServer(script, arena_tools=arena.tools) as server:
+        config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        result = load_framework("pydantic_ai_multi").build(arena, config).run(arena.dataset[0])
+        requests = server.requests
+
+    stages = [
+        next((r for r in ("researcher", "writer", "editor") if f"the {r}" in _system(req)), "?")
+        for req in requests
+    ]
+    # Byte-identical to the smolagents pipeline's: down the chain, then back up.
+    assert stages == ["researcher", "researcher", "writer", "editor", "writer", "researcher"], (
+        stages
+    )
+
+    # Every stage carries the arena's task prompt, not just a role line.
+    for req in requests:
+        assert arena.system_prompt in _system(req)
+
+    with MockServer(script, arena_tools=arena.tools) as server:
+        config = replace(ArenaConfig(mode="mock"), base_url=server.base_url, api_key="mock-key")
+        single = load_framework("pydantic_ai").build(arena, config).run(arena.dataset[0])
+    assert result.llm_calls == 3 * single.llm_calls == 6, (result.llm_calls, single.llm_calls)
+    assert result.output_text == single.output_text, "same scripted answer, different cost"
+    # Nested runs must be billed. Sharing one RunUsage is what does it; without
+    # that this pipeline would report a single agent's cost while making six
+    # calls, which is the shape tests/test_usage_accounting.py exists to catch.
+    assert result.prompt_tokens > single.prompt_tokens
+    # Delegating is not a tool the arena granted, so it must not be logged as one.
+    assert [c["name"] for c in result.tool_calls] == ["search"], result.tool_calls
+
+
 def test_variant_entries_are_scoped_to_their_arena():
     """`--framework all` must not drop a pipeline into a single-agent comparison.
 
