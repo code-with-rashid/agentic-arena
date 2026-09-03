@@ -223,6 +223,7 @@ def run(
         "arena_description": arena.description,
         "mode": config.mode,
         "model": config.model if config.mode == "live" else "mock-model",
+        "temperature": config.temperature,
         "repeat": config.repeat,
         "dataset_size": len(arena.dataset),
         "started_at": started,

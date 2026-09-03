@@ -95,7 +95,7 @@ class _Runner:
             api_base=config.base_url,
             api_key=config.api_key,
             client_kwargs={"timeout": config.request_timeout_s},
-            temperature=0.0,
+            temperature=config.temperature,
         )
         # smolagents makes one model call beyond `max_steps`, same as the
         # single-agent entry. Each agent in the chain gets a small budget rather

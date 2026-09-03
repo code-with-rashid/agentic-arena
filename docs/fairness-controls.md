@@ -30,6 +30,7 @@ an answer.
 | field | does an adapter see it? | held to it by |
 |---|---|---|
 | `model` | **yes** | `tests/test_shared_controls.py` |
+| `temperature` | **yes** | `tests/test_shared_controls.py` |
 | `base_url` | **yes** | implicit — nothing reaches the mock otherwise |
 | `api_key` | **yes** | not gated; a wrong key fails loudly live (401) rather than silently |
 | `request_timeout_s` | **yes** | `tests/test_transport_faults.py` |
@@ -78,11 +79,43 @@ so builds `openai/<model>` — LiteLLM strips the prefix and the name on the wir
 is exactly what the arena configured. A negative result, pinned because of what
 it would cost to be wrong about it later.
 
+**The configured sampling temperature is the one on the wire.** [methodology
+§3e](methodology.md#3e-one-sampling-temperature) — *"temperature is `0.0`
+everywhere"* was the last item in that list held by convention rather than by a
+field: ten hard-coded `temperature=0.0` literals, one per adapter, checked by
+nothing. A framework left at its library default of `1.0` would sample
+differently from the rest of the field in every live run, for a reason that has
+nothing to do with the framework.
+
+Measured across all thirteen buildable adapters: every one sends `0.0` today.
+`ArenaConfig.temperature` is now the single source, and the gate builds each
+adapter with a non-zero canary — a literal `0.0` left in an adapter sends the
+wrong number and fails.
+
+**No adapter puts a sampling parameter on the wire that the arena did not
+choose.** Every request body is held to the envelope the hand-rolled baseline
+sends — `model`, `messages`, `temperature`, `stream`, `tools`, `tool_choice` —
+plus a per-adapter exception table. Measured: no adapter sets `top_p`, `seed`,
+`max_tokens`, the penalties, `n`, `logprobs` or `response_format`; `smolagents`
+alone adds `stop` (below). An adapter that started injecting `top_p=0.9` would be
+comparing a different sampling distribution, and would fail here until the key
+was removed or recorded with a reason.
+
 ## What is deliberately not gated
 
 - **`api_key`.** It reaches the adapter, and a wrong one fails loudly live with a
   401 rather than silently skewing a comparison. There is no quiet failure to
   guard against.
+- **`smolagents`' `stop` sequences.** It sends `stop: ["Observation:", "Calling
+  tools:"]` on every request, in both its single- and multi-agent entries,
+  because its text ReAct loop parses generation that halts at those markers. It
+  is intrinsic to the mechanism, not a sampling choice, so it is an entry in the
+  gate's exception table rather than a failure — the same treatment as
+  `strict: true` and `title` on the tool schemas.
+- **`tool_choice`.** Every adapter sends `"auto"` today. A framework that drove
+  its loop with `"required"` or `"none"` would be a mechanism difference worth
+  recording, not a fairness break — the arena does not dictate how a framework
+  decides to call a tool, only which tools exist.
 - **Adapter-side prompt framing.** Adapters may phrase the arena's instruction in
   whatever way is idiomatic — that difference *is* part of what is being
   compared. What they may not do is substitute their own task instruction, and

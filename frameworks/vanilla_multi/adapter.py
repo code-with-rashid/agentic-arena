@@ -67,6 +67,7 @@ class _Runner:
             api_key=self.config.api_key,
             model=self.config.model,
             timeout_s=self.config.request_timeout_s,
+            temperature=self.config.temperature,
         )
         # One shared transcript, exactly like the graph's shared MessagesState.
         # The system message is swapped per stage rather than accumulated, so each

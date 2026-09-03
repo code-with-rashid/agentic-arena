@@ -467,6 +467,19 @@ latency column would have been reporting library defaults rather than the arena'
 configuration. Measurable only because the mock learned to *hang* rather than
 fail. → [transport.md](transport.md#a-hung-provider-is-a-different-failure-and-five-adapters-were-deaf-to-it)
 
+**Temperature was an invariant with nothing behind it.** `methodology.md` §1 says
+"temperature is `0.0` everywhere" in the same breath as one model for everyone —
+but it was ten hard-coded `temperature=0.0` literals, one per adapter, and no
+check that any reached the gateway. Measured: all thirteen buildable adapters send
+`0.0` today, and no adapter sends any *other* sampling parameter — not `top_p`,
+`seed`, `max_tokens`, the penalties — so the provider default applies identically
+for everyone. `smolagents` alone adds `stop` sequences, which its text ReAct loop
+needs to parse its output. `ArenaConfig.temperature` is now the single source and
+`tests/test_shared_controls.py` holds every adapter to it on the wire with a
+non-zero canary, and holds every request body to the baseline's sampling envelope.
+A negative result, pinned the same way the model-on-wire check is. →
+[fairness-controls.md](fairness-controls.md)
+
 **The mock's streaming path would have zeroed every token count.** A real
 OpenAI-compatible provider sends **no `usage`** on a streamed response unless the
 client asks with `stream_options: {"include_usage": true}`. The mock sent none

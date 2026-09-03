@@ -92,7 +92,7 @@ class _Runner:
             model=config.model,
             base_url=config.base_url,
             api_key=config.api_key,
-            temperature=0.0,
+            temperature=config.temperature,
             timeout=config.request_timeout_s,
             max_retries=1,
         )

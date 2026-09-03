@@ -111,7 +111,7 @@ class _Runner:
             timeout=config.request_timeout_s,
         )
         model = OpenAIChatCompletionsModel(model=config.model, openai_client=client)
-        settings = ModelSettings(temperature=0.0)
+        settings = ModelSettings(temperature=config.temperature)
 
         def agent(role: str, **kw: Any) -> Any:
             return Agent(

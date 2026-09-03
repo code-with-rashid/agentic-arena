@@ -61,7 +61,7 @@ class _Runner:
             model=f"openai/{config.model}",
             base_url=config.base_url,
             api_key=config.api_key,
-            temperature=0.0,
+            temperature=config.temperature,
         )
 
     def run(self, item: EvalItem) -> AgentResult:
