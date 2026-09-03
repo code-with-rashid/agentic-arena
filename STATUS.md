@@ -20,13 +20,16 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
     `ToolApprovalMiddleware`), `google_adk` (`LongRunningFunctionTool`) and
     `vanilla` (emulated) all 12/12 — six distinct mechanisms; `smolagents`
     reports unsupported because it has no `resume` method
-  - `multi_agent` — 10 items; carries two real three-role pipelines
-    (`vanilla_multi` hand-rolled, `langgraph_multi` a `StateGraph`) beside the
-    single-agent entries, plus a model-decided handoff chain
-    (`openai_agents_multi`). Measures what delegation costs: 2x LLM calls,
-    ~2.5x prompt tokens, the graph machinery itself adds nothing, and a handoff
-    costs ~10% more again — 94% of it the `transfer_to_*` schemas on every
-    request rather than the transfers
+  - `multi_agent` — 10 items; carries five real three-role pipelines beside the
+    single-agent entries: `vanilla_multi` (hand-rolled) and `langgraph_multi`
+    (a `StateGraph`) for structural delegation, `openai_agents_multi` for a
+    model-decided handoff chain, and `smolagents_multi` + `pydantic_ai_multi`
+    for a sub-agent invoked as a tool. Measures what delegation costs: 2x LLM
+    calls, ~2.5x prompt tokens, the graph machinery itself adds nothing, and a
+    handoff costs ~10% more again — 94% of it the `transfer_to_*` schemas on
+    every request rather than the transfers. Sub-agent-as-a-tool costs 3x the
+    calls instead of 2x, and does so identically in three libraries that share
+    no code — including Pydantic AI, which has no delegation feature at all
   - `durable_state` — 8 items; the harness throws the runner away at the
     checkpoint and rebuilds it. All four resumable adapters 8/8, by four
     different mechanisms — see docs/feature-matrix.md

@@ -55,12 +55,19 @@ the wire.
 | `human_in_the_loop` | 12/12 |
 | `durable_state` | 8/8 |
 
-### Prompt size: 1.05× baseline *(comparable)*
+### Prompt size: 1.11× baseline *(comparable)*
 
-791 estimated prompt tokens per item against `vanilla`'s 754. That puts ADK
-inside the 1.15× band the other five in-band frameworks occupy, at its heavy end —
-marginally above the OpenAI Agents SDK. Nothing unusual on the wire; it
-serialises the same two tool schemas slightly less compactly than most.
+836 estimated prompt tokens per item against `vanilla`'s 754. That puts ADK
+inside the 1.15× band the other five in-band frameworks occupy, at its heavy end.
+Nothing unusual on the wire; it serialises the same two tool schemas slightly less
+compactly than most.
+
+> **Correction.** This said *1.05×, marginally above the OpenAI Agents SDK*, and
+> both halves were wrong. ADK was declaring `search(query)` where the arena
+> declares `search(query, k=3)` — a parameter the model was never offered — so it
+> was cheaper because it was **sending less**. With the schemas equalised it is
+> 1.11× and the OpenAI Agents SDK is above it at 1.14×. See
+> [tool-schemas.md](../tool-schemas.md).
 
 ### `resilience` 6/8 — the only framework that loses both
 
@@ -179,7 +186,7 @@ Two more things worth knowing about `sub_agents`:
 - **The transfer tool is parameterised by target**, not one tool per target:
   a single `transfer_to_agent` whose `agent_name` parameter carries an `enum` of
   the agents that stage may hand to. Both shapes are described in
-  [multi-agent.md](../multi-agent.md#how-this-scales-three-laws-four-implementations).
+  [multi-agent.md](../multi-agent.md#how-this-scales-three-laws-five-implementations).
 
 ## Not yet done
 

@@ -146,13 +146,16 @@ and it is the only one that costs **3x** the model calls rather than 2x: its
 reply is a tool result, not the end of the run, so every delegator has to wake up
 and produce its own final answer afterwards.
 
-Measured from one role to five across four implementations, each follows an exact
+Measured from one role to five across five implementations, each follows an exact
 law - `handoffs` N+1, ADK `sub_agents` N+2, sub-agent-as-tool 2N - and the 2N law
-**replicates in two libraries that share no code**, so it is a property of the
-mechanism. But the call count is only half the bill: a transfer keeps one growing
-conversation (prompt compounds 15.4x over four roles) while a sub-agent starts
-fresh (3.59x). Inside ADK, `AgentTool` costs a third more calls and a quarter of
-the prompt than `sub_agents`. See [multi-agent.md](multi-agent.md).
+**replicates in three libraries that share no code**, so it is a property of the
+mechanism. The third replication is the decisive one: Pydantic AI has no
+delegation feature, so its chain is an ordinary async tool awaiting a nested run,
+and it costs 2N anyway. But the call count is only half the bill: a transfer keeps
+one growing conversation (prompt compounds 15.4x over four roles) while a
+sub-agent starts fresh (3.59x ADK, 3.68x pydantic_ai). Inside ADK, `AgentTool`
+costs a third more calls and a quarter of the prompt than `sub_agents`. See
+[multi-agent.md](multi-agent.md).
 
 Still judged: CrewAI crews, the same sub-agent-as-tool shape, blocked on an
 adapter that has never been mock-verified.

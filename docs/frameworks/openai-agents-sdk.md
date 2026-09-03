@@ -71,7 +71,7 @@ a quality signal. The comparable columns are marked.
 
 | Arena | Mode | Pass rate | Note |
 |---|---|--:|---|
-| `tool_use` | mock | 15/15 | 787 prompt tok/item, 1.04× baseline — heaviest of the five *(comparable)* |
+| `tool_use` | mock | 15/15 | 857 prompt tok/item, 1.14× baseline — heaviest of the in-band six *(comparable)* |
 | `structured_output` | mock | 15/15 | |
 | `rag` | mock | 15/15 | |
 | `multi_agent` | mock | 10/10 | single-agent role-play entry |

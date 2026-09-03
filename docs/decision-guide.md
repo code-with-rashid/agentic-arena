@@ -213,7 +213,7 @@ retries twice can spend three times it before giving up.
 
 The *benefit* of delegation is still **[claimed]** — mock mode holds the model
 constant, so it cannot tell you whether three roles answer better than one. The
-**cost** is now measured across four delegation mechanisms in three libraries,
+**cost** is now measured across five delegation mechanisms in four libraries,
 from one role to five, and it scales by an exact law. **[measured]**
 
 | mechanism | library | LLM calls for N roles |
@@ -222,6 +222,7 @@ from one role to five, and it scales by an exact law. **[measured]**
 | `sub_agents` — transfer, returns to parent | `google_adk` | **N + 2** |
 | `managed_agents` — sub-agent as a tool | `smolagents` | **2N** |
 | `AgentTool` — sub-agent as a tool | `google_adk` | **2N** |
+| agent delegation — sub-agent as a tool | `pydantic_ai` | **2N** |
 
 Three things to take from that table.
 
@@ -230,9 +231,12 @@ transferring to another agent; ADK returns control to the *parent* afterwards an
 the parent speaks again, which is the whole difference between N+1 and N+2. Same
 word, different control flow.
 
-**Sub-agent-as-a-tool costs double.** Two libraries that share no code agree at
-every depth: the sub-agent's reply is a tool result rather than the end of the
-run, so each level costs two calls instead of one.
+**Sub-agent-as-a-tool costs double, and you cannot shop around it.** Three
+libraries that share no code agree at every depth: the sub-agent's reply is a tool
+result rather than the end of the run, so each level costs two calls instead of
+one. The third is the one to note — Pydantic AI has no delegation feature at all,
+so its version is a plain async tool that awaits a nested run, and it still costs
+exactly 2N. The price is in the shape, not in anyone's implementation of it.
 
 **But calls are the wrong thing to optimise.** Prompt tokens for the same chains
 at four roles, *inside ADK* so nothing else varies:

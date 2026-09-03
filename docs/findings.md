@@ -241,6 +241,7 @@ questions come apart:
 | `vanilla_multi` → `langgraph_multi` — **the graph machinery alone** | **0.97×** | **1.00×** |
 | `openai_agents` → `openai_agents_multi` — native `handoffs` | 2.76× | 2.00× |
 | `smolagents` → `smolagents_multi` — sub-agent invoked as a tool | **4.03×** | **3.00×** |
+| `pydantic_ai` → `pydantic_ai_multi` — the same, hand-built | **3.57×** | **3.00×** |
 
 **The cost of multi-agent is the structure, not the framework.** Three roles
 double the LLM calls and roughly 2.5× the prompt tokens, and cost that whether
@@ -287,7 +288,7 @@ in §1: each sub-agent is described **twice**, once as a JSON schema and once in
 prose. Both frameworks bill you for options rather than actions; they do not bill
 the same amount.
 
-**Measured from one role to five, across four implementations in three
+**Measured from one role to five, across five implementations in four
 libraries, every one follows an exact law:**
 
 | roles | | 1 | 2 | 3 | 4 | 5 | |
@@ -296,10 +297,15 @@ libraries, every one follows an exact law:**
 | `sub_agents` (google_adk) | transfer, returns to parent | 2 | 4 | 5 | 6 | 7 | **N + 2** |
 | `managed_agents` (smolagents) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
 | `AgentTool` (google_adk) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
+| agent delegation (pydantic_ai) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
 
-**2N is the mechanism, not the library** — smolagents and ADK share no code and
-agree at every depth. **"Handoff" is not one thing** — both the OpenAI SDK and
-ADK call theirs a transfer, and ADK's costs one call more because it returns
+**2N is the mechanism, not the library** — three implementations in three
+libraries that share no code, agreeing at every depth. The third one settles it:
+Pydantic AI has *no delegation feature*, so its chain is an ordinary async tool
+whose body awaits a nested run, and it costs exactly 2N anyway. The price is in
+the shape — a nested run returns a value instead of ending the conversation — and
+no library choice avoids it. **"Handoff" is not one thing** — both the OpenAI SDK
+and ADK call theirs a transfer, and ADK's costs one call more because it returns
 control to the parent, which then speaks again.
 
 **And you pay in calls or in prompt, not both — the call law alone points the
@@ -310,9 +316,15 @@ sub-agent starts fresh, so the prompt stays flat and the calls compound instead
 (3.59× against 4×). Cheaper in calls is dearer in prompt, and prompt is usually
 the larger bill.
 
-Restarting only helps if there is little to re-send: smolagents restarts too and
-still compounds (5.68×), because each sub-agent carries its own ~4 KB templated
-system prompt — the scaffolding from §1.
+Restarting only helps if there is little to re-send — and the third
+sub-agent-as-tool implementation is what proves that is the *library* rather than
+the mechanism. smolagents restarts each sub-agent fresh and still compounds
+(5.68×); Pydantic AI restarts them exactly the same way and lands on ADK's
+numbers instead — **1581 prompt tokens at four roles against ADK's 1722 and
+smolagents' 13441**. So smolagents' outlier is its own ~4 KB templated system
+prompt, re-sent by every fresh sub-agent (the scaffolding from §1), and nothing
+about starting fresh. Note too which implementation is cheapest in prompt at four
+roles: the one that costs the *most* calls.
 
 Two things this deliberately does *not* say. The lower completion tokens on the
 handoff chain (140 vs 198) are not efficiency — the researcher emits a short
@@ -470,7 +482,7 @@ fail. → [transport.md](transport.md#a-hung-provider-is-a-different-failure-and
 **Temperature was an invariant with nothing behind it.** `methodology.md` §1 says
 "temperature is `0.0` everywhere" in the same breath as one model for everyone —
 but it was ten hard-coded `temperature=0.0` literals, one per adapter, and no
-check that any reached the gateway. Measured: all thirteen buildable adapters send
+check that any reached the gateway. Measured: all fourteen buildable adapters send
 `0.0` today, and no adapter sends any *other* sampling parameter — not `top_p`,
 `seed`, `max_tokens`, the penalties — so the provider default applies identically
 for everyone. `smolagents` alone adds `stop` sequences, which its text ReAct loop

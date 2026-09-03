@@ -87,7 +87,7 @@ nothing. A framework left at its library default of `1.0` would sample
 differently from the rest of the field in every live run, for a reason that has
 nothing to do with the framework.
 
-Measured across all thirteen buildable adapters: every one sends `0.0` today.
+Measured across all fourteen buildable adapters: every one sends `0.0` today.
 `ArenaConfig.temperature` is now the single source, and the gate builds each
 adapter with a non-zero canary — a literal `0.0` left in an adapter sends the
 wrong number and fails.

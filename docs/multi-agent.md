@@ -202,6 +202,7 @@ wording as the other three entries:
 | structural | `langgraph` → `langgraph_multi` | 2.62× | 2.00× |
 | model-decided, speaker swap | `openai_agents` → `openai_agents_multi` | 2.76× | 2.00× |
 | model-decided, sub-agent as tool | `smolagents` → `smolagents_multi` | **4.03×** | **3.00×** |
+| model-decided, sub-agent as tool | `pydantic_ai` → `pydantic_ai_multi` | **3.57×** | **3.00×** |
 
 Three roles cost two model calls in every mechanism above except this one, which
 costs three. The reason is visible on the wire — six requests, down the chain and
@@ -266,6 +267,37 @@ paid on every request rather than only the delegating one, it scales with how
 many delegates are offered, and each sub-agent really is described twice. The
 byte counts stay findings.
 
+### The same shape without a delegation feature: `pydantic_ai_multi`
+
+`pydantic_ai_multi` is the same three roles again, with the same wording, wired
+the same way — except that **Pydantic AI has nothing called delegation**. There
+is no `managed_agents` list and no `AgentTool` wrapper. The delegate is an
+ordinary async tool whose body happens to `await sub_agent.run(...)`, and the
+library does not know a sub-agent is involved:
+
+| entry | prompt tok | completion | LLM calls | pass |
+|---|--:|--:|--:|--:|
+| `pydantic_ai` | 696.7 | 86.2 | 2.00 | 10/10 |
+| `pydantic_ai_multi` | 2486.7 | 269.0 | 6.00 | 10/10 |
+
+**3.57× prompt, 3.00× LLM calls** — the same call multiplier as
+`smolagents_multi`, because it is the same mechanism, hand-built. That is the
+sharpest form of the claim below: the 2N cost is not a library's implementation
+of delegation, it is what happens when a sub-agent's reply is a value rather than
+the end of the conversation.
+
+The two entries also make the *other* smolagents number legible. Same mechanism,
+same roles, same task, same scripted turns: **2487 prompt tokens against 10578**.
+Four times the bill for identical work, and none of it is the delegation — it is
+the ~4 KB templated system prompt each smolagents sub-agent carries.
+
+Nested runs share one `RunUsage`, which is how the reported cost stays honest;
+without it a pipeline would bill like a single agent, which is exactly what
+[`tests/test_usage_accounting.py`](../tests/test_usage_accounting.py) exists to
+catch. One consequence worth naming: 2N at three roles is six LLM calls against a
+default `max_tool_iterations` of six, so this mechanism spends the *whole*
+per-item allowance where a handoff chain spends four of it.
+
 ### What the mock needed in order to drive a nested pipeline
 
 The handoff accommodation is stateless because a transfer swaps the speaker
@@ -300,11 +332,11 @@ only the explicit `transfer_to_*` shape, which is the narrower behaviour on
 purpose. Verified behaviour-preserving: the handoff chain's numbers are unchanged
 to the decimal (2.76×, 2.00×).
 
-## How this scales: three laws, four implementations
+## How this scales: three laws, five implementations
 
 Three roles was one point, and this page previously said plainly that two points
-do not establish a curve. Measured from one role to five, across **four**
-delegation implementations in three libraries, every one follows an exact law:
+do not establish a curve. Measured from one role to five, across **five**
+delegation implementations in four libraries, every one follows an exact law:
 
 | roles | | 1 | 2 | 3 | 4 | 5 | |
 |---|---|--:|--:|--:|--:|--:|---|
@@ -312,15 +344,23 @@ delegation implementations in three libraries, every one follows an exact law:
 | `sub_agents` (google_adk) | transfer, returns to parent | 2 | 4 | 5 | 6 | 7 | **N + 2** |
 | `managed_agents` (smolagents) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
 | `AgentTool` (google_adk) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
+| agent delegation (pydantic_ai) | sub-agent as a tool | 2 | 4 | 6 | 8 | 10 | **2N** |
 
 ### The 2N law is the mechanism, not the library
 
-smolagents and Google ADK share no code, and their sub-agent-as-tool
+smolagents, Google ADK and Pydantic AI share no code, and their sub-agent-as-tool
 implementations agree at **every** depth. A sub-agent's reply is a tool result
 rather than the end of the run, so each intermediate level costs 2 (delegate,
 then answer), the top costs 3 (tool call, delegate, answer), the leaf costs 1 —
-2N. Replication in a second library is what turns that from an observation about
-smolagents into a property of the design.
+2N.
+
+The third one is what settles it, because **Pydantic AI has no delegation
+feature**. There is no `managed_agents` list and no `AgentTool` wrapper: the
+delegate is an ordinary async tool whose body happens to `await sub.run(...)`, and
+nothing in the library knows a sub-agent is involved. It still costs exactly 2N.
+Two implementations were a pattern; three, one of which is not a feature at all,
+means the cost is in the *shape* — a nested run returns a value instead of ending
+the conversation — and no library choice avoids it.
 
 ### "Handoff" is not one thing
 
@@ -332,7 +372,7 @@ different control flow.
 
 ### You pay in calls or in prompt, and the call law points the wrong way
 
-Prompt tokens for the same four chains, one role to four:
+Prompt tokens for the same five chains, one role to four:
 
 | | 1 | 2 | 3 | 4 | call growth | prompt growth |
 |---|--:|--:|--:|--:|--:|--:|
@@ -340,6 +380,7 @@ Prompt tokens for the same four chains, one role to four:
 | `sub_agents` — transfer | 479 | 3168 | 5229 | 7375 | 3.00× | **15.40×** |
 | `managed_agents` — as tool | 2367 | 5859 | 9311 | 13441 | 4.00× | 5.68× |
 | `AgentTool` — as tool | 479 | 1126 | 1423 | 1722 | 4.00× | **3.59×** |
+| agent delegation — as tool | 430 | 1056 | 1318 | 1581 | 4.00× | **3.68×** |
 
 Inside ADK — same library, same model, same task, so nothing else explains it —
 four roles cost **6 calls and 7375 prompt tokens** with `sub_agents`, and **8
@@ -351,17 +392,30 @@ here where prompt grows **slower** than call count.
 Cheaper in calls is dearer in prompt, and prompt is usually the larger bill. A
 reader who took only the call-count law from this page would pick the wrong one.
 
-And restarting the conversation only helps if there is little to re-send:
+And restarting the conversation only helps if there is little to re-send.
 smolagents also starts each sub-agent fresh, and its prompt still grows faster
-than its calls, because every sub-agent carries its own ~4 KB templated system
-prompt — the same scaffolding behind its 3.77× single-agent overhead in
-[overhead.md](overhead.md).
+than its calls (5.68×). The obvious explanation is its own ~4 KB templated system
+prompt, re-sent by every fresh sub-agent — the scaffolding behind its 3.90×
+single-agent overhead in [overhead.md](overhead.md) — but with one comparison
+that was an explanation, not a measurement.
+
+**Pydantic AI's chain is what turns it into one.** It restarts each sub-agent's
+conversation exactly as smolagents does, and it lands on ADK's numbers rather
+than smolagents': **1581 prompt tokens at four roles against ADK's 1722 and
+smolagents' 13441**, growing 3.68× against 3.59× and 5.68×. Two independent
+implementations of the same mechanism agreeing, and a third an order of magnitude
+away, isolates the difference in the library — not in starting fresh.
+
+Note also which implementation is cheapest in prompt at four roles: the one that
+costs the **most** calls. `pydantic_ai` delegation spends 8 calls to `handoffs`'
+5, and 1581 prompt tokens to its 1883.
 
 > **Correction.** An earlier version of this section said prompt cost grows
 > faster than call count, full stop. That was measured on two mechanisms and
 > broke on the first new one: `AgentTool` grows 3.59× in prompt against 4.00× in
 > calls. The claim now holds only where the conversation keeps growing, and the
-> test that gates it excludes `AgentTool` explicitly rather than quietly.
+> test that gates it excludes the mechanisms it does not cover explicitly rather
+> than quietly — `AgentTool` then, and `pydantic_ai` delegation now.
 
 All of this is gated in `tests/test_delegation_depth.py` rather than described,
 because a library change could break a law while every depth-3 number on this

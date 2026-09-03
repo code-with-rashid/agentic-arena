@@ -69,7 +69,7 @@ def test_no_adapter_imports_its_framework_at_module_level():
 
     The harness has zero runtime dependencies and CI's `lint-and-test` job
     installs no framework at all, so `available_frameworks()` has to be able to
-    import all thirteen adapter modules against a bare interpreter. Framework
+    import all fourteen adapter modules against a bare interpreter. Framework
     imports therefore live inside `build()`, and `lib_version` reports
     "(not installed)" rather than raising.
 
