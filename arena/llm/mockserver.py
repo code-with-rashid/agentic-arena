@@ -504,7 +504,13 @@ class _Handler(BaseHTTPRequestHandler):
             # `final_answer` is how the answer itself is delivered. A client
             # offering both hands off now and answers after, which is the order a
             # real run would take.
-            delegate = _delegation_tool(req, arena_tools, first_user)
+            # What the delegate is told. Empty by default: the cheapest thing a
+            # manager could forward, which is what makes every published pipeline
+            # number a floor. The task stays first so scenario matching still
+            # finds the item.
+            forwarded: str = self.server.forward_context
+            task = "\n\n".join([first_user, forwarded]) if forwarded else first_user
+            delegate = _delegation_tool(req, arena_tools, task)
             if delegate:
                 turn = _as_handoff_call(turn, delegate[0], delegate[1])
             elif _wants_final_answer_tool(req):
@@ -617,6 +623,7 @@ class MockServer:
         faults: Sequence[int] = (),
         retry_after: int | None = None,
         stall_seconds: float = 0.0,
+        forward_context: str = "",
     ):
         """`arena_tools` is the arena's declared tool list, when the caller knows it.
 
@@ -642,6 +649,26 @@ class MockServer:
         `stall_seconds` holds every request open for that long before answering -
         a hung provider rather than a failing one, which is what
         `ArenaConfig.request_timeout_s` exists to bound.
+
+        `forward_context` is what a delegating agent *hands down the chain*. Left
+        empty - the default, and what every published pipeline number is measured
+        with - a delegate is told only the original task, which is the cheapest
+        thing a manager could possibly forward. That makes those numbers a floor
+        rather than an estimate, and `docs/multi-agent.md` says so.
+
+        Set it to a payload and the same bytes ride on every delegation call, for
+        every framework, so who *pays* for forwarding is the mechanism rather than
+        anything about the transcript a particular library happens to keep. A
+        transfer that swaps the speaker takes no arguments at all, so it forwards
+        for free; a sub-agent invoked as a tool is starting a fresh conversation
+        and has to be told, so it pays the payload once per hop.
+
+        The original task stays at the front of the string. Scenario matching
+        reads the first user message, so putting the payload first would lose the
+        item; and because the mock replays a script either way, forwarding can
+        change what a pipeline *costs* here but never what it answers - the same
+        construction that holds delegation's benefit at zero everywhere else on
+        this page.
         """
         self.script = script if isinstance(script, MockScript) else MockScript.load(script)
         # `_Server` sets `daemon_threads`: a stalled request outlives the client
@@ -655,6 +682,7 @@ class MockServer:
         self._httpd.faults = list(faults)  # type: ignore[attr-defined]
         self._httpd.retry_after = retry_after  # type: ignore[attr-defined]
         self._httpd.stall_seconds = float(stall_seconds)  # type: ignore[attr-defined]
+        self._httpd.forward_context = str(forward_context)  # type: ignore[attr-defined]
         self._httpd.attempts = []  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
 
