@@ -131,7 +131,7 @@ class _Runner:
             name="arena-agent",
             instructions=self.system_prompt,
             model=OpenAIChatCompletionsModel(model=config.model, openai_client=client),
-            model_settings=ModelSettings(temperature=0.0),
+            model_settings=ModelSettings(temperature=config.temperature),
             tools=_make_tools(names),
         )
 

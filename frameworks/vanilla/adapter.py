@@ -36,6 +36,7 @@ class _Runner:
             api_key=self.config.api_key,
             model=self.config.model,
             timeout_s=self.config.request_timeout_s,
+            temperature=self.config.temperature,
         )
 
     def _loop(self, messages: list[dict], client: ChatClient) -> AgentResult:

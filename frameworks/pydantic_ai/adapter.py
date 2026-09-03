@@ -67,7 +67,7 @@ class _Runner:
         self._agent = Agent(
             model,
             system_prompt=self.system_prompt,
-            model_settings=OpenAIChatModelSettings(temperature=0.0),
+            model_settings=OpenAIChatModelSettings(temperature=config.temperature),
             output_type=output_type,
         )
         # `Agent(retries=...)` is a tool/output-validation retry budget, NOT an

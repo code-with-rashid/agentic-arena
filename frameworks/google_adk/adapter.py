@@ -176,7 +176,7 @@ class _Runner:
             # LiteLLM forwards unknown kwargs to the completion call, which is
             # where its own per-request timeout lives.
             timeout=self.config.request_timeout_s,
-            temperature=0.0,
+            temperature=self.config.temperature,
         )
         agent = LlmAgent(
             name="arena_agent",

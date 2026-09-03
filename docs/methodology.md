@@ -6,9 +6,10 @@ These are the rules that make it so. A change that breaks one of them is a bug.
 ## 1. One model for everyone
 
 `ArenaConfig.model` is passed to every adapter in a run. No adapter selects its own
-model, temperature schedule, or provider. Temperature is `0.0` everywhere. If a
-framework cannot be pinned to a single model, that is a finding — note it in the
-adapter README and the feature matrix.
+model, sampling parameters, or provider. Sampling temperature is a shared control
+too — see [§3e](#3e-one-sampling-temperature). If a framework cannot be pinned to a
+single model, that is a finding — note it in the adapter README and the feature
+matrix.
 
 ## 2. One gateway
 
@@ -116,6 +117,28 @@ Both sides of that contract are pinned. The mock sends the usage chunk only when
 it was asked for (`tests/test_mockserver.py`), and an adapter may stream only if
 it asks (`tests/test_adapters_contract.py`). Streaming is not banned; streaming
 blind is.
+
+## 3e. One sampling temperature
+
+`ArenaConfig.temperature` (default `0.0`) is passed to every adapter, the same way
+`model` is. Live, a framework running at the library default of `1.0` while the
+rest of the field is at `0.0` would produce different answers for a reason that
+has nothing to do with the framework — and it would read as that framework being
+inconsistent.
+
+It was the last item in [§1](#1-one-model-for-everyone)'s list without a field
+behind it: "temperature is `0.0` everywhere" was held by ten separate hard-coded
+literals, one per adapter, and nothing checked that any of them reached the
+gateway. Mock mode cannot see it — the mock strips control fields before matching
+a scripted turn — so this is the same shape as the unwired iteration budget and
+the unwired request timeout.
+
+`tests/test_shared_controls.py` builds every adapter with a non-zero canary and
+asserts the number on the wire, and separately holds each request body to the
+sampling envelope the baseline sends — an adapter that adds `top_p` or `seed`
+fails until the parameter is removed or recorded as a mechanism requirement.
+`smolagents` has one such recorded exception: it sends `stop` sequences because
+its text ReAct loop parses generation that halts at them.
 
 ## 4. One task spec + eval set per arena
 

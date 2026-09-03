@@ -99,7 +99,7 @@ class _Runner:
             # smolagents builds the client itself; `client_kwargs` is the only
             # way through to it, and without this the shared budget is ignored.
             client_kwargs={"timeout": config.request_timeout_s},
-            temperature=0.0,
+            temperature=config.temperature,
         )
         self._agent = ToolCallingAgent(
             tools=_make_tools(_tool_names(arena.tools)),

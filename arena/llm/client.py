@@ -30,6 +30,10 @@ class ChatClient:
     api_key: str
     model: str
     timeout_s: float = 60.0
+    # Default sampling temperature for every call this client makes. The harness
+    # passes `ArenaConfig.temperature` here so the baseline is pinned the same way
+    # the framework adapters are; a per-call argument still overrides it.
+    temperature: float = 0.0
     prompt_tokens: int = field(default=0, init=False)
     completion_tokens: int = field(default=0, init=False)
     calls: int = field(default=0, init=False)
@@ -39,12 +43,12 @@ class ChatClient:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
         tool_choice: str = "auto",
-        temperature: float = 0.0,
+        temperature: float | None = None,
     ) -> ChatResponse:
         body: dict[str, Any] = {
             "model": self.model,
             "messages": messages,
-            "temperature": temperature,
+            "temperature": self.temperature if temperature is None else temperature,
             "stream": False,
         }
         if tools:

@@ -189,7 +189,7 @@ class _Runner:
             client,
             instructions=self.system_prompt,
             tools=self.tools,
-            default_options=ChatOptions(temperature=0.0),
+            default_options=ChatOptions(temperature=self.config.temperature),
             middleware=([ToolApprovalMiddleware()] if self._pausable else []) + [probe],
         )
 

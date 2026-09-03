@@ -21,9 +21,11 @@ So this file enumerates the controls rather than waiting for the next one to
 surface. `docs/fairness-controls.md` is the same table in prose, with where each
 is verified.
 
-Three things are gated here: that every `ArenaConfig` and every `ArenaSpec` field
-has an answer, and that the configured model is the one on the wire — the last
-fundamental rule with nothing behind it. The rest name the file that covers them.
+What is gated here: that every `ArenaConfig` and every `ArenaSpec` field has an
+answer; that the configured model and the configured sampling temperature are the
+ones on the wire (methodology 1 and 3e — both were rules with nothing behind
+them); and that no adapter puts a sampling parameter on the wire that the arena
+did not choose. The rest name the file that covers them.
 """
 
 from __future__ import annotations
@@ -46,6 +48,26 @@ ITEM = EvalItem(id="t-01", input="How tall is the Eiffel Tower?", checks=[])
 # default would send something plausible; this cannot be mistaken for one.
 CANARY_MODEL = "arena-canary-model-7"
 
+# Deliberately not 0.0. The invariant is "temperature is 0.0 everywhere", held
+# until now by ten hard-coded literals; an adapter still sending one of those
+# instead of reading the config sends 0.0 here and fails.
+CANARY_TEMPERATURE = 0.7
+
+# What the hand-rolled baseline puts in a request body and nothing more. Any key
+# outside this set is a sampling choice the arena did not make and nothing is
+# holding constant across frameworks.
+SAMPLING_ENVELOPE = {"model", "messages", "temperature", "stream", "tools", "tool_choice"}
+
+# The one measured exception, kept as a reviewable declaration rather than a
+# pattern match. smolagents sends `stop: ["Observation:", "Calling tools:"]` on
+# every request because its text ReAct loop parses generation that halts at those
+# markers - intrinsic to the mechanism, not a sampling knob. See
+# docs/fairness-controls.md and docs/overhead.md.
+SAMPLING_EXCEPTIONS = {
+    "smolagents": {"stop"},
+    "smolagents_multi": {"stop"},
+}
+
 # Every field of ArenaConfig, and where it is held to reaching the adapter.
 # `None` means the harness consumes it and no adapter ever sees it.
 VERIFIED_BY = {
@@ -59,6 +81,7 @@ VERIFIED_BY = {
     "request_timeout_s": "tests/test_transport_faults.py",
     "max_tool_iterations": "tests/test_adapters_contract.py",
     "checkpoint_dir": "tests/test_durable_across_a_restart.py",
+    "temperature": "tests/test_shared_controls.py",
 }
 
 # Same question for the arena spec, which is where two of the four bugs were.
@@ -162,4 +185,69 @@ def test_the_configured_model_is_the_model_on_the_wire(name):
         f"{name} sent model={sorted(seen)} where the arena configured "
         f"{CANARY_MODEL!r} — every live comparison against it would be against a "
         f"different model"
+    )
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_the_configured_temperature_is_on_the_wire(name):
+    """methodology 3e: one sampling temperature, and it is a field, not a literal.
+
+    "Temperature is 0.0 everywhere" was an invariant with nothing behind it - ten
+    hard-coded `temperature=0.0` literals, one per adapter, and no check that any
+    reached the gateway. The same blind spot that hid the unwired iteration
+    budget, the unwired request timeout and the narrowed tool schemas: mock mode
+    strips control fields before it matches a scripted turn, so an adapter that
+    dropped temperature, or a library whose default is 1.0, would be invisible
+    offline and would only show up live as that framework sampling differently
+    from the rest of the field - read as flakiness, not as a harness bug.
+
+    Built here with a non-zero canary: an adapter still emitting a literal 0.0
+    sends the wrong number and fails.
+    """
+    with MockServer(SCRIPT, arena_tools=list(ARENA.tools)) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            temperature=CANARY_TEMPERATURE,
+            max_tool_iterations=3,
+        )
+        load_framework(name).build(ARENA, config).run(ITEM)
+        seen = {request.get("temperature") for request in server.requests}
+
+    assert seen, f"{name} made no request"
+    assert seen == {CANARY_TEMPERATURE}, (
+        f"{name} sent temperature={sorted(seen, key=str)} where the arena "
+        f"configured {CANARY_TEMPERATURE} — every live run would sample "
+        f"differently from the other frameworks and it would look like variance"
+    )
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_no_unowned_sampling_parameter_reaches_the_wire(name):
+    """The arena chooses `temperature` and nothing else about sampling.
+
+    Every other knob - `top_p`, `seed`, `max_tokens`, the penalties, `n`,
+    `logprobs`, `response_format` - is left at the provider default so it is the
+    same for everyone. Measured today: no adapter sets any of them, and
+    `smolagents` alone adds `stop` (declared above, because its ReAct loop needs
+    it). A future adapter that quietly injects `top_p=0.9` would be comparing a
+    different sampling distribution; this fails until that key is removed or
+    added to SAMPLING_EXCEPTIONS with a reason.
+    """
+    allowed = SAMPLING_ENVELOPE | SAMPLING_EXCEPTIONS.get(name, set())
+    with MockServer(SCRIPT, arena_tools=list(ARENA.tools)) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            max_tool_iterations=3,
+        )
+        load_framework(name).build(ARENA, config).run(ITEM)
+        unowned = {key for request in server.requests for key in request} - allowed
+
+    assert not unowned, (
+        f"{name} put {sorted(unowned)} on the wire — a sampling parameter the "
+        f"arena never chose and nothing holds constant across frameworks. Remove "
+        f"it, or record it in SAMPLING_EXCEPTIONS with why the mechanism needs it"
     )
