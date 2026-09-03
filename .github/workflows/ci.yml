@@ -84,6 +84,12 @@ jobs:
         env:
           ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af,smolagents,google_adk
         run: pytest tests/test_adapters_contract.py -q
+      - name: Every control the arena owns actually reaches the adapter
+        # methodology 1 (one model for everyone) had nothing behind it until now,
+        # and it is the rule whose breach would invalidate every number at once.
+        # Also fails if a new ArenaConfig field arrives without saying which test
+        # holds adapters to it. See docs/fairness-controls.md.
+        run: pytest tests/test_shared_controls.py -q
       - name: Durability survives an actual process restart
         # The other durability tests rebuild the runner inside one interpreter,
         # which a process-global cache survives. Measured: such a cheat scores
