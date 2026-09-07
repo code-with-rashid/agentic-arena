@@ -592,6 +592,18 @@ reason the positive ones are believable.
   python .github/scripts/report_structured_output.py
   ```
 
+- **Retrieval, in mock mode.** Every framework walks the `rag` arena
+  identically — 15/15, exactly two hops on each multi-hop item, a passing
+  refusal on each unanswerable one — because the script decides when the second
+  search happens and what the final answer is. No adapter retrieves *better*
+  here. What a framework could vary is the prompt cost of carrying a
+  multi-document context, and that is the same per-request overhead already
+  measured on `tool_use` in [overhead.md](overhead.md). The arena's teeth are
+  its dataset design (a multi-hop item a single lookup cannot answer) and its
+  scorer (a hallucinated answer must fail an unanswerable item); both are gated
+  in `tests/test_rag_arena.py`, and the cross-framework walk is now pinned there
+  too as a floor.
+
 ---
 
 ## What is not measured
