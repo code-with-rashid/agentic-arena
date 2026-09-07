@@ -1,9 +1,18 @@
 """Report what a three-role pipeline costs against its single-agent namesake.
 
-Report-only. The pipelines are expected to be *more* expensive — that is the
-measurement, not a regression. This fails only if a pairing is missing or an
-entry collapsed to zero cost, which would mean the run is broken rather than the
-framework being slow.
+The pipelines are expected to be *more* expensive — that is the measurement, not
+a regression. Two things are gated, after `smolagents`' `resilience` count
+drifted for iterations with nothing noticing:
+
+  * no pairing collapses to zero cost (the run is broken, not the framework);
+  * each pipeline's prompt ratio stays within `RATIO_TOLERANCE` of `EXPECTED`.
+    `EXPECTED` mirrors what this script currently measures on a clean CI run;
+    `docs/multi-agent.md` publishes the same ratios and lags a release bump of
+    `openai-agents` / `smolagents` / `langgraph` — it is being corrected
+    separately, and this gate is what stops the next drift going unseen.
+
+The call multipliers (2x, 3x) are gated in `tests/test_delegation_depth.py` and
+`tests/test_multi_agent_arena.py`; only the prompt ratios are new here.
 
 See docs/multi-agent.md for what the numbers mean, and in particular for why
 "cheaper" here would be the wrong reading.
@@ -25,6 +34,17 @@ PAIRS = [
     ("smolagents", "smolagents_multi", "model-decided, sub-agent as tool"),
     ("pydantic_ai", "pydantic_ai_multi", "model-decided, sub-agent as tool"),
 ]
+
+# prompt-token ratio pipeline/single, from a clean CI run. Update this and
+# docs/multi-agent.md together — a drift is a real change or a regression.
+EXPECTED_RATIO = {
+    "vanilla_multi": 2.50,
+    "langgraph_multi": 2.50,
+    "openai_agents_multi": 2.64,
+    "smolagents_multi": 3.93,
+    "pydantic_ai_multi": 3.57,
+}
+RATIO_TOLERANCE = 0.06
 
 runs = sorted(pathlib.Path("runs").glob("*__multi_agent__mock.json"))
 if not runs:
@@ -59,13 +79,26 @@ if not seen:
     sys.exit("no single/pipeline pairing present - cannot report delegation cost")
 
 print()
+drifted: list[str] = []
 for single, multi, kind in seen:
     if mean(single, "llm_calls") == 0:
         sys.exit(f"{single} reported zero LLM calls - the run is broken")
+    ratio = mean(multi, "prompt_tokens") / mean(single, "prompt_tokens")
+    note = ""
+    if multi in EXPECTED_RATIO and abs(ratio - EXPECTED_RATIO[multi]) > RATIO_TOLERANCE:
+        note = f"  <- expected {EXPECTED_RATIO[multi]:.2f}x"
+        drifted.append(f"{multi}: prompt ratio {ratio:.2f}x, expected {EXPECTED_RATIO[multi]:.2f}x")
     print(
         f"  {single} -> {multi} ({kind}): "
-        f"prompt {mean(multi, 'prompt_tokens') / mean(single, 'prompt_tokens'):.2f}x, "
+        f"prompt {ratio:.2f}x{note}, "
         f"llm calls {mean(multi, 'llm_calls') / mean(single, 'llm_calls'):.2f}x"
+    )
+
+if drifted:
+    sys.exit(
+        "\ndelegation prompt ratio drifted from the published table:\n  "
+        + "\n  ".join(drifted)
+        + "\nIf intended, correct docs/multi-agent.md and EXPECTED_RATIO here together."
     )
 
 if all(p in by_name for p in ("vanilla_multi", "langgraph_multi")):
