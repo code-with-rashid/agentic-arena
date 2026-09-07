@@ -440,3 +440,57 @@ def test_every_delegate_an_adapter_declares_is_absent_from_every_arena():
     for name in available_frameworks():
         declared = tuple(getattr(load_framework(name), "delegates", ()))
         check_declared_delegates(declared, sorted(tools))
+
+
+def _advertised_tools_on(arena_id, name):
+    """Every tool name this adapter puts in a `tools` block, across the whole run."""
+    arena = load_arena(arena_id)
+    script = MockScript.load(arena.mock_script_path)
+    with MockServer(script, arena_tools=list(arena.tools)) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            max_tool_iterations=8,
+        )
+        with contextlib.suppress(Exception):
+            load_framework(name).build(arena, config).run(arena.dataset[0])
+        return sorted(
+            {
+                (spec.get("function", spec) or {}).get("name")
+                for request in server.requests
+                for spec in request.get("tools") or []
+                if (spec.get("function", spec) or {}).get("name")
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    "name",
+    sorted(n for n in available_frameworks() if getattr(load_framework(n), "delegates", ())),
+)
+def test_every_declared_delegate_is_actually_advertised(name):
+    """A `delegates` entry that never reaches the wire is stale config, not a waiver.
+
+    `Adapter.delegates` widens the "only declared tools" rule for names that look
+    like task tools — a sub-agent advertised under its own name. The widening is
+    already checked (above) not to cover a real tool; this checks the other
+    direction: every declared name must be a tool the adapter genuinely
+    advertises. A pipeline that dropped a role would otherwise leave a dead name
+    exempting nothing, while a reviewer reading `delegates` would still trust it.
+    """
+    adapter = load_framework(name)
+    declared = tuple(getattr(adapter, "delegates", ()))
+    arena_id = getattr(adapter, "arenas", ("tool_use",))[0]
+    try:
+        advertised = _advertised_tools_on(arena_id, name)
+    except Exception as exc:  # noqa: BLE001 - framework not runnable in this env
+        pytest.skip(f"{name} not runnable here: {type(exc).__name__}")
+    if not advertised:
+        pytest.skip(f"{name}: no tools advertised in this environment")
+
+    missing = set(declared) - set(advertised)
+    assert not missing, (
+        f"{name}: declares delegate(s) {sorted(missing)} it never advertises as a tool "
+        f"on {arena_id} — drop them from Adapter.delegates, or restore the role"
+    )
