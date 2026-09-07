@@ -21,22 +21,31 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       `json_schema`, `json_path_equals`, `sentence_count`
 - ✅ `vanilla` baseline adapter (stdlib agent loop) — runs green in mock mode
 - ✅ `langgraph` adapter
-- ✅ `crewai` adapter (written; mock-verify still pending on Python 3.12)
+- 🚧 `crewai` adapter — on Python 3.12 it installs, builds and answers correctly;
+      tool-call capture through a `step_callback` added, awaiting a debug-workflow
+      run to confirm 15/15 (see `frameworks/crewai/README.md`)
 - 🚧 First **live** scorecard (needs an API key; run `python -m arena run --mode live`
       and commit `results/`)
 
 ## Phase 2 — Breadth of frameworks ✅ / 🚧
 
-- ✅ `openai_agents`, `pydantic_ai`, `microsoft_af` adapters — mock-green on both arenas
+- ✅ `openai_agents`, `pydantic_ai`, `microsoft_af`, `smolagents` adapters —
+      mock-green across the arenas each runs
 - 🚫 `claude_agent_sdk` — stays a stub; drives the `claude` CLI over the Anthropic
       Messages API, so it can't use the shared OpenAI-compatible gateway
       (see `frameworks/claude_agent_sdk/README.md`)
-- ⬜ Google ADK adapter (stretch)
+- ✅ Google ADK adapter — via LiteLLM to the shared gateway; runs every arena it
+      is registered for, including both delegation shapes (`sub_agents` and
+      `AgentTool`)
 - 🚧 `docs/feature-matrix.md` — filled for every built adapter; `❓` cells remain for
       capabilities no arena exercises yet
 - ✅ Per-framework deep dives in `docs/frameworks/` for the built adapters
 - ✅ `docs/decision-guide.md` — filled in from measured offline evidence, every
       claim tagged [measured] or [claimed]; revisit once a live scorecard exists
+- ✅ `docs/fairness-controls.md` + `tests/test_shared_controls.py` — every
+      `ArenaConfig`/`ArenaSpec` control enumerated with the test that holds each
+      adapter to it (`model`, `temperature`, `max_tool_iterations`,
+      `request_timeout_s`, tool schema fidelity, …)
 
 ## Phase 3 — Breadth of arenas 🚧
 
@@ -58,12 +67,21 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       `deferred_tool_results`), passing both pause arenas
 - ✅ Native approval interruptions for `openai_agents` (`needs_approval` +
       `RunState.to_json`), passing both pause arenas
-- ⬜ Pause support for `microsoft_af` (tool-approval middleware, needs an
-      `AgentSession`)
+- ✅ Pause support for `microsoft_af` (`approval_mode="always_require"` +
+      `ToolApprovalMiddleware`) — 12/12 pause; does **not** survive a crash (its
+      `AgentSession` store does not round-trip JSON), which is a measured finding
+- ✅ Pause + durability for `google_adk` (`LongRunningFunctionTool` +
+      `DatabaseSessionService` on `sqlite+aiosqlite`) — reports the pause but
+      does not enforce it (🟡), survives a crash
 - ✅ Arena 7 `durable_state` — the harness discards the runner at the pause and
       JSON round-trips the resume state, so only a real checkpoint or a
-      serialised transcript survives. `langgraph` (SqliteSaver) + `vanilla` 8/8
-- ⬜ `multi_agent` still needs real multi-agent adapter entries (`<fw>-multi`)
+      serialised transcript survives. Six adapters 8/8 by six mechanisms;
+      `test_durable_across_a_restart.py` runs the two legs in two interpreters
+- ✅ Real multi-agent adapter entries — `vanilla_multi`, `langgraph_multi`
+      (structural), `openai_agents_multi` (handoff chain), `smolagents_multi` +
+      `pydantic_ai_multi` (sub-agent as a tool). Delegation cost measured to an
+      exact law (N+1 / N+2 / 2N calls) across five implementations; see
+      `docs/multi-agent.md`
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
 - ✅ Cross-arena summary (`python -m arena summary`) — coverage grid plus the
       three comparisons that hold offline; CI publishes it as an artifact

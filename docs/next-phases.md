@@ -3,17 +3,27 @@
 _Written 2026-09-01. Companion to [ROADMAP.md](../ROADMAP.md); ROADMAP stays the
 terse index, this file records the reasoning and the current batch of work._
 
+> **Status update.** Tracks A, B and C below are done, and so is everything the
+> 2026-09-01 note put "out of scope for this batch" bar the three standing
+> blockers. All seven arenas run, seven adapters plus five `*_multi` pipeline
+> entries are mock-green, delegation cost is measured to an exact law, the
+> durable pause runs across a real process restart, and every arena-owned
+> control is enumerated with the test that holds each adapter to it
+> ([fairness-controls.md](fairness-controls.md)). The reasoning below is kept as
+> the record of how that batch was planned.
+
 ## Where things stand
 
-Phases 0–2 are done and Phase 3 is largely there: seven arenas exist, seven
-adapters run against the mock, CI is green, and the harness core is still
-stdlib-only with zero runtime dependencies. What the repo has actually measured
-is collected in [findings.md](findings.md).
+Phases 0–3 are done: seven arenas, seven adapters plus five pipeline entries all
+run against the mock, CI is green, and the harness core is still stdlib-only with
+zero runtime dependencies. What the repo has actually measured is collected in
+[findings.md](findings.md).
 
 The remaining gaps are no longer breadth. They are: no live scorecard (needs an
 API key — every number published so far is mock mode, so nothing says whether any
-framework gives *better answers*), `crewai` written but not mock-verified, and
-`claude_agent_sdk` still a stub.
+framework gives *better answers*), `crewai` installs and answers on Python 3.12
+but its `tool_used` evidence is not yet confirmed (a `step_callback` capture path
+was added; needs a debug-workflow run), and `claude_agent_sdk` is still a stub.
 
 ## What the landscape says (Sept 2026)
 
@@ -93,8 +103,12 @@ Branch: `next-phases`. One reviewable PR, small separate commits, no merge to
 
 ### Out of scope for this batch
 
-- `rag`, `human_in_the_loop`, `durable_state` arenas (HITL and durable_state need
-  a harness resume/checkpoint API — a design step of their own).
-- `crewai` verification (needs a 3.12 machine).
+- ~~`rag`, `human_in_the_loop`, `durable_state` arenas~~ — all shipped since,
+  with the harness resume/checkpoint API (`ResumableRunner`, leg merging) they
+  needed.
+- `crewai` verification — still needs a 3.12 environment; the adapter now
+  installs and answers there, tool-call capture pending a debug run.
 - Live scorecards (need `OPENAI_API_KEY` in the `full-run` workflow).
-- MkDocs site (Phase 4).
+- MkDocs site (Phase 4) — `mkdocs-material` builds but not under `--strict`: the
+  docs deep-link to source files outside `docs/` (legitimate for GitHub
+  browsing), so a Pages build would need those rewritten or a relaxed config.
