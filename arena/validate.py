@@ -18,7 +18,7 @@ from typing import Any
 
 from .registry import ARENAS_DIR, available_arenas
 from .scorer import CHECK_SPECS
-from .tools import TOOL_FUNCS
+from .tools import SUSPEND_TOOLS, TOOL_FUNCS
 
 
 @dataclass
@@ -187,12 +187,15 @@ def _validate_tool_checks(
     A `min_tool_calls: 2` on an item whose scenario scripts one `search`, or a
     `tool_used: calculator` on a scenario that only calls `search`, fails every
     mock run for a reason nothing else reports — it looks like an adapter bug.
-    Skipped for `deliberate_fault` scenarios, where the mismatch is the point.
+    A `suspended` check on a scenario that never scripts `request_approval` /
+    `save_progress` is the same trap on the pause arenas. Skipped for
+    `deliberate_fault` scenarios, where the mismatch is the point.
     """
     if scenario.get("deliberate_fault"):
         return
     scripted = _scripted_tool_calls(scenario)
     n, present = len(scripted), set(scripted)
+    suspends = sum(1 for name in scripted if name in SUSPEND_TOOLS)
     for check in checks:
         if not isinstance(check, dict):
             continue
@@ -224,6 +227,14 @@ def _validate_tool_checks(
                 f"{where} forbids {check['name']!r}, but its mock scenario calls it "
                 f"({scripted}) — the item fails every mock run"
             )
+        elif ctype == "suspended":
+            want = check["value"] if isinstance(check.get("value"), int) else 1
+            if suspends < want:
+                report.errors.append(
+                    f"{where} expects the agent to pause >= {want} time(s), but its mock "
+                    f"scenario scripts {suspends} {list(SUSPEND_TOOLS)} call(s) — the item "
+                    f"fails every mock run"
+                )
 
 
 def validate_arena(arena_id: str) -> Report:
