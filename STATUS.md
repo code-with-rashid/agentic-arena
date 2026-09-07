@@ -42,6 +42,13 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   `openai_agents` 7/8 and `google_adk` 6/8 on `resilience` (`smolagents` recovers
   8/8 but at 3× the cost on the faults its validator rejects), and pause support
   reported as *unsupported* where a framework has no `resume`.
+- An eighth entry, `smolagents_code`, runs smolagents' `CodeAgent` (the model
+  writes and executes Python) as a contrast to the `ToolCallingAgent` entry.
+  Scoped to the three single-agent tool arenas — `tool_use`, `rag`,
+  `structured_output` — 15/15 on each in mock mode, at 6.95× the baseline wire
+  cost (heavier than `ToolCallingAgent`'s 3.90×). Needed a new
+  `arena.llm.mockserver` accommodation to render a scripted turn as a `<code>`
+  blob.
 - `python -m arena run --arena <id> --framework all --mode mock` → the six above
   run, the rest report themselves unavailable cleanly.
 - `pytest -q` → all offline; `ruff check .` + `ruff format --check .` clean.
@@ -65,7 +72,6 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | `frameworks/claude_agent_sdk` | deliberate stub — drives the `claude` CLI (Node) over the Anthropic Messages API, not one OpenAI-compatible endpoint | see `frameworks/claude_agent_sdk/README.md` for the three ways to close it |
 | Real multi-agent entries for `multi_agent` | only single-agent role-play entries exist | add `<fw>-multi` adapters using each framework's own graph/crew/handoff mechanism, compared on token and LLM-call cost |
 | Durable pause for `microsoft_af` | its `AgentSession` message store does not survive a JSON round trip, and restoring approval state re-queues the request | needs a real session store (`FileSessionStore`) wired to the harness checkpoint dir |
-| `smolagents` `CodeAgent` | **shipped** as `frameworks/smolagents_code` (contrast entry, `tool_use` + `rag`) — 15/15 in mock mode on both, two-hop discipline held by `test_rag_arena.py`. Needed a new `arena.llm.mockserver` accommodation to render a scripted turn as a Python `<code>` blob. | widen to `structured_output` too if it stays clean (its contract tests already exercise the adapter there) |
 | `multi_agent` real orchestration | only the single-agent role-play entry exists | add `<fw>-multi` adapter entries that use each framework's own graph/crew/handoff mechanism; compare tokens + LLM calls against the single-agent run |
 | `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |
 | Docs site | plain markdown in `docs/` | MkDocs Material + GitHub Pages (Phase 4) |

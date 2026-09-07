@@ -17,10 +17,14 @@ Two adapter facts follow from that:
     `arena.llm.mockserver._looks_like_code_agent`), so `CodeAgent` faces the
     identical sequence of scripted decisions as every other adapter.
 
-Scoped to `tool_use` and `rag`: it is a contrast entry, run where a tool loop is
-what is being compared. `rag` is the same `search` loop with a second hop, so
-`CodeAgent` walks it the same way every other adapter does (see
-`tests/test_rag_arena.py`); `tool_use` is where the overhead number lives.
+Scoped to the three single-agent tool arenas — `tool_use`, `rag`,
+`structured_output`. It is a contrast entry, run where a tool loop is what is
+being compared: `tool_use` is where the overhead number lives, `rag` is the same
+`search` loop with a second hop (see `tests/test_rag_arena.py`), and
+`structured_output` is `tool_use` with a JSON-shaped answer — a `CodeAgent` is
+prompt-only there like every other adapter (see docs/structured-output.md). The
+pause, durable and multi-agent arenas are out of scope for the same reasons they
+are for the `smolagents` entry.
 """
 
 from __future__ import annotations
@@ -135,9 +139,10 @@ class Adapter:
     name = "smolagents_code"
     # A contrast entry, like the `_multi` pipelines: `--framework all` runs it
     # only where it is meant to be compared. Naming it explicitly works anywhere.
-    # `tool_use` carries the overhead number; `rag` is the same tool loop with a
-    # second hop, and CodeAgent clears it 15/15 like everyone else.
-    arenas = ("tool_use", "rag")
+    # `tool_use` carries the overhead number; `rag` and `structured_output` are
+    # the same tool loop (a second hop / a JSON answer), and CodeAgent clears
+    # both 15/15 like everyone else.
+    arenas = ("tool_use", "rag", "structured_output")
 
     @property
     def lib_version(self) -> str:
