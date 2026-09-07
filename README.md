@@ -17,8 +17,8 @@ produces scorecards you can regenerate yourself with one command.
   don't reduce to a number.
 
 > **Status:** Phases 0–3 done. All seven arenas run; seven framework adapters
-> plus five `*_multi` pipeline entries are green against the mock; the harness
-> core is still stdlib-only. What is left is a **live scorecard** (needs an API
+> (plus a `CodeAgent` contrast entry) and five `*_multi` pipeline entries are
+> green against the mock; the harness core is still stdlib-only. What is left is a **live scorecard** (needs an API
 > key — every number so far is mock mode, so nothing yet says which framework
 > gives *better answers*), `crewai` full verification, and `claude_agent_sdk`
 > (a stub, protocol mismatch). See [ROADMAP.md](ROADMAP.md) and
@@ -86,13 +86,15 @@ when its output satisfies every check for that item.
 | Google ADK | ✅ | Python | `google-adk` + `litellm` (required to leave Gemini); the only real loop cap out of the box |
 | Claude Agent SDK | 🚫 stub | Python | drives the `claude` CLI over the Anthropic Messages API — doesn't fit the shared OpenAI-compatible gateway ([why](frameworks/claude_agent_sdk/README.md)) |
 
-Seven adapters run against the mock across seven arenas, plus five `*_multi`
-pipeline entries on `multi_agent` (`vanilla_multi` and `langgraph_multi` for
+Seven adapters run all seven arenas; an eighth, `smolagents_code`, is a
+`CodeAgent` contrast entry on `tool_use` and `rag`. Five `*_multi` pipeline
+entries run on `multi_agent` (`vanilla_multi` and `langgraph_multi` for
 structural delegation, `openai_agents_multi` for a handoff chain,
 `smolagents_multi` and `pydantic_ai_multi` for a sub-agent invoked as a tool).
-`vanilla`, `pydantic_ai` and `microsoft_af` recover from all eight `resilience`
-faults; `langgraph` and `openai_agents` lose one each, `google_adk` two,
-`smolagents` four. Six of the seven pause for a human (12/12); five of those also
+`vanilla`, `pydantic_ai`, `microsoft_af` and `smolagents` recover from all eight
+`resilience` faults — `smolagents` at 3× the LLM calls on the four it rejects
+before the tool runs; `langgraph` and `openai_agents` lose one each, `google_adk`
+two. Six of the seven pause for a human (12/12); five of those also
 survive having the runner thrown away (8/8). `microsoft_af` pauses but is
 *unsupported* on `durable_state`, and `smolagents` is *unsupported* on both pause
 arenas — reported as unsupported rather than failed.
