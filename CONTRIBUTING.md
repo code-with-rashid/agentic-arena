@@ -16,10 +16,13 @@ cell**. This guide walks through that, plus adding a whole new framework or aren
 ## Dev setup
 
 ```bash
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev]"     # or: make install
 python -m pytest              # harness + baseline adapter tests, all offline
 ruff check . && ruff format --check .
 ```
+
+`make check` runs the full local gate in one go — `ruff`, `python -m arena
+validate`, and `pytest` — the same checks as CI's `lint-and-test` job.
 
 ## Adding a framework adapter
 
