@@ -61,6 +61,13 @@ real work (driving models that cannot natively tool-call), but paired with a
 model that tool-calls well it is ~3.8 KB per request of scaffolding you do not
 need.
 
+**Its `CodeAgent` shape is heavier again — 6.95×.** `smolagents_code` runs the
+same tools through a Python-writing loop instead of native tool calls; a longer
+few-shot system prompt puts it well above the `ToolCallingAgent` entry, though
+its completions run terser (60.7 tokens against 74.7). Same 2.07 LLM calls. The
+side-by-side table is on
+[the smolagents page](frameworks/smolagents.md#prompt-size-390-baseline-comparable).
+
 → [overhead.md](overhead.md) · [tool-schemas.md](tool-schemas.md) ·
 [smolagents.md](frameworks/smolagents.md)
 
