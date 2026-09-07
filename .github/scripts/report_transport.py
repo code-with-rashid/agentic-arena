@@ -1,15 +1,21 @@
 """Report how each framework handles a gateway that fails, not a model that misbehaves.
 
-Report-only, like report_overhead.py: the differences are findings, not
-regressions. It fails only if the *baseline* stops behaving as documented, which
-would mean the probe is broken rather than a framework being unusual.
+Mostly report-only, like report_overhead.py: the outcome differences are
+findings. Two things are gated, because a published number had already gone
+stale once (smolagents' `resilience` count) with nothing noticing:
 
-    python .github/scripts/report_transport.py           # fast plans only
-    python .github/scripts/report_transport.py --deep    # adds 429 x3
+  * the `vanilla` baseline still has no retry (1 attempt on a 429);
+  * every retrying framework still gives up after the number of retries
+    docs/transport.md and docs/feature-matrix.md publish — `langgraph` once,
+    the rest twice — measured on three consecutive 429s.
 
-`--deep` is separate because smolagents sleeps for over two minutes rather than
-give up on three consecutive 429s, which is the most interesting result here and
-also far too slow to run on every push.
+`smolagents` is excluded from that second gate and from the default run: it does
+not give up on three 429s, it sleeps for two to four minutes and then succeeds,
+which is its documented finding and far too slow for every push. `--deep` adds
+it back as report-only.
+
+    python .github/scripts/report_transport.py           # gated plans
+    python .github/scripts/report_transport.py --deep    # + smolagents' 429 x3 sleep
 """
 
 import sys
@@ -29,7 +35,23 @@ SCRIPT = MockScript({"default": {"turns": [{"content": ANSWER}]}})
 ITEM = EvalItem(id="t-01", input="How tall is the Eiffel Tower?", checks=[])
 
 FAST = [("healthy", []), ("429 once", [429, 200]), ("500 once", [500, 200]), ("400", [400, 200])]
-DEEP = [("429 x3", [429, 429, 429, 200])]
+# Three consecutive 429s: every framework except smolagents gives up fast, after
+# its own number of retries. That is the number docs/transport.md publishes, so
+# it is gated here (smolagents runs it only under --deep, where it sleeps).
+GIVE_UP = ("429 x3", [429, 429, 429, 200])
+DEEP = [GIVE_UP]
+SMOLAGENTS = "smolagents"
+
+# HTTP attempts before giving up on three 429s = 1 + the framework's retry count.
+# vanilla: no retry. langgraph: one. everyone else: two. From docs/transport.md.
+GIVE_UP_ATTEMPTS = {
+    "vanilla": 1,
+    "langgraph": 2,
+    "pydantic_ai": 3,
+    "openai_agents": 3,
+    "microsoft_af": 3,
+    "google_adk": 3,
+}
 
 
 def arena():
@@ -79,23 +101,47 @@ def buildable():
     return out
 
 
-plans = FAST + (DEEP if "--deep" in sys.argv else [])
+deep = "--deep" in sys.argv
+# smolagents runs the give-up plan only under --deep (it sleeps 2-4 min there).
+plans = FAST + [GIVE_UP] + (DEEP if deep else [])
 names = buildable()
 print("\ntransport faults - what each framework does when the GATEWAY fails\n")
 print(f"  {'framework':16}" + "".join(f"  {label:<26}" for label, _ in plans))
 for name in sorted(names):
     cells = []
-    for _, faults in plans:
+    for label, faults in plans:
+        if label == GIVE_UP[0] and name == SMOLAGENTS and not deep:
+            cells.append("(skipped - sleeps)")
+            continue
         outcome, attempts, gaps, elapsed = run(name, list(faults))
         slow = f" +{elapsed:.0f}s" if elapsed > 5 else ""
         cells.append(f"{outcome} ({attempts}){slow}")
     print(f"  {name:16}" + "".join(f"  {c:<26}" for c in cells))
 
 print("\n  Bracketed number is HTTP attempts that reached the wire, retries included.")
-print("  Differences are findings, not regressions - see docs/transport.md.")
+print("  Outcome differences are findings; the give-up attempt counts are gated.")
 
+# --- gates -----------------------------------------------------------------
+drifted: list[str] = []
 if "vanilla" in names:
-    outcome, attempts, _, _ = run("vanilla", [429, 200])
+    _, attempts, _, _ = run("vanilla", [429, 200])
     if attempts != 1:
         sys.exit(f"\nBASELINE CHANGED: vanilla made {attempts} attempts on one 429, expected 1")
-    print("\n  baseline check: vanilla still has no retry (1 attempt on a 429). ok")
+
+for name in sorted(names):
+    if name == SMOLAGENTS or name not in GIVE_UP_ATTEMPTS:
+        continue
+    _, attempts, _, _ = run(name, list(GIVE_UP[1]))
+    if attempts != GIVE_UP_ATTEMPTS[name]:
+        drifted.append(
+            f"{name}: gave up after {attempts} attempts on 429 x3, docs say {GIVE_UP_ATTEMPTS[name]}"
+        )
+
+if drifted:
+    sys.exit(
+        "\nretry behaviour drifted from the published table:\n  "
+        + "\n  ".join(drifted)
+        + "\nIf intended, correct docs/transport.md, docs/feature-matrix.md and "
+        "GIVE_UP_ATTEMPTS in this file together."
+    )
+print("\n  gates: vanilla still has no retry; every retry count matches docs/transport.md.")

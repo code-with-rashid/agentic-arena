@@ -40,17 +40,17 @@ from everyone else's "fail fast and hand you the error".
 **Everyone refuses to retry a 400**, which is correct — a malformed request will
 be malformed the second time too.
 
-What is gated here are the invariants: a healthy control answers in one attempt,
-nobody retries a 400, and the baseline's lack of retry is pinned so that the
-comparison keeps meaning something. Per-framework retry counts are findings and
-live in docs/, the same rule as `resilience`.
+What is gated *here* are the invariants: a healthy control answers in one
+attempt, nobody retries a 400, and the baseline's lack of retry is pinned so
+that the comparison keeps meaning something.
 
-The three-consecutive-429 column is deliberately **not** gated: reproducing
-smolagents' sleep would add two to four minutes to CI to re-measure a number that
-is already written down, and being jittered it is not one a test could assert
-tightly anyway. Reproduce it with
-
-    python .github/scripts/report_transport.py --deep
+The per-framework **retry counts** — `langgraph` gives up after one retry, the
+rest after two — are gated in `.github/scripts/report_transport.py` instead, on
+the three-consecutive-429 plan, after `smolagents`' count silently drifted on
+the sibling `resilience` arena with nothing noticing. `smolagents` is excluded
+from that gate: it does not give up on three 429s, it sleeps two to four minutes
+and then succeeds, and `report_transport.py --deep` reproduces that as a
+report-only row.
 
 **Delegation pipelines** are covered at the end of this file. Everything above
 runs one agent; a `*_multi` entry makes four to six requests through up to three

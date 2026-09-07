@@ -205,10 +205,12 @@ Gated in `tests/test_transport_faults.py`:
   itself: if it did, a retrying framework would be served the *next* turn and
   every row above would be comparing different conversations.
 
-**The 429 ×3 column is deliberately not gated.** Reproducing smolagents' sleep
-would add two to four minutes to every CI run to re-measure a number that is
-already written down — and being jittered, it is not a number a test could assert
-tightly anyway.
+**The retry counts *are* gated now** — `langgraph` gives up after one retry, the
+rest after two — in `.github/scripts/report_transport.py`, on the 429 ×3 plan,
+after `smolagents`' recovery count silently drifted on the sibling `resilience`
+arena. `smolagents` is excluded from the gate: it does not give up on three
+429s, it sleeps two to four minutes and then succeeds, which stays a report-only
+row under `report_transport.py --deep`.
 
 ## Not measured
 
