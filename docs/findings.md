@@ -107,23 +107,33 @@ Eight scripted faults, byte-identical for every framework, so any difference is
 the framework's own error handling. This is the other thing mock mode compares
 honestly.
 
-| framework | recovered | fails on |
+| framework | recovered | fails on / at what cost |
 |---|--:|---|
-| `vanilla` | 8/8 | — |
+| `vanilla` | 8/8 | — (2 LLM calls each) |
 | `pydantic_ai` | 8/8 | — |
 | `microsoft_af` | 8/8 | — |
 | `langgraph` | **7/8** | `res-01` — malformed tool arguments |
 | `openai_agents` | **7/8** | `res-02` — raises on an unknown tool name |
 | `google_adk` | **6/8** | `res-01` *and* `res-02`, both uncaught exceptions |
-| `smolagents` | **4/8** | every fault its validator rejects *before* the tool runs |
+| `smolagents` | **8/8** | but **6 LLM calls** (the whole budget) on the four faults its validator rejects before the tool runs, against 2 elsewhere |
 
-**smolagents' losses are structural, not a rough edge.** The split is exact: it
-recovers from all four faults where the tool *ran* and returned something, and
-loses all four its validation layer rejects first (unknown name, missing
-argument, unexpected argument, `null` arguments). Those never reach the
-transcript, so the model cannot see the error and re-emits the identical call
-until the step budget is gone. A retry wrapper does not help — the prompt is
-byte-identical each time.
+**smolagents' rough edge is structural, and now shows up as cost rather than a
+lost item.** The split is exact: on the four faults where the tool *ran* and
+returned something it recovers in two calls like everyone else; on the four its
+validation layer rejects first (unknown name, missing argument, unexpected
+argument, `null` arguments) the error never reaches the transcript, the model
+cannot see it, and it re-emits the identical call until the step budget is gone —
+six calls and ~2.7× the prompt tokens, with **zero** tool calls recorded. It
+still produces the right final answer at the end, so the item passes; a retry
+wrapper does not help, because the prompt is byte-identical each time.
+
+> **Correction.** This row read **4/8** for several iterations. That was measured
+> when an exhausted `smolagents` run returned `""`; it now surfaces a final
+> answer from its last memory step instead, so `numeric_equals` passes. The
+> failure *mechanism* is unchanged — the validator-rejected faults still burn the
+> whole budget with no tool call — but the *consequence* is a 3× cost, not a lost
+> item. `check_resilience.py` now gates every count in this table so the next
+> drift fails CI instead of ageing silently.
 
 **Google ADK is the only framework that loses both `res-01` and `res-02`**, and
 both are uncaught exceptions rather than the model giving up. Loud, at least, and

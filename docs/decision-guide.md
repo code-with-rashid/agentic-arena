@@ -107,7 +107,7 @@ The `resilience` arena scripts eight faults — malformed tool arguments, a tool
 that doesn't exist, a required argument omitted — byte-identical for every
 framework. Any difference is the framework's own error handling. **[measured]**
 
-| framework | recovered | fails on |
+| framework | recovered | fails on / at what cost |
 |---|--:|---|
 | `vanilla` | 8/8 | — |
 | `pydantic_ai` | 8/8 | — |
@@ -115,19 +115,24 @@ framework. Any difference is the framework's own error handling. **[measured]**
 | `langgraph` | **7/8** | `res-01` — gives up when the model returns malformed tool arguments |
 | `openai_agents` | **7/8** | `res-02` — raises `ModelBehaviorError` on an unknown tool name |
 | `google_adk` | **6/8** | `res-01` and `res-02` — the only framework that loses both, by raising |
-| `smolagents` | **4/8** | every fault its validator rejects *before* running the tool |
+| `smolagents` | **8/8** | but **6 LLM calls** (the whole budget) on the four faults its validator rejects before the tool runs, against 2 elsewhere |
 
 The LangGraph and OpenAI Agents failures are not fatal in production — both are
 recoverable with a retry wrapper — but they are the kind of thing you find out
 about at 3am rather than in a benchmark, which is the point of scripting them.
 
-`smolagents` is a structural difference rather than a single rough edge. It
-recovers from all four faults where the tool *ran* and returned something, and
-loses all four the tool-validation layer rejects first (unknown name, missing
-argument, unexpected argument, `null` arguments) — because it never writes those
-back into the conversation. The model cannot see the error, so it re-emits the
-identical call until the step budget is gone. Retry wrappers do not help; the
-prompt is byte-identical each time.
+`smolagents` recovers every fault, but at a cost the others do not pay. On the
+four where the tool *ran* it recovers in two calls; on the four its validation
+layer rejects first (unknown name, missing argument, unexpected argument, `null`
+arguments) the error never reaches the conversation, so the model re-emits the
+identical call until the step budget is gone — six calls and ~2.7× the prompt,
+with no tool call recorded, before it answers from its last memory step. Retry
+wrappers do not help; the prompt is byte-identical each time.
+
+> **Correction.** This row read `smolagents` **4/8** for several iterations,
+> measured when an exhausted run returned `""`. It now surfaces a final answer,
+> so the items pass — the mechanism is unchanged, the consequence is a 3× cost
+> rather than a lost item. Gated in `check_resilience.py`.
 
 ## 3. Do you need to pause for a human?
 

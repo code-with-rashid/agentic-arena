@@ -162,7 +162,10 @@ jobs:
         run: pytest tests/test_rag_arena.py -q
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
-      - name: Report recovery, and fail only if the baseline broke
+      - name: Report recovery, and gate the published per-framework counts
+        # Fails if the baseline stops recovering, or if any framework's recovery
+        # count drifts from the table in docs/findings.md §2 — smolagents went
+        # 4/8 -> 8/8 once with nothing noticing.
         run: python .github/scripts/check_resilience.py
       - name: Run tool_use for the overhead comparison
         run: python -m arena run --arena tool_use --framework all --mode mock --no-scorecard
