@@ -52,3 +52,34 @@ def test_mock_scorecards_never_land_in_results():
 def test_unknown_framework_is_reported_not_raised():
     record = run("tool_use", ["does_not_exist"], config=ArenaConfig(mode="mock"))
     assert record["frameworks"][0]["available"] is False
+
+
+def test_run_can_filter_to_specific_items():
+    record = run("tool_use", ["vanilla"], config=ArenaConfig(mode="mock"), only={"tu-03"})
+    items = record["frameworks"][0]["items"]
+    assert [it["item_id"] for it in items] == ["tu-03"]
+    assert record["dataset_size"] == 1
+    assert record["filtered_to"] == ["tu-03"]
+    assert record["_path"].endswith("__partial.json")
+
+
+def test_run_rejects_an_unknown_item_id():
+    import pytest
+
+    with pytest.raises(SystemExit):
+        run("tool_use", ["vanilla"], config=ArenaConfig(mode="mock"), only={"tu-03", "nope-99"})
+
+
+def test_latest_run_skips_a_partial_run(tmp_path, monkeypatch):
+    import json
+
+    from arena import scorecard
+
+    monkeypatch.setattr(scorecard, "RUNS_DIR", tmp_path)
+    full = {"arena": "demo", "dataset_size": 15, "frameworks": []}
+    partial = {"arena": "demo", "dataset_size": 1, "filtered_to": ["d-01"], "frameworks": []}
+    (tmp_path / "20260101T000000Z__demo__mock.json").write_text(json.dumps(full))
+    # Lexically later, so it would win if it were not excluded.
+    (tmp_path / "20260101T000001Z__demo__mock__partial.json").write_text(json.dumps(partial))
+
+    assert scorecard.latest_run("demo", mode="mock")["dataset_size"] == 15
