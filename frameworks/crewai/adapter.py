@@ -12,9 +12,14 @@ from typing import Any
 
 # Keep CrewAI non-interactive and quiet in CI: no telemetry, no "view execution
 # traces? [y/N]" prompt, no OTEL exporter noise. Set before crewai is imported.
+# The trace-prompt env var was renamed between releases, so set every spelling.
 os.environ.setdefault("CREWAI_DISABLE_TELEMETRY", "true")
+os.environ.setdefault("CREWAI_TELEMETRY_OPT_OUT", "true")
 os.environ.setdefault("CREWAI_TRACING_ENABLED", "false")
+os.environ.setdefault("CREWAI_TRACES_ENABLED", "false")
+os.environ.setdefault("CREWAI_DISABLE_TRACKING", "true")
 os.environ.setdefault("OTEL_SDK_DISABLED", "true")
+os.environ.setdefault("OTEL_TRACES_EXPORTER", "none")
 os.environ.setdefault("CI", "true")
 
 from arena.config import ArenaConfig  # noqa: E402
@@ -49,6 +54,40 @@ def _make_tools(sink: list[dict[str, Any]], names: list[str]) -> list[Any]:
     return [available[name]() for name in names if name in available]
 
 
+def _step_recorder(sink: list[dict[str, Any]], known: set[str]):
+    """A CrewAI `step_callback` that records each tool step.
+
+    CrewAI drives a text ReAct loop and copies tools onto the agent executor, so
+    the `_run` closures above do not always fire in this adapter's process. The
+    `step_callback` does: it is handed every agent step, and a tool step carries
+    `.tool` / `.tool_input` (an `AgentAction`, or a `ToolResult` wrapping one on
+    newer releases). This is the capture the reported `tool_calls` come from; the
+    `_run` sink is a fallback for builds where it does fire.
+    """
+    import json as _json
+
+    def record(step: Any) -> None:
+        action = getattr(step, "action", step)
+        name = getattr(action, "tool", None) or getattr(step, "tool", None)
+        if not name:
+            return
+        name = str(name).strip().strip("`").strip('"').lower()
+        if name not in known:
+            return
+        raw = getattr(action, "tool_input", None)
+        if raw is None:
+            raw = getattr(step, "tool_input", None)
+        arguments: Any = raw
+        if isinstance(raw, str):
+            try:
+                arguments = _json.loads(raw)
+            except (ValueError, TypeError):
+                arguments = {"input": raw}
+        sink.append({"name": name, "arguments": arguments})
+
+    return record
+
+
 class _Runner:
     def __init__(self, arena: ArenaSpec, config: ArenaConfig) -> None:
         from crewai import LLM
@@ -67,8 +106,12 @@ class _Runner:
     def run(self, item: EvalItem) -> AgentResult:
         from crewai import Agent, Crew, Process, Task
 
-        calls: list[dict[str, Any]] = []
-        tools = _make_tools(calls, self.tool_names)
+        # Two capture points, because CrewAI's ReAct executor does not reliably
+        # call the tool `_run` closures in this adapter's process: the
+        # `step_callback` sees every tool step, the sink is a fallback.
+        sink: list[dict[str, Any]] = []
+        step_calls: list[dict[str, Any]] = []
+        tools = _make_tools(sink, self.tool_names)
 
         agent = Agent(
             role="Research assistant",
@@ -79,6 +122,7 @@ class _Runner:
             verbose=False,
             allow_delegation=False,
             max_iter=self.config.max_tool_iterations,
+            step_callback=_step_recorder(step_calls, set(self.tool_names)),
         )
         task = Task(
             description=item.input,
@@ -87,6 +131,8 @@ class _Runner:
         )
         crew = Crew(agents=[agent], tasks=[task], process=Process.sequential, verbose=False)
         output = crew.kickoff()
+
+        calls = step_calls or sink
 
         prompt_tokens = completion_tokens = 0
         usage = getattr(crew, "usage_metrics", None)
