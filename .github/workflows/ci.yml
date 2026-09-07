@@ -82,7 +82,7 @@ jobs:
         # the real libraries. ARENA_EXPECT_FRAMEWORKS makes a broken install fail
         # loudly rather than quietly shrinking the matrix back to one adapter.
         env:
-          ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af,smolagents,google_adk
+          ARENA_EXPECT_FRAMEWORKS: vanilla,langgraph,pydantic_ai,openai_agents,microsoft_af,smolagents,smolagents_code,google_adk
         run: pytest tests/test_adapters_contract.py -q
       - name: Every control the arena owns actually reaches the adapter
         # methodology 1 (one model for everyone) had nothing behind it until now,
@@ -240,6 +240,7 @@ jobs:
           - { python-version: "3.13", framework: microsoft_af, arena: rag }
           - { python-version: "3.13", framework: smolagents, arena: tool_use }
           - { python-version: "3.13", framework: smolagents, arena: rag }
+          - { python-version: "3.13", framework: smolagents_code, arena: tool_use }
           - { python-version: "3.13", framework: google_adk, arena: tool_use }
           - { python-version: "3.13", framework: google_adk, arena: rag }
     steps:
