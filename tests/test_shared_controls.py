@@ -59,13 +59,14 @@ CANARY_TEMPERATURE = 0.7
 SAMPLING_ENVELOPE = {"model", "messages", "temperature", "stream", "tools", "tool_choice"}
 
 # The one measured exception, kept as a reviewable declaration rather than a
-# pattern match. smolagents sends `stop: ["Observation:", "Calling tools:"]` on
-# every request because its text ReAct loop parses generation that halts at those
-# markers - intrinsic to the mechanism, not a sampling knob. See
-# docs/fairness-controls.md and docs/overhead.md.
+# pattern match. Every smolagents entry sends `stop` on every request - its text
+# loops (ReAct `tool_calls`, and the `<code>` blob for CodeAgent) parse
+# generation that halts at those markers, so it is intrinsic to the mechanism,
+# not a sampling knob. See docs/fairness-controls.md and docs/overhead.md.
 SAMPLING_EXCEPTIONS = {
     "smolagents": {"stop"},
     "smolagents_multi": {"stop"},
+    "smolagents_code": {"stop"},
 }
 
 # Every field of ArenaConfig, and where it is held to reaching the adapter.
@@ -255,7 +256,11 @@ def test_no_unowned_sampling_parameter_reaches_the_wire(name):
 
 # The arena the entry actually runs; a `_multi` exception has to be exercised on
 # the pipeline arena or it never delegates.
-_EXCEPTION_ARENA = {"smolagents": "tool_use", "smolagents_multi": "multi_agent"}
+_EXCEPTION_ARENA = {
+    "smolagents": "tool_use",
+    "smolagents_multi": "multi_agent",
+    "smolagents_code": "tool_use",
+}
 
 
 @pytest.mark.parametrize("name", sorted(SAMPLING_EXCEPTIONS))
