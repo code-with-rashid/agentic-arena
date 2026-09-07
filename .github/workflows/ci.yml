@@ -208,10 +208,13 @@ jobs:
   mock-smoke:
     # Proves a real framework adapter wires together against the mock LLM.
     # Only frameworks whose adapter has been verified against the mock belong here.
-    # crewai is intentionally NOT included yet: its adapter is written but not yet
-    # smoke-verified (see STATUS.md / frameworks/crewai/README.md). Add a job for it
-    # once it passes locally on Python 3.12. claude_agent_sdk is a deliberate stub
-    # (see frameworks/claude_agent_sdk/README.md).
+    # crewai is still out: a 3.12 run confirms it installs and answers correctly,
+    # but scores 0/15 because it drives a text ReAct loop and the tool-call sink
+    # stays empty, so every `tool_used` check fails. It also needs a newer
+    # trace-prompt suppression on crewai 0.203.2 (`CREWAI_TRACING_ENABLED=false`
+    # no longer silences "view execution traces? [y/N]"). See STATUS.md and
+    # frameworks/crewai/README.md; debug via .github/workflows/crewai-debug.yml.
+    # claude_agent_sdk is a deliberate stub (see frameworks/claude_agent_sdk/README.md).
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
