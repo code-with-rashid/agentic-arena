@@ -140,6 +140,46 @@ def test_warns_on_ambiguous_multi_scenario_match(tmp_path, monkeypatch):
     assert any("matches 2 scenarios" in w for w in report.warnings), report.warnings
 
 
+def test_catches_min_tool_calls_the_scenario_cannot_reach(tmp_path, monkeypatch):
+    bad = {**GOOD_ITEM, "checks": [{"type": "min_tool_calls", "value": 3}]}
+    errs = _errors(tmp_path, monkeypatch, items=[bad])
+    assert any("fails every mock run" in e and "min_tool_calls" in e for e in errs), errs
+
+
+def test_catches_tool_used_the_scenario_never_calls(tmp_path, monkeypatch):
+    bad = {**GOOD_ITEM, "checks": [{"type": "tool_used", "name": "search"}]}
+    errs = _errors(tmp_path, monkeypatch, items=[bad])
+    assert any("fails every mock run" in e and "search" in e for e in errs), errs
+
+
+def test_catches_no_tool_when_the_scenario_calls_one(tmp_path, monkeypatch):
+    bad = {**GOOD_ITEM, "checks": [{"type": "no_tool"}]}
+    errs = _errors(tmp_path, monkeypatch, items=[bad])
+    assert any("fails every mock run" in e and "no tool calls" in e for e in errs), errs
+
+
+def test_reachability_check_ignores_deliberate_fault_scenarios(tmp_path, monkeypatch):
+    mock = json.loads(json.dumps(GOOD_MOCK))
+    mock["scenarios"][0]["deliberate_fault"] = "scripted to under-call on purpose"
+    bad = {**GOOD_ITEM, "checks": [{"type": "min_tool_calls", "value": 9}]}
+    _write(tmp_path, monkeypatch, items=[bad], mock=mock)
+    report = V.validate_arena("demo")
+    assert not any("fails every mock run" in e for e in report.errors), report.errors
+
+
+def test_reachability_check_passes_when_the_scenario_can_satisfy_it(tmp_path, monkeypatch):
+    ok = {
+        **GOOD_ITEM,
+        "checks": [
+            {"type": "min_tool_calls", "value": 1},
+            {"type": "tool_used", "name": "calculator"},
+        ],
+    }
+    _write(tmp_path, monkeypatch, items=[ok])
+    report = V.validate_arena("demo")
+    assert report.ok, report.errors
+
+
 @pytest.mark.parametrize("ctype", sorted(CHECK_SPECS))
 def test_every_registered_check_type_is_implemented(ctype):
     """CHECK_SPECS and the scorer must not drift apart."""
