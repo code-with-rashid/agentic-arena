@@ -62,7 +62,10 @@ PAGE_FRAMEWORK = {
 SLUG_FRAMEWORK = {Path(page).name: fw for page, fw in PAGE_FRAMEWORK.items()}
 # `vanilla` has no deep-dive page of its own - it lives beside its code - but it
 # is the baseline every ratio is against, so it appears in the summary tables.
-KNOWN = set(PAGE_FRAMEWORK.values()) | {"vanilla"}
+# `smolagents_code` has no page of its own — it is a `CodeAgent` contrast entry
+# discussed on the `smolagents` page — but it appears in the `tool_use` overhead
+# run, so its published ratio is held to that run like any other.
+KNOWN = set(PAGE_FRAMEWORK.values()) | {"vanilla", "smolagents_code"}
 
 # Pages that must keep carrying a claim, and how many. Without this the whole
 # file passes by finding nothing: delete the row from a framework page and every
@@ -78,7 +81,10 @@ EXPECTED_CLAIMS = {
     # These two present the same measurement as a heading plus a sentence rather
     # than a results-table row: one ratio, then its own tokens and the baseline's.
     "docs/frameworks/google-adk.md": 3,
-    "docs/frameworks/smolagents.md": 3,
+    # 3 (the 3.90x heading + its own tokens + baseline tokens), plus the
+    # ToolCallingAgent-vs-CodeAgent overhead table: smolagents (tokens, ratio)
+    # and smolagents_code (tokens, ratio).
+    "docs/frameworks/smolagents.md": 7,
     "docs/frameworks/README.md": 1,
 }
 

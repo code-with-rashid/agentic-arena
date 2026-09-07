@@ -108,14 +108,14 @@ findings, the same way `resilience` does.
 > what it loses is the successful sibling. The probe now matches each outcome's
 > own text, and a test pins that none of those markers appear in the corpus.
 
-Those two rows do not fully capture `smolagents`, which loses **four** of the
-eight faults. The unknown-tool-name row is the visible one, but the real boundary
-is its tool-validation layer: any failure raised *before* the tool body runs
-(unknown name, missing argument, unexpected argument, `null` arguments) is never
-written back into the conversation, so the model cannot see it and repeats the
-identical call until the step budget is gone. Faults that get as far as running
-the tool come back as observations and it recovers from all of them. See
-[smolagents.md](frameworks/smolagents.md#resilience-48-split-exactly-along-one-line).
+Those two rows do not fully capture `smolagents`, whose real boundary on
+`resilience` is its tool-validation layer: any failure raised *before* the tool
+body runs (unknown name, missing argument, unexpected argument, `null` arguments)
+is never written back into the conversation, so the model cannot see it and
+repeats the identical call until the step budget is gone. It still answers each
+one from its last memory step — 8/8 — but at **six LLM calls** against the two
+the other four faults take. See
+[smolagents.md](frameworks/smolagents.md#resilience-88-but-four-of-them-cost-3-the-rest).
 
 The `Built-in multi-agent` row is now **partly measured**. `multi_agent` carries
 two real three-role pipelines alongside the single-agent entries:
