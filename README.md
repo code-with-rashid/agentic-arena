@@ -16,12 +16,14 @@ produces scorecards you can regenerate yourself with one command.
   estimated cost, retries, and crashes — plus a feature matrix for the things that
   don't reduce to a number.
 
-> **Status:** early but moving. Phase 0 (scaffold) is done; Phase 1 (harness +
-> `tool_use`) and Phase 2 (framework breadth) are largely there — five adapters run
-> green against the mock, and a second arena (`structured_output`) has landed. No
-> live scorecard yet (needs an API key). See [ROADMAP.md](ROADMAP.md) and
-> [docs/next-phases.md](docs/next-phases.md). Contributions for empty framework ×
-> arena cells are very welcome — see [CONTRIBUTING.md](CONTRIBUTING.md).
+> **Status:** Phases 0–3 done. All seven arenas run; seven framework adapters
+> plus five `*_multi` pipeline entries are green against the mock; the harness
+> core is still stdlib-only. What is left is a **live scorecard** (needs an API
+> key — every number so far is mock mode, so nothing yet says which framework
+> gives *better answers*), `crewai` full verification, and `claude_agent_sdk`
+> (a stub, protocol mismatch). See [ROADMAP.md](ROADMAP.md) and
+> [docs/next-phases.md](docs/next-phases.md); contributions welcome — see
+> [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Quickstart
 
@@ -65,10 +67,10 @@ when its output satisfies every check for that item.
 | 1 | `tool_use` — single agent with web-search + calculator tools | tool-calling loop, baseline DX | ✅ spec + dataset + scorer |
 | 2 | `structured_output` — look up a landmark, return a schema-checked JSON record | output validation, typing | ✅ spec + dataset + scorer |
 | 3 | `resilience` — the model misbehaves on purpose; the agent must recover | error handling, graceful degradation | ✅ spec + dataset + scorer |
-| 4 | `multi_agent` — researcher → writer → editor pipeline | orchestration, handoffs | ✅ spec + dataset + scorer (single-agent baseline) |
+| 4 | `multi_agent` — researcher → writer → editor pipeline | orchestration, handoffs | ✅ + 5 `*_multi` pipelines (structural, handoff, sub-agent-as-tool) |
 | 5 | `rag` — agent over a fixed local corpus; single-hop, multi-hop, and unanswerable | retrieval integration, grounding | ✅ spec + dataset + scorer |
-| 6 | `human_in_the_loop` — approval gate, pause + resume | interrupts, HITL | ✅ spec + dataset + scorer (`langgraph` native, `vanilla` emulated) |
-| 7 | `durable_state` — resume after a crash | checkpointing, durability | ✅ spec + dataset + scorer (`langgraph` + `vanilla`) |
+| 6 | `human_in_the_loop` — approval gate, pause + resume | interrupts, HITL | ✅ 6 adapters pause, 6 distinct mechanisms |
+| 7 | `durable_state` — resume after a crash | checkpointing, durability | ✅ 5 adapters 8/8 across a real process restart |
 
 ## The frameworks
 
@@ -76,7 +78,7 @@ when its output satisfies every check for that item.
 |-----------|---------|----------|-------|
 | _baseline_ `vanilla` | ✅ | Python (stdlib) | hand-rolled agent loop; the "what does the framework buy you?" control |
 | LangGraph | ✅ | Python | graph/state-machine orchestration |
-| CrewAI | ⚠️ written | Python | role-based crews; adapter written, not yet mock-verified (needs Python 3.12) |
+| CrewAI | 🚧 3.12-only | Python | role-based crews; on Python 3.12 it installs and answers correctly, `tool_used` evidence pending a debug run ([status](frameworks/crewai/README.md)) |
 | OpenAI Agents SDK | ✅ | Python | `openai-agents`; tracing disabled for the arena |
 | Pydantic AI | ✅ | Python | `pydantic-ai-slim`; typed, model-agnostic |
 | Microsoft Agent Framework | ✅ | Python | `agent-framework-openai` (merged AutoGen + Semantic Kernel) |
@@ -84,13 +86,16 @@ when its output satisfies every check for that item.
 | Google ADK | ✅ | Python | `google-adk` + `litellm` (required to leave Gemini); the only real loop cap out of the box |
 | Claude Agent SDK | 🚫 stub | Python | drives the `claude` CLI over the Anthropic Messages API — doesn't fit the shared OpenAI-compatible gateway ([why](frameworks/claude_agent_sdk/README.md)) |
 
-Seven adapters run against the mock across seven arenas. `vanilla`,
-`pydantic_ai` and `microsoft_af` recover from all eight `resilience` faults;
-`langgraph` and `openai_agents` lose one each, `google_adk` two, `smolagents`
-four. Six of the seven pause for a human (12/12); five of those also survive
-having the runner thrown away (8/8). `microsoft_af` pauses but is *unsupported*
-on `durable_state`, and `smolagents` is *unsupported* on both pause arenas —
-reported as unsupported rather than failed.
+Seven adapters run against the mock across seven arenas, plus five `*_multi`
+pipeline entries on `multi_agent` (`vanilla_multi` and `langgraph_multi` for
+structural delegation, `openai_agents_multi` for a handoff chain,
+`smolagents_multi` and `pydantic_ai_multi` for a sub-agent invoked as a tool).
+`vanilla`, `pydantic_ai` and `microsoft_af` recover from all eight `resilience`
+faults; `langgraph` and `openai_agents` lose one each, `google_adk` two,
+`smolagents` four. Six of the seven pause for a human (12/12); five of those also
+survive having the runner thrown away (8/8). `microsoft_af` pauses but is
+*unsupported* on `durable_state`, and `smolagents` is *unsupported* on both pause
+arenas — reported as unsupported rather than failed.
 
 **[What we found so far →](docs/findings.md)** — every measured result in one
 page, with the command that regenerates each number. The next contribution step
