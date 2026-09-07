@@ -1,4 +1,4 @@
-.PHONY: install lint fmt validate test smoke clean
+.PHONY: install lint fmt validate test check smoke smoke-all clean
 
 install:
 	python -m pip install -e ".[dev]"
@@ -16,6 +16,9 @@ validate:
 
 test:
 	pytest -q
+
+# The full local gate, same as CI's lint-and-test job. Run this before a PR.
+check: lint validate test
 
 # Mock smoke: prove the dependency-free path wires together.
 smoke:
