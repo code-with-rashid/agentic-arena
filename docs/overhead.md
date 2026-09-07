@@ -106,6 +106,16 @@ None of this is a bug, and the prompt is doing real work — it is what lets
 support. But if you are pairing it with a model that already tool-calls well, you
 are paying ~3.5 KB per request for scaffolding you do not need.
 
+**And this is the cheaper of its two agents.** `smolagents` also ships
+`CodeAgent`, where the model writes and executes Python instead of emitting
+native tool calls. It runs as its own entry, `smolagents_code`, and it is
+*heavier still* — **6.95×** the baseline prompt, because its system prompt is a
+longer few-shot (several worked Python examples) layered on top of everything
+above. Completion tokens go the other way (60.7 against `ToolCallingAgent`'s
+74.7 — a `<code>` blob is terser than a JSON tool call), and the LLM-call count
+is the same 2.07. The side-by-side table is on
+[the smolagents page](frameworks/smolagents.md#prompt-size-390-baseline-comparable).
+
 ## How to read these numbers
 
 - **Relative, not absolute.** The estimator is `len(text) // 4`, not a real BPE
