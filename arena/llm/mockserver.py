@@ -117,6 +117,57 @@ def _build_react_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
     return {"role": "assistant", "content": text}, "stop"
 
 
+def _looks_like_code_agent(req: dict[str, Any]) -> bool:
+    """Is this client a smolagents `CodeAgent` rather than a text-ReAct loop?
+
+    `CodeAgent` also advertises no tools and also feeds results back as
+    `Observation:` text, so `_looks_like_react` would match it too — but it wants
+    a **Python code blob** (`<code> … </code>` that calls the tool functions),
+    not an `Action: / Action Input:` pair, and its parser rejects the latter
+    outright. The tell is on the `stop` list: `CodeAgent` stops the generation at
+    `</code>`, which a text-ReAct client never does. Checked before
+    `_looks_like_react` for that reason.
+    """
+    if req.get("tools"):
+        return False
+    stop = req.get("stop") or []
+    if isinstance(stop, str):
+        stop = [stop]
+    return any("</code>" in str(s) for s in stop)
+
+
+def _build_code_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
+    """Render a scripted turn as a `CodeAgent` `Thought:` + `<code>` block.
+
+    A `tool_calls` turn becomes `result = <tool>(<kwargs>)` + `print(result)`;
+    a content turn becomes `final_answer(<the answer>)`. Arguments are rendered
+    with `repr()` so strings quote and escape correctly — rule 3 of the
+    `CodeAgent` prompt forbids passing them as a dict.
+    """
+    tool_calls = turn.get("tool_calls")
+    if tool_calls:
+        lines = []
+        for i, call in enumerate(tool_calls):
+            args = call.get("arguments", {})
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except (ValueError, TypeError):
+                    args = {}
+            kwargs = ", ".join(f"{name}={value!r}" for name, value in args.items())
+            var = "result" if len(tool_calls) == 1 else f"result_{i}"
+            lines.append(f"{var} = {call['name']}({kwargs})")
+            lines.append(f"print({var})")
+        code = "\n".join(lines)
+        names = ", ".join(c["name"] for c in tool_calls)
+        thought = f"I should use the {names} tool(s)."
+    else:
+        code = f"final_answer({turn.get('content', '')!r})"
+        thought = "I have enough information to answer."
+    text = f"Thought: {thought}\n<code>\n{code}\n</code>"
+    return {"role": "assistant", "content": text}, "stop"
+
+
 FINAL_ANSWER_TOOL = "final_answer"
 
 
@@ -486,7 +537,16 @@ class _Handler(BaseHTTPRequestHandler):
         script: MockScript = self.server.script  # type: ignore[attr-defined]
         scenario = script.pick(first_user)
 
-        if _looks_like_react(req):
+        if _looks_like_code_agent(req):
+            # `CodeAgent` keeps a real message list — system, user, then one
+            # `assistant` per `<code>` block with a `user` observation after it —
+            # so assistant turns are the served-turn count, same as the native
+            # path. (Counting "Observation:" text the way the ReAct branch does
+            # would over-count wildly here: the few-shot system prompt is full of
+            # example `Observation:` lines.)
+            turn = script.turn_for(scenario, assistant_turns)
+            message, finish_reason = _build_code_message(turn)
+        elif _looks_like_react(req):
             # A ReAct client keeps the whole transcript in one growing prompt and
             # feeds tool results back as "Observation:" text rather than as
             # `role: tool` messages, so count those instead of assistant turns.

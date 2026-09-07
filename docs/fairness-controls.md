@@ -107,9 +107,10 @@ was removed or recorded with a reason.
   401 rather than silently skewing a comparison. There is no quiet failure to
   guard against.
 - **`smolagents`' `stop` sequences.** It sends `stop: ["Observation:", "Calling
-  tools:"]` on every request, in both its single- and multi-agent entries,
-  because its text ReAct loop parses generation that halts at those markers. It
-  is intrinsic to the mechanism, not a sampling choice, so it is an entry in the
+  tools:", …]` on every request, in all three of its entries (`smolagents`,
+  `smolagents_multi`, `smolagents_code`), because its text loops parse generation
+  that halts at those markers — `CodeAgent` also stops at `</code>`. It is
+  intrinsic to the mechanism, not a sampling choice, so it is an entry in the
   gate's exception table rather than a failure — the same treatment as
   `strict: true` and `title` on the tool schemas. The exception is itself
   checked to be live: `tests/test_shared_controls.py` fails if `stop` stops

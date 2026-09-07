@@ -159,6 +159,25 @@ def test_adapter_advertises_only_the_tools_the_arena_declares(name):
     """Handing an agent an undeclared tool breaks 'same fight for everyone'."""
     body = _wire_traffic(name, ["search"])
     advertised = sorted(t.get("function", {}).get("name", "") for t in body.get("tools", []) or [])
+    delegates = tuple(getattr(load_framework(name), "delegates", ()))
+    check_declared_delegates(delegates, ["search"])
+
+    if not advertised:
+        # A text-ReAct or CodeAgent client sends no `tools` array at all - the
+        # tools live in the system prompt. It still has to be offered exactly the
+        # arena's tools, so check they are named there and nothing extra is.
+        system = ""
+        for message in body.get("messages", []):
+            if message.get("role") != "system":
+                continue
+            content = message.get("content", "")
+            system += content if isinstance(content, str) else json.dumps(content)
+        assert "search" in system, f"{name}: advertises no tools and does not name `search` either"
+        assert "calculator" not in system, (
+            f"{name}: names `calculator` in the prompt, but the arena declared only ['search']"
+        )
+        return
+
     # A framework may add tools that only drive its own loop - smolagents ends a
     # run by calling `final_answer`, a handoff chain advertises
     # `transfer_to_<agent>`, and a managed-agent pipeline advertises each
@@ -168,8 +187,6 @@ def test_adapter_advertises_only_the_tools_the_arena_declares(name):
     # The third kind has no name pattern to match, so the adapter has to declare
     # it. That declaration is checked, not trusted: it may not cover a tool the
     # arena actually declares.
-    delegates = tuple(getattr(load_framework(name), "delegates", ()))
-    check_declared_delegates(delegates, ["search"])
     task_tools = [t for t in advertised if not is_control_tool(t, delegates)]
     assert task_tools == ["search"], (
         f"{name}: advertised {advertised}, but the arena declares only ['search'] "
