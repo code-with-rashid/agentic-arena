@@ -17,6 +17,8 @@ RUNS_DIR = REPO_ROOT / "runs"
 
 def latest_run(arena_id: str, mode: str | None = None) -> dict[str, Any]:
     candidates = sorted(RUNS_DIR.glob(f"*__{arena_id}__*.json"))
+    # A `--item` run writes `..__partial.json`; it is not a scorecard input.
+    candidates = [p for p in candidates if not p.stem.endswith("__partial")]
     if mode:
         candidates = [p for p in candidates if p.stem.endswith(f"__{mode}")]
     if not candidates:

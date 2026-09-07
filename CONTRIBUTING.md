@@ -93,6 +93,11 @@ ruff check . && ruff format --check .
    is the only one that installs every framework — add your framework to that
    job's install loop and to its `ARENA_EXPECT_FRAMEWORKS` list.
 
+   To debug one failing item without running the whole dataset, pass `--item`
+   (repeatable): `python -m arena run --arena tool_use --framework <name> --mode
+   mock --item tu-03`. It skips the scorecard and writes a `…__partial.json` run
+   record that `arena scorecard` / `arena summary` ignore.
+
 7. Add a row to the framework table in the top-level `README.md` and a deep-dive
    stub in `docs/frameworks/<name>.md`.
 

@@ -42,9 +42,12 @@ def _cmd_run(args: argparse.Namespace) -> int:
         )
         return 2
 
+    only = set(args.item) or None
     print(f"arena={args.arena} mode={config.mode} model={config.model} repeat={config.repeat}")
+    if only:
+        print(f"items: {', '.join(sorted(only))}  (partial run, no scorecard)")
     print(f"frameworks: {', '.join(frameworks)}")
-    record = run_arena(args.arena, frameworks, config=config)
+    record = run_arena(args.arena, frameworks, config=config, only=only)
 
     for fw in record["frameworks"]:
         if not fw.get("available"):
@@ -54,7 +57,7 @@ def _cmd_run(args: argparse.Namespace) -> int:
         passed = sum(1 for it in items if it["passed"])
         print(f"  {fw['framework']:<20} {passed}/{len(items)} passed")
 
-    if not args.no_scorecard:
+    if not args.no_scorecard and not only:
         path = write_scorecard(record)
         print(f"\nscorecard: {path}")
     print(f"raw run:   {record['_path']}")
@@ -129,6 +132,13 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--mode", choices=["mock", "live"], default=None)
     p_run.add_argument("--repeat", type=int, default=1)
     p_run.add_argument("--no-scorecard", action="store_true")
+    p_run.add_argument(
+        "--item",
+        action="append",
+        default=[],
+        metavar="ID",
+        help="repeatable; run only these dataset item id(s). Implies --no-scorecard.",
+    )
     p_run.set_defaults(func=_cmd_run)
 
     p_val = sub.add_parser("validate", help="statically check arena specs, datasets, mock scripts")

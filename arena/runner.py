@@ -189,9 +189,16 @@ def run(
     framework_names: list[str],
     *,
     config: ArenaConfig | None = None,
+    only: set[str] | None = None,
 ) -> dict[str, Any]:
     config = config or ArenaConfig.from_env()
     arena = load_arena(arena_id)
+
+    if only:
+        missing = only - {item.id for item in arena.dataset}
+        if missing:
+            raise SystemExit(f"no such item(s) in {arena_id!r}: {', '.join(sorted(missing))}")
+        arena = replace(arena, dataset=[item for item in arena.dataset if item.id in only])
 
     if arena.durable and not config.checkpoint_dir:
         # The harness owns the store and hands the same path to every framework,
@@ -226,6 +233,7 @@ def run(
         "temperature": config.temperature,
         "repeat": config.repeat,
         "dataset_size": len(arena.dataset),
+        **({"filtered_to": sorted(only)} if only else {}),
         "started_at": started,
         "duration_s": round(time.perf_counter() - t0, 2),
         "harness_version": __version__,
@@ -240,7 +248,10 @@ def run(
 
     RUNS_DIR.mkdir(exist_ok=True)
     stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    out_path = RUNS_DIR / f"{stamp}__{arena.id}__{config.mode}.json"
+    # A partial run is a debugging artefact — mark the filename so `latest_run`
+    # and the summary never mistake it for a full scorecard input.
+    suffix = "__partial" if only else ""
+    out_path = RUNS_DIR / f"{stamp}__{arena.id}__{config.mode}{suffix}.json"
     out_path.write_text(json.dumps(record, indent=2), encoding="utf-8")
     record["_path"] = str(out_path)
     return record
