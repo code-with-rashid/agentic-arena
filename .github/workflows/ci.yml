@@ -154,6 +154,12 @@ jobs:
         run: |
           pytest tests/test_structured_output_contract.py -q
           python .github/scripts/report_structured_output.py
+      - name: Every framework walks the rag arena the same way
+        # A floor, not a comparison: the script drives the second hop and the
+        # answer, so this only catches an adapter that stopped making the second
+        # search or started answering the unanswerable items. rag has no
+        # per-framework finding, so nothing else would.
+        run: pytest tests/test_rag_arena.py -q
       - name: Run the resilience arena
         run: python -m arena run --arena resilience --framework all --mode mock --no-scorecard
       - name: Report recovery, and fail only if the baseline broke
