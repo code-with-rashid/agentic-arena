@@ -196,6 +196,21 @@ def test_suspended_check_passes_when_the_scenario_scripts_request_approval(tmp_p
     assert report.ok, report.errors
 
 
+def test_catches_call_counts_the_scenario_does_not_produce(tmp_path, monkeypatch):
+    bad = {
+        **GOOD_ITEM,
+        "checks": [{"type": "call_counts", "counts": {"calculator": 2, "search": 1}}],
+    }
+    errs = _errors(tmp_path, monkeypatch, items=[bad])
+    assert any("fails every mock run" in e and "call_counts" in e for e in errs), errs
+
+
+def test_call_counts_passes_when_it_matches_the_scenario(tmp_path, monkeypatch):
+    ok = {**GOOD_ITEM, "checks": [{"type": "call_counts", "counts": {"calculator": 1}}]}
+    _write(tmp_path, monkeypatch, items=[ok])
+    assert V.validate_arena("demo").ok, V.validate_arena("demo").errors
+
+
 def test_reachability_check_passes_when_the_scenario_can_satisfy_it(tmp_path, monkeypatch):
     ok = {
         **GOOD_ITEM,

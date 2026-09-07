@@ -188,7 +188,8 @@ def _validate_tool_checks(
     `tool_used: calculator` on a scenario that only calls `search`, fails every
     mock run for a reason nothing else reports — it looks like an adapter bug.
     A `suspended` check on a scenario that never scripts `request_approval` /
-    `save_progress` is the same trap on the pause arenas. Skipped for
+    `save_progress`, or a `call_counts` that disagrees with the scripted turns,
+    is the same trap on the pause / durable arenas. Skipped for
     `deliberate_fault` scenarios, where the mismatch is the point.
     """
     if scenario.get("deliberate_fault"):
@@ -234,6 +235,18 @@ def _validate_tool_checks(
                     f"{where} expects the agent to pause >= {want} time(s), but its mock "
                     f"scenario scripts {suspends} {list(SUSPEND_TOOLS)} call(s) — the item "
                     f"fails every mock run"
+                )
+        elif ctype == "call_counts" and isinstance(check.get("counts"), dict):
+            wrong = {
+                name: (scripted.count(name), want)
+                for name, want in check["counts"].items()
+                if scripted.count(name) != want
+            }
+            if wrong:
+                report.errors.append(
+                    f"{where} wants {check['counts']}, but its mock scenario scripts "
+                    f"{ {n: v[0] for n, v in wrong.items()} } for those — the item fails "
+                    f"every mock run"
                 )
 
 
