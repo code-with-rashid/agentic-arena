@@ -25,6 +25,10 @@
 - [Dependencies](dependencies.md) — the pinning policy, why the harness has zero
   runtime deps, and the deprecation register.
 - Per-framework deep dives: [`frameworks/`](frameworks/)
+- Per-arena reference notes: [`arenas/`](arenas/) — what each arena tests, its
+  traps, and where its design is written down.
+- [Scorecard example](scorecard-example.md) — the shape of a `results/<id>/`
+  scorecard, before the first live run exists to produce a real one.
 
 ## Reports
 

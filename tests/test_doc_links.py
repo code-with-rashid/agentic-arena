@@ -100,3 +100,55 @@ def test_every_heading_anchor_resolves(path):
     assert not broken, (
         f"{path.relative_to(ROOT)} points at heading(s) that no longer exist: {broken}"
     )
+
+
+# Entry points a reader actually starts from. A page reachable from none of these
+# is written and maintained but never found.
+_DOC_ROOTS = ["README.md", "docs/index.md", "CONTRIBUTING.md"]
+
+
+def _linked_md(path):
+    """Every local `.md` this page points at, resolving a bare directory to its README."""
+    body = FENCE.sub("", path.read_text(encoding="utf-8"))
+    out = set()
+    for target in LINK.findall(body):
+        if target.startswith(("http://", "https://", "mailto:", "#")):
+            continue
+        file_part = target.split("#", 1)[0]
+        if not file_part:
+            continue
+        resolved = (path.parent / file_part).resolve()
+        if resolved.is_dir():
+            resolved = resolved / "README.md"
+        if resolved.suffix == ".md" and resolved.exists():
+            out.add(resolved)
+    return out
+
+
+def test_every_doc_page_is_reachable_from_an_entry_point():
+    """A doc no entry point links to is invisible to a reader browsing the repo.
+
+    Fifteen-plus iterations of findings have left `docs/` heavily
+    cross-referenced, but cross-references between deep pages do not help someone
+    who starts at the README or `docs/index.md`. This walks the link graph from
+    those roots and fails on any `docs/**.md` it cannot reach — the arena
+    reference notes and the scorecard example were both stranded this way.
+    """
+    roots = [(ROOT / r).resolve() for r in _DOC_ROOTS if (ROOT / r).exists()]
+    seen = set()
+    stack = list(roots)
+    while stack:
+        cur = stack.pop()
+        if cur in seen or not cur.exists():
+            continue
+        seen.add(cur)
+        stack.extend(t for t in _linked_md(cur) if t not in seen)
+
+    docs = {p.resolve() for p in (ROOT / "docs").rglob("*.md")}
+    orphans = sorted(str(p.relative_to(ROOT)) for p in docs - seen)
+    assert not orphans, (
+        "doc page(s) not reachable from README.md / docs/index.md / CONTRIBUTING.md:\n  "
+        + "\n  ".join(orphans)
+        + "\nLink each from an entry point (docs/index.md is the usual home) or, if it "
+        "is genuinely internal, move it out of docs/."
+    )
