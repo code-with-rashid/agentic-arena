@@ -9,8 +9,12 @@ terse index, this file records the reasoning and the current batch of work._
 > entries are mock-green, delegation cost is measured to an exact law, the
 > durable pause runs across a real process restart, and every arena-owned
 > control is enumerated with the test that holds each adapter to it
-> ([fairness-controls.md](fairness-controls.md)). The reasoning below is kept as
-> the record of how that batch was planned.
+> ([fairness-controls.md](fairness-controls.md)). Since then an eighth entry —
+> `smolagents_code`, a `CodeAgent` contrast to the `ToolCallingAgent` `smolagents`
+> adapter — runs `tool_use` / `rag` / `structured_output` at 6.95× baseline wire
+> cost, and `arena validate` grew a reachability check for a tool/pause check its
+> mock scenario can never satisfy. The reasoning below is kept as the record of
+> how that batch was planned.
 
 ## Where things stand
 
