@@ -96,6 +96,33 @@ ruff check . && ruff format --check .
 7. Add a row to the framework table in the top-level `README.md` and a deep-dive
    stub in `docs/frameworks/<name>.md`.
 
+### Contrast and variant entries
+
+Some entries are not standalone frameworks but a *second wiring of one that
+already exists*, kept so the pair can be compared on one axis: the `*_multi`
+pipelines (`vanilla_multi`, `langgraph_multi`, …) against their single-agent
+namesakes on `multi_agent`, and `smolagents_code` (`CodeAgent`) against the
+`ToolCallingAgent` `smolagents` entry. If you are adding one:
+
+- **Name it `<base>_<variant>`** — `frameworks/<base>_<variant>/adapter.py`, with
+  `name = "<base>_<variant>"`.
+- **Scope it with `arenas`.** Set `arenas = ("multi_agent",)` (or whichever
+  arenas the contrast is meaningful on) on the `Adapter` class. `--framework all`
+  then runs it only there; naming it explicitly on the command line still runs it
+  anywhere. Without this, a pipeline lands in a per-framework overhead table it
+  is not comparable with. See `arena.registry.frameworks_for_arena`.
+- **Do not pin dependencies again.** `frameworks/<base>_<variant>/requirements.txt`
+  is one line — `-r ../<base>/requirements.txt`. A second copy of the same
+  versions would drift from the first, and then the two entries would no longer
+  be running the same library, which is the only reason the entry exists.
+- **It still faces the contract tests.** Add it to the `comparison` job's
+  `ARENA_EXPECT_FRAMEWORKS` list and a `mock-smoke` matrix row for each arena it
+  runs. `tests/test_adapters_contract.py` handles an entry that advertises no
+  OpenAI `tools` array (a text-ReAct or `CodeAgent` loop) by checking the tool
+  names in the system prompt instead.
+- **No separate framework page.** Document it on the base framework's page (or in
+  `docs/multi-agent.md` for the pipelines), not a new `docs/frameworks/` file.
+
 ## Adding an arena
 
 1. `arenas/<name>/arena.toml` — id, description, which shared tools are available,
