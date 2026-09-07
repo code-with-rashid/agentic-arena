@@ -258,14 +258,33 @@ as smolagents describes its tools twice, which is most of its 3.77× prompt
 overhead in [overhead.md](overhead.md). The same design decision shows up in both
 places.
 
-Against the OpenAI Agents SDK's 262-character `transfer_to_writer` schema, that
-is 3.3× to hold open the same option. Both frameworks charge you for options
-rather than actions; they do not charge the same amount.
+The OpenAI Agents SDK's `handoffs` charge for the option the same way, and
+sweeping them the same way turns a point into a curve:
 
-The invariants are gated in `tests/test_delegation_advertising.py` — the cost is
-paid on every request rather than only the delegating one, it scales with how
-many delegates are offered, and each sub-agent really is described twice. The
-byte counts stay findings.
+| handoffs offered | system prompt | tool schemas | total | marginal |
+|---:|---:|---:|---:|---:|
+| 0 | 50 | 364 | 414 | — |
+| 1 | 50 | 615 | 665 | +251 |
+| 2 | 50 | 866 | 916 | +251 |
+| 3 | 50 | 1119 | 1169 | +253 |
+
+**~251 characters per offered handoff, linear from the first, all of it in the
+tool schema.** No preamble to pay once, and the system prompt does not move — the
+SDK puts nothing there. A `transfer_to_<name>` schema is a name-templated stub
+("Handoff to the writer agent to handle the request.") whose parameter object is
+empty; the target agent's own description is never carried. A managed sub-agent
+is described twice; a handoff target is barely described once, which is the whole
+~3.5× (≈875 against ≈251).
+
+Both frameworks charge you for options rather than actions; they do not charge
+the same amount, and they do not charge in the same place — the managed agent
+also moves the system prompt, the handoff is pure schema.
+
+The invariants are gated in `tests/test_delegation_advertising.py`, for both
+shapes — the cost is paid on every request rather than only the delegating one,
+it scales linearly with how many delegates are offered, a managed sub-agent is
+described twice while a handoff target is a name-only stub, and the handoff's
+whole cost lands in the tool schema. The byte counts stay findings.
 
 ### The same shape without a delegation feature: `pydantic_ai_multi`
 
@@ -478,6 +497,9 @@ comparison that quietly became a quality comparison would be worthless.
 - **Whether the laws survive a real model.** They are structural, so they should,
   but a real model may delegate more than once or answer without delegating at
   all. That needs a live run.
-- **More than three roles.** The compounding above predicts prompt cost grows
-  faster than call count, and the handoff finding predicts it grows with the
-  number of *offered* transfers too. Two points do not establish a curve.
+- ~~**More than three roles.**~~ **Measured.** Chain depth one to five is in
+  "How this scales: three laws, five implementations" above; the *offered*-transfer
+  curve for both `managed_agents` and `handoffs` is in "And offering one costs
+  3.3× a handoff" and gated in `tests/test_delegation_advertising.py`. Both are
+  linear; the only open part is whether a real model walks the chain the way the
+  script does.

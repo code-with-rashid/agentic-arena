@@ -2,13 +2,18 @@
 
 `docs/multi-agent.md` reports that 94% of what a native handoff costs is the
 `transfer_to_*` schema riding on every request rather than the transfer itself —
-you pay to advertise a handoff, not to take it. That was measured against one
-mechanism. This file asks the same question of a structurally different one:
-smolagents' `managed_agents`, where a sub-agent is invoked *as a tool* rather
-than by a transfer that swaps the speaker.
+you pay to advertise a handoff, not to take it. This file sweeps that cost for
+**both** delegation shapes, so a curve is compared against a curve rather than
+against a single point:
 
-It generalises, and it is much more expensive. Offering one sub-agent, with no
-delegation happening at all:
+  * smolagents' `managed_agents`, where a sub-agent is invoked *as a tool*;
+  * the OpenAI Agents SDK's `handoffs`, where a transfer swaps the speaker.
+
+**Both scale linearly with delegates offered, and neither charges for the
+transfer itself. They do not charge the same amount, or in the same place.**
+
+smolagents `managed_agents`, characters of system prompt plus tool schema on the
+first request, no delegation happening:
 
     0 sub-agents offered   system 3311  tools  518   total 3829
     1                      system 4102  tools  982   total 5084   (+1255)
@@ -18,20 +23,37 @@ delegation happening at all:
 The first one costs ~1255 characters and each further one ~875, on *every*
 request. The step down after the first is a ~385-char preamble ("You can also
 give tasks to team members…") that enables delegation at all and is paid once.
-
 The marginal ~875 splits into ~400 characters of prose in the system prompt and
 ~475 of JSON tool schema — **each sub-agent is described twice**, exactly as
 smolagents describes its tools twice (see docs/overhead.md, where the same
-double transmission is most of its 3.77× prompt overhead). Against the OpenAI
-Agents SDK's 262-char `transfer_to_writer` schema, that is 3.3× more to offer
-the same option.
+double transmission is most of its 3.77× prompt overhead).
 
-What is gated here are the invariants, not the byte counts: the cost is paid on
-every request rather than only the delegating one, it scales with how many
-delegates are offered, and offering none costs nothing. The numbers themselves
-are findings and live in the docs, following the same rule as `resilience`.
+OpenAI Agents SDK `handoffs`, same measurement:
+
+    0 handoffs offered     system 50  tools  364   total  414
+    1                      system 50  tools  615   total  665   (+251)
+    2                      system 50  tools  866   total  916   (+251)
+    3                      system 50  tools 1119   total 1169   (+253)
+
+**~251 characters per offered handoff, linear from the very first, and every one
+of them in the tool schema.** No preamble, no step-down, and the system prompt
+does not move — the SDK adds nothing there. The `transfer_to_<name>` schema is a
+name-templated stub ("Handoff to the writer agent to handle the request.") with
+an empty parameter object; the target agent's own description is never carried.
+A managed sub-agent is described twice; a handoff target is barely described
+once. That is why offering a handoff costs ~3.5× less than offering a managed
+agent (~251 against ~875), and it is the same split the `_multi` prompt totals
+show at three roles.
+
+What is gated here are the invariants, not the byte counts: for both shapes the
+cost is paid on every request rather than only the delegating one, it scales with
+how many delegates are offered, and offering none costs nothing; and the handoff
+adds its whole cost in the tool schema while the managed agent also moves the
+system prompt. The numbers themselves are findings and live in the docs,
+following the same rule as `resilience`.
 """
 
+import contextlib
 import json
 
 import pytest
@@ -53,6 +75,7 @@ ROLES = [
     ("writer", "Writes a brief from research notes."),
     ("editor", "Tightens a draft to three to five sentences."),
     ("checker", "Verifies every number against the research notes."),
+    ("approver", "Signs off the final brief."),
 ]
 
 
@@ -98,6 +121,48 @@ def _run_with_managed_agents(count):
         smolagents.ToolCallingAgent(
             tools=[search], model=model, managed_agents=managed, max_steps=4
         ).run("Write a brief about the Eiffel Tower.")
+        return list(server.requests)
+
+
+def _run_with_handoffs(count):
+    """Run one item with `count` native handoffs offered. Returns every request.
+
+    The manager is handed `count` target agents through the SDK's `handoffs=`
+    and never told to prefer any of them; the mock renders the scripted "now
+    write it up" step as a transfer for whichever it can. Only the first
+    request is read by the callers, before any transfer has happened.
+    """
+    agents = pytest.importorskip("agents")
+
+    agents.set_tracing_disabled(True)
+
+    @agents.function_tool
+    def search(query: str, k: int = 3) -> str:
+        """Search a knowledge base of general facts."""
+        from arena.tools import search as _search
+
+        return _search(query, k)
+
+    with MockServer(SCRIPT) as server:
+        client = agents.AsyncOpenAI(base_url=server.base_url, api_key="mock-key", timeout=30)
+        model = agents.OpenAIChatCompletionsModel(model="mock-model", openai_client=client)
+        settings = agents.ModelSettings(temperature=0.0)
+
+        def agent(role, instructions, **kw):
+            return agents.Agent(
+                name=role, instructions=instructions, model=model, model_settings=settings, **kw
+            )
+
+        targets = [agent(name, description) for name, description in ROLES[:count]]
+        manager = agent(
+            "researcher",
+            "You are the researcher. Use search, then hand off.",
+            tools=[search],
+            handoffs=targets,
+        )
+        # The first request is captured well before anything downstream can fail.
+        with contextlib.suppress(Exception):
+            agents.Runner.run_sync(manager, "Write a brief about the Eiffel Tower.", max_turns=6)
         return list(server.requests)
 
 
@@ -156,4 +221,97 @@ def test_a_sub_agent_is_described_twice():
     assert ROLES[0][1] in system, (
         "the sub-agent's description is not restated in prose — if upstream stopped "
         "doing this, the advertising cost reported in the docs has changed"
+    )
+
+
+# --- the other shape: the OpenAI Agents SDK's native handoffs -----------------
+
+
+def test_a_handoff_is_paid_on_every_request():
+    """The `transfer_to_*` schema rides on every request, not only the one that transfers.
+
+    Same finding as for a managed agent, checked on the structurally different
+    mechanism. If the SDK sent the transfer tool only when a handoff was
+    imminent, `docs/multi-agent.md`'s "you pay to advertise, not to take" would
+    be false for the shape it was first measured on.
+    """
+    requests = _run_with_handoffs(1)
+    assert len(requests) >= 2, "probe never reached a second request"
+    advertised = [
+        i
+        for i, r in enumerate(requests)
+        if any(
+            t.get("function", {}).get("name") == "transfer_to_writer" for t in r.get("tools") or []
+        )
+    ]
+    # The last request is the writer answering; it offers no further transfer.
+    # Every request up to the transfer must carry the schema.
+    assert len(advertised) >= len(requests) - 1, (
+        f"transfer_to_writer was on {len(advertised)} of {len(requests)} requests — "
+        f"if it is not on all the researcher's, the advertised cost is overstated"
+    )
+
+
+def test_offering_a_handoff_scales_linearly_from_the_first():
+    """Each offered handoff costs about the same, with no first-one premium.
+
+    The contrast with a managed agent is the point and is asserted, not just
+    described: smolagents pays a ~385-char delegation preamble once, so its
+    first delegate costs far more than its second. A handoff has no preamble —
+    the marginal cost of the first offered transfer is within a small margin of
+    the marginal cost of the third.
+    """
+    sizes = [_request_size(_run_with_handoffs(n)[0]) for n in range(4)]
+    assert sizes == sorted(sizes) and len(set(sizes)) == 4, (
+        f"not strictly increasing in handoffs offered: {sizes}"
+    )
+    marginals = [b - a for a, b in zip(sizes, sizes[1:], strict=False)]
+    assert all(150 < m < 450 for m in marginals), (
+        f"a handoff schema is no longer ~250 chars: marginals {marginals}"
+    )
+    assert max(marginals) - min(marginals) < 60, (
+        f"the first offered handoff is priced differently from the rest — a preamble "
+        f"has appeared: marginals {marginals}"
+    )
+
+
+def test_a_handoff_target_is_barely_described_at_all():
+    """The whole cost is in the tool schema; the system prompt does not move.
+
+    This is why a handoff is the cheaper option to hold open. A managed agent is
+    described twice (schema + prose) and its own one-line description is carried;
+    a `transfer_to_<name>` schema is a name-templated stub with an empty
+    parameter object, and the target's instructions never reach the wire as an
+    advertisement.
+    """
+    zero, one = (_run_with_handoffs(n)[0] for n in (0, 1))
+
+    def system_of(request):
+        out = ""
+        for message in request.get("messages", []):
+            if message.get("role") == "system":
+                content = message.get("content", "")
+                out += (
+                    content
+                    if isinstance(content, str)
+                    else "".join(p.get("text", "") for p in content if isinstance(p, dict))
+                )
+        return out
+
+    assert system_of(zero) == system_of(one), (
+        "offering a handoff changed the system prompt — the SDK has started "
+        "describing targets in prose and the advertising split in the docs is wrong"
+    )
+    transfer = next(
+        t
+        for t in one.get("tools") or []
+        if t.get("function", {}).get("name") == "transfer_to_writer"
+    )
+    assert ROLES[0][1] not in json.dumps(transfer), (
+        "the target agent's own description is now carried in the transfer schema — "
+        "a handoff has stopped being a name-only stub"
+    )
+    assert transfer["function"]["parameters"].get("properties") == {}, (
+        "the transfer tool grew parameters — there is now somewhere to put a payload, "
+        "which contradicts the forwarding finding in docs/multi-agent.md"
     )
