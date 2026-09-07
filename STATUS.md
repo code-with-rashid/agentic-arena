@@ -60,6 +60,11 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   `results/<id>/`, mock → `runs/scorecards/<id>/`).
 - `python -m arena summary --print` renders every arena in one view — coverage,
   fault recovery, prompt size, pause support. CI uploads it as an artifact.
+- Dev conveniences: `arena run --item <id>` runs a subset (partial run, no
+  scorecard); `arena list --arena <id>` prints an arena's item ids; `make check`
+  is the whole local gate (ruff + `arena validate` + pytest). `arena validate`
+  also flags a `min_tool_calls` / `tool_used` / `suspended` / `call_counts` check
+  its matched mock scenario can never satisfy.
 - CI: `lint-and-test` (3.11–3.13, runs `arena validate` + pytest), `resilience`
   (reports the recovery table; fails only if the stdlib baseline breaks), and
   `mock-smoke` (a framework × arena matrix).
