@@ -247,20 +247,28 @@ questions come apart:
 | comparison | prompt | LLM calls |
 |---|--:|--:|
 | `vanilla` → `vanilla_multi` — three stages, framework-free | 2.50× | 2.00× |
-| `langgraph` → `langgraph_multi` — the same, inside a framework | 2.62× | 2.00× |
-| `vanilla_multi` → `langgraph_multi` — **the graph machinery alone** | **0.97×** | **1.00×** |
-| `openai_agents` → `openai_agents_multi` — native `handoffs` | 2.76× | 2.00× |
-| `smolagents` → `smolagents_multi` — sub-agent invoked as a tool | **4.03×** | **3.00×** |
+| `langgraph` → `langgraph_multi` — the same, inside a framework | 2.50× | 2.00× |
+| `vanilla_multi` → `langgraph_multi` — **the graph machinery alone** | **1.00×** | **1.00×** |
+| `openai_agents` → `openai_agents_multi` — native `handoffs` | 2.64× | 2.00× |
+| `smolagents` → `smolagents_multi` — sub-agent invoked as a tool | **3.93×** | **3.00×** |
 | `pydantic_ai` → `pydantic_ai_multi` — the same, hand-built | **3.57×** | **3.00×** |
 
 **The cost of multi-agent is the structure, not the framework.** Three roles
-double the LLM calls and roughly 2.5× the prompt tokens, and cost that whether
-you build them with a graph library or a `for` loop.
+double the LLM calls and 2.5× the prompt tokens, and cost that whether you build
+them with a graph library or a `for` loop.
 
-The 0.97× is **not** "the framework is cheaper". The `vanilla_multi` →
-`langgraph_multi` gap is 48.6 prompt tokens per item; the `vanilla` →
-`langgraph` gap is also **48.6** — the same tool-schema difference from §1,
-carried through unchanged. LangGraph's orchestration adds nothing on top of it.
+The graph machinery adds **nothing** — `vanilla_multi` and `langgraph_multi`
+send the byte-identical request. `langgraph` used to carry a 48.6-token
+tool-schema difference from `vanilla` (a 0.97× that read like "the framework is
+cheaper"); a LangChain release equalised the serialisation, so it now matches
+byte for byte here as well as on `tool_use`.
+
+> **Correction.** The row above read `langgraph_multi` **2.62×** and the graph
+> machinery **0.97×**, and `openai_agents_multi` **2.76×** / `smolagents_multi`
+> **4.03×**, for several iterations. A LangChain / `openai-agents` / `smolagents`
+> release bump moved each one's serialisation; `vanilla` and `pydantic_ai` are
+> unchanged, every call multiplier is unchanged, and `report_delegation.py` now
+> gates all five ratios.
 
 **You pay for a handoff by advertising it, not by taking it.** Model-decided
 delegation costs ~10% more prompt than the structural pipeline at the same call
@@ -283,7 +291,7 @@ invoked *as a tool* costs **3×**, because its reply is a tool result rather tha
 the end of the run: the manager is still running and has to produce its own final
 answer afterwards. Visible on the wire as six requests, down the chain and back
 up it — the last two are pure mechanism. So this cost grows with the *depth* of a
-chain rather than with the work in it. (The 4.03× is a floor: the mock forwards
+chain rather than with the work in it. (The 3.93× is a floor: the mock forwards
 only the task, so the writer never receives the researcher's findings. With a
 speaker swap the transcript comes along free; with a sub-agent you pass context
 by hand and pay for it again.)
@@ -360,9 +368,9 @@ one token at every size**, in libraries that share no code.
 
 It costs about **1.77 tokens per forwarded character**, not the 0.25 of a single
 copy: the payload becomes the sub-agent's opening message and rides every
-subsequent request of its conversation. So 4.03× and 3.57× were floors, and a
+subsequent request of its conversation. So 3.93× and 3.57× were floors, and a
 modest 553-character findings block takes `pydantic_ai_multi` to roughly 4.9×
-while `openai_agents_multi` stays at 2.76×. The gap about doubles; it does not
+while `openai_agents_multi` stays at 2.64×. The gap about doubles; it does not
 invert.
 
 Two things this deliberately does *not* say. The lower completion tokens on the
@@ -599,8 +607,10 @@ reason the positive ones are believable.
   both and return both results. An arena was deliberately *not* built for this:
   an arena everybody passes adds runtime and dilutes the scorecard without
   separating anything. It lives as a test instead.
-- **Graph orchestration, as a cost.** See §3 — 0.97×, which is 1.00× once the
-  known tool-schema difference is subtracted.
+- **Graph orchestration, as a cost.** See §3 — **1.00×**. LangGraph's machinery
+  adds nothing; `vanilla_multi` and `langgraph_multi` send the identical request.
+  (It read 0.97× until a LangChain release equalised a tool-schema difference
+  LangGraph used to carry.)
 - **"Batching changes nothing."** This was a hypothesis, and its test failed on
   `langgraph` — batching is *not* neutral. It was replaced with the invariant
   that does hold: batching may rescue a fault, but must never make a framework

@@ -272,7 +272,7 @@ managed sub-agent is described twice. Same 3.3× the call-law section shows,
 in the other bill.
 
 **One more entry on the same ledger: forwarding context down the chain.** The
-4.03× above is a floor — it is measured with the delegate told only the
+3.93× above is a floor — it is measured with the delegate told only the
 original task. Give it the research too and a speaker swap carries it for free
 (the transcript comes along), while a sub-agent-as-a-tool pays for it again at
 ~1.77 tokens per forwarded character, re-sent on every one of that sub-agent's
