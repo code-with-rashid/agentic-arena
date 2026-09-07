@@ -1,6 +1,6 @@
 # Build status / handoff
 
-_Last updated: 2026-09-02. This file tracks what the automated scaffolding +
+_Last updated: 2026-09-07. This file tracks what the automated scaffolding +
 follow-up passes left in place. Delete it once the project has its own rhythm._
 
 ## What works right now
@@ -37,9 +37,11 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   `vanilla`, `langgraph` (LangGraph 1.2.11), `pydantic_ai` (pydantic-ai-slim 2.37),
   `openai_agents` (openai-agents 0.22), `microsoft_af` (agent-framework 1.16),
   `smolagents` (smolagents 1.26), `google_adk` (google-adk 2.8 + litellm).
-  `vanilla` and `pydantic_ai` are green on all
-  seven arenas; the others' misses are measured findings, not wiring bugs
-  (`resilience` recovery, and pause support reported as *unsupported*).
+  `vanilla`, `pydantic_ai` and `microsoft_af` are green on every arena they run;
+  the others' misses are measured findings, not wiring bugs — `langgraph` 7/8 and
+  `openai_agents` 7/8 and `google_adk` 6/8 on `resilience` (`smolagents` recovers
+  8/8 but at 3× the cost on the faults its validator rejects), and pause support
+  reported as *unsupported* where a framework has no `resume`.
 - `python -m arena run --arena <id> --framework all --mode mock` → the six above
   run, the rest report themselves unavailable cleanly.
 - `pytest -q` → all offline; `ruff check .` + `ruff format --check .` clean.
@@ -98,8 +100,10 @@ python -m arena run --arena tool_use \
 - `microsoft_af` is async-only; the adapter builds a fresh client + event loop per
   item so the httpx client never outlives its loop. `openai_agents` needs its
   built-in tracing disabled or it POSTs to `api.openai.com`.
-- `crewai` tool-call capture uses a wrapper sink because CrewAI doesn't expose a
-  tool-call history; retries could undercount (the `tool_used` checks still pass).
+- `crewai` (3.12 only) drives a text ReAct loop and does not fire the wrapper
+  tool `_run` in this adapter's process, so tool-call capture now goes through a
+  `step_callback` with the sink as fallback. Unverified until a `crewai-debug.yml`
+  run confirms the `tool_used` checks pass — see `frameworks/crewai/README.md`.
 - Token/latency in mock mode are client-serialisation artifacts, not model usage —
   the scorecard header says so; don't let anyone quote them.
 
