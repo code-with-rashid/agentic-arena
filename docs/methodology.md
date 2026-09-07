@@ -63,8 +63,11 @@ indistinguishable from a task tool by inspection. An adapter that does this must
 list those names on itself (`Adapter.delegates`) — a deliberately awkward,
 reviewable declaration rather than a pattern, so a reader sees exactly which
 extra names an adapter is claiming. The declaration is checked rather than
-trusted: `check_declared_delegates` refuses one that covers a tool any arena
-declares, so an adapter cannot exempt `search` by calling it a delegate.
+trusted, from both ends: `check_declared_delegates` refuses one that covers a
+tool any arena declares, so an adapter cannot exempt `search` by calling it a
+delegate; and `tests/test_adapters_contract.py` fails on a declared name the
+adapter never actually advertises, so the list cannot rot into a stale exemption
+a reviewer would still read as real.
 
 They are **not** excluded from prompt-size accounting. A framework that must
 advertise an extra tool on every request really does pay for it — for handoffs
