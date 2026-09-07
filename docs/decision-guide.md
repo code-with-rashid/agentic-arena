@@ -253,8 +253,26 @@ Cheaper in calls is dearer in prompt, and prompt is usually the larger bill —
 a reader who took only the call-count law from this table would pick the wrong
 mechanism.
 
-**Also**: offering a sub-agent costs prompt on every request whether or not
-anyone delegates. See [multi-agent.md](multi-agent.md).
+**And you pay to *offer* a delegate, before anyone takes it** — on every
+request, scaling linearly with how many you offer. Both mechanisms, measured
+with no delegation happening:
+
+| offering one more delegate | cost per request |
+|---|--:|
+| `handoffs` — a `transfer_to_<name>` schema | **~251 chars**, all in the tool schema |
+| `managed_agents` — a sub-agent as a tool | **~875 chars**, split schema + a prose restatement |
+
+A handoff target is a name-templated stub with an empty parameter list; a
+managed sub-agent is described twice. Same 3.3× the call-law section shows,
+in the other bill.
+
+**One more entry on the same ledger: forwarding context down the chain.** The
+4.03× above is a floor — it is measured with the delegate told only the
+original task. Give it the research too and a speaker swap carries it for free
+(the transcript comes along), while a sub-agent-as-a-tool pays for it again at
+~1.77 tokens per forwarded character, re-sent on every one of that sub-agent's
+requests. It does not change the ranking; it widens the gap. See
+[multi-agent.md](multi-agent.md).
 
 ### Shape of the work
 
@@ -264,7 +282,7 @@ numbers.
 | If the core need is... | Look first at... | Arena that tests it |
 |---|---|---|
 | Deterministic, auditable, resumable workflows | LangGraph — the only one that pauses via a real checkpointer | `human_in_the_loop` ✅, `durable_state` ✅ |
-| Fastest path to a multi-agent prototype | CrewAI | `multi_agent` (structural pipelines measured; handoffs not yet) |
+| Fastest path to a multi-agent prototype | CrewAI | `multi_agent` (structural, handoff and sub-agent-as-tool pipelines all measured; CrewAI's own adapter not yet verified) |
 | Conversational multi-agent / event-driven | Microsoft Agent Framework | `multi_agent` |
 | Minimal wrapper around one provider's models | OpenAI Agents SDK / Claude Agent SDK | `tool_use` |
 | Type-safe outputs, model-agnostic | Pydantic AI | `structured_output` |

@@ -57,12 +57,21 @@ Note also which implementation is cheapest in prompt at four roles: the one that
 costs the **most** calls. `pydantic_ai delegation` spends 8 calls to `handoffs`'
 5, and 1581 prompt tokens to its 1883.
 
-What is gated here are the laws, not the byte counts.
+What is gated here are the laws, not the byte counts — including that the three
+pages which reproduce the call-law table (`docs/multi-agent.md`,
+`docs/findings.md`, `docs/decision-guide.md`) still reproduce it correctly, so a
+library change that moved a law would fail here rather than leave three prose
+tables asserting the old one.
 """
+
+import re
+from pathlib import Path
 
 import pytest
 
 from arena.llm.mockserver import MockScript, MockServer
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 SCRIPT = MockScript(
     {
@@ -492,3 +501,99 @@ def test_a_fresh_conversation_only_helps_if_the_per_agent_prompt_is_small():
             f"{smol_prompt:.2f}x — the outlier was supposed to be the template, not the mechanism"
         )
     assert smol_prompt > smol_calls, (smol_prompt, smol_calls)
+
+
+# --- the docs quote this table; check they still quote it right ----------------
+
+# Every page that reproduces the call-law table. `test_doc_links.py` checks the
+# links on these pages resolve; nothing checked that the laws in the tables were
+# still the laws this file measures. A library change could move a law here and
+# leave three prose tables asserting the old one.
+_LAW_PAGES = {
+    "docs/multi-agent.md": 5,
+    "docs/findings.md": 5,
+    "docs/decision-guide.md": 5,
+}
+
+_MECHANISM_TOKENS = ("handoffs", "sub_agents", "managed_agents", "AgentTool", "agent delegation")
+_LIBRARY_TOKENS = ("openai_agents", "google_adk", "smolagents", "pydantic_ai")
+_LAW_LABELS = ("N + 1", "N + 2", "2N")
+
+
+def _law_label(fn) -> str:
+    """The asymptotic label a page would print for one of the law functions."""
+    a, b, c = fn(3), fn(4), fn(5)
+    if (b - a, c - b) == (2, 2) and b == 8:
+        return "2N"
+    if (b - a, c - b) == (1, 1):
+        return {1: "N + 1", 2: "N + 2"}.get(c - 5, "?")
+    return "?"
+
+
+def _doc_key(mechanism: str, library: str) -> str:
+    """Map a (mechanism, library) pair as written in the docs to a MECHANISMS key."""
+    return f"{library} {mechanism}".replace("agent delegation", "delegation")
+
+
+def _parse_law_rows(text: str):
+    """(mechanism, library, [int columns], law label) for every law row on a page."""
+    rows = []
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("|") or stripped.startswith("|--") or stripped.startswith(">"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        label = cells[-1].replace("*", "").strip()
+        if label not in _LAW_LABELS:
+            continue
+        row = stripped
+        mechanism = next((m for m in _MECHANISM_TOKENS if m in cells[0]), None)
+        library = next((lib for lib in _LIBRARY_TOKENS if lib in row), None)
+        if mechanism is None or library is None:
+            continue
+        ints = [int(c) for c in cells if re.fullmatch(r"\d+", c)]
+        rows.append((mechanism, library, ints, label))
+    return rows
+
+
+@pytest.mark.parametrize("page, expected_rows", _LAW_PAGES.items(), ids=lambda v: str(v))
+def test_the_published_call_law_table_still_matches_what_this_file_measures(page, expected_rows):
+    """Each doc row's stated law — and its per-N integers, where printed — must
+    equal the law function `MECHANISMS` pairs with that mechanism.
+
+    Not measured against a run: the point is that the *prose* on three pages
+    agrees with the one place the laws are defined, so editing a law here is a
+    single change and not a four-file one that quietly goes half-done.
+    """
+    rows = _parse_law_rows((REPO_ROOT / page).read_text(encoding="utf-8"))
+    assert len(rows) == expected_rows, (
+        f"{page}: found {len(rows)} law rows, expected {expected_rows} — the table "
+        f"changed shape; update _LAW_PAGES and this file's own module docstring"
+    )
+    for mechanism, library, ints, label in rows:
+        key = _doc_key(mechanism, library)
+        assert key in MECHANISMS, f"{page}: '{mechanism} ({library})' is not a known mechanism"
+        law = MECHANISMS[key][1]
+        assert label == _law_label(law), (
+            f"{page}: {key} is published as '{label}', but its measured law is '{_law_label(law)}'"
+        )
+        if ints:
+            expected = [law(n) for n in range(1, len(ints) + 1)]
+            assert ints == expected, (
+                f"{page}: {key} row prints {ints} calls, the law gives {expected}"
+            )
+
+
+def test_every_mechanism_this_file_measures_appears_in_the_guide():
+    """The reverse cover: a sixth mechanism added here must be written up too.
+
+    Without this, `MECHANISMS` could grow and `docs/decision-guide.md` §5 would
+    silently describe only five of six — the failure mode that let a withdrawn
+    tool-schema claim sit on four pages for five iterations (see
+    tests/test_published_numbers.py).
+    """
+    guide = _parse_law_rows((REPO_ROOT / "docs/decision-guide.md").read_text(encoding="utf-8"))
+    described = {_doc_key(m, lib) for m, lib, _, _ in guide}
+    assert described == set(MECHANISMS), (
+        f"decision-guide.md §5 describes {described}, this file measures {set(MECHANISMS)}"
+    )
