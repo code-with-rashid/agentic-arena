@@ -123,15 +123,17 @@ two real three-role pipelines alongside the single-agent entries:
 | comparison | prompt | LLM calls |
 |---|--:|--:|
 | `vanilla` -> `vanilla_multi` (hand-rolled pipeline) | 2.50x | 2.00x |
-| `langgraph` -> `langgraph_multi` (`StateGraph`) | 2.62x | 2.00x |
-| `vanilla_multi` -> `langgraph_multi` (graph machinery alone) | **0.97x** | **1.00x** |
-| `openai_agents` -> `openai_agents_multi` (native `handoffs`) | 2.76x | 2.00x |
-| `smolagents` -> `smolagents_multi` (`managed_agents`) | **4.03x** | **3.00x** |
+| `langgraph` -> `langgraph_multi` (`StateGraph`) | 2.50x | 2.00x |
+| `vanilla_multi` -> `langgraph_multi` (graph machinery alone) | **1.00x** | **1.00x** |
+| `openai_agents` -> `openai_agents_multi` (native `handoffs`) | 2.64x | 2.00x |
+| `smolagents` -> `smolagents_multi` (`managed_agents`) | **3.93x** | **3.00x** |
 
 The cost of multi-agent is the structure, not the framework: three roles double
-the LLM calls and ~2.5x the prompt tokens whether you build them with a graph
-library or a `for` loop, and LangGraph's orchestration adds nothing on top (the
-0.97x is the tool-schema difference from [overhead.md](overhead.md), unchanged).
+the LLM calls and 2.5x the prompt tokens whether you build them with a graph
+library or a `for` loop, and LangGraph's orchestration adds nothing on top —
+`vanilla_multi` and `langgraph_multi` send the byte-identical request. (It read
+2.62x / 0.97x until a LangChain release equalised the tool-schema difference from
+[overhead.md](overhead.md); `report_delegation.py` gates the ratios now.)
 
 This measures cost with benefit held at zero — the mock scripts identical turns,
 so all four entries return the same brief. Whether delegation improves the answer

@@ -42,28 +42,30 @@ Mean per item, mock mode, 10 items:
 |---|--:|--:|--:|--:|--:|
 | `vanilla` | 681.3 | 86.2 | 2.00 | 1.00 | 10/10 |
 | `vanilla_multi` | 1705.3 | 198.0 | 4.00 | 1.00 | 10/10 |
-| `langgraph` | 632.7 | 86.2 | 2.00 | 1.00 | 10/10 |
-| `langgraph_multi` | 1656.7 | 198.0 | 4.00 | 1.00 | 10/10 |
+| `langgraph` | 681.3 | 86.2 | 2.00 | 1.00 | 10/10 |
+| `langgraph_multi` | 1705.3 | 198.0 | 4.00 | 1.00 | 10/10 |
 
 | comparison | prompt | LLM calls |
 |---|--:|--:|
 | cost of 3 stages, framework-free | 2.50× | 2.00× |
-| cost of 3 stages, inside a framework | 2.62× | 2.00× |
-| **what the graph machinery itself adds** | **0.97×** | **1.00×** |
+| cost of 3 stages, inside a framework | 2.50× | 2.00× |
+| **what the graph machinery itself adds** | **1.00×** | **1.00×** |
+
+> **Correction.** `langgraph` read `632.7` / `langgraph_multi` `1656.7` / `2.62×`
+> / a `0.97×` graph-machinery cost for several iterations, from a 48.6-token
+> tool-schema difference LangGraph used to carry. A LangChain release equalised
+> that serialisation, so `langgraph` now matches `vanilla` **byte for byte on
+> this arena too** — the same parity it already had on `tool_use`. The graph
+> machinery adds exactly nothing, which was the finding all along, now without
+> the asterisk. `report_delegation.py` gates every ratio here.
 
 ## What this says
 
 **The cost of multi-agent is the structure, not the framework.** Splitting one
-agent into three roles doubles the LLM calls and roughly 2.5×'s the prompt
-tokens, and it costs that whether you build it with a graph library or with a
-`for` loop. LangGraph's orchestration is, to the byte, free.
-
-The 0.97× is worth being precise about, because "the framework is *cheaper*" would
-be the wrong reading. The gap between `vanilla_multi` and `langgraph_multi` is
-48.6 prompt tokens per item. The gap between `vanilla` and `langgraph` is also
-**48.6**. It is the same tool-schema serialisation difference already reported in
-[overhead.md](overhead.md) — LangGraph renders the `search` schema more compactly —
-carried through unchanged. The graph adds nothing on top of it.
+agent into three roles doubles the LLM calls and 2.5×'s the prompt tokens, and it
+costs that whether you build it with a graph library or with a `for` loop.
+LangGraph's orchestration is, to the byte, free — `vanilla_multi` and
+`langgraph_multi` send the identical request.
 
 Why 2× the calls: one agent answers in 2 (search, then write). The pipeline
 spends 4 — researcher searches, researcher reports, writer drafts, editor
@@ -113,13 +115,13 @@ each agent is handed a `transfer_to_<agent>` tool and *chooses* to delegate.
 
 | entry | prompt tok | completion | LLM calls | pass |
 |---|--:|--:|--:|--:|
-| `openai_agents` | 686.7 | 86.2 | 2.00 | 10/10 |
-| `openai_agents_multi` | 1894.8 | 140.2 | 4.00 | 10/10 |
+| `openai_agents` | 735.3 | 86.2 | 2.00 | 10/10 |
+| `openai_agents_multi` | 1942.9 | 140.2 | 4.00 | 10/10 |
 
 | kind | comparison | prompt | LLM calls |
 |---|---|--:|--:|
 | structural | `vanilla` → `vanilla_multi` | 2.50× | 2.00× |
-| model-decided | `openai_agents` → `openai_agents_multi` | **2.76×** | 2.00× |
+| model-decided | `openai_agents` → `openai_agents_multi` | **2.64×** | 2.00× |
 
 Same number of LLM calls, ~10% more prompt. Where that goes is the interesting
 part — decomposing one item's four requests:
@@ -193,15 +195,15 @@ wording as the other three entries:
 
 | entry | prompt tok | completion | LLM calls | pass |
 |---|--:|--:|--:|--:|
-| `smolagents` | 2584.1 | 115.5 | 2.00 | 10/10 |
-| `smolagents_multi` | 10419.3 | 589.9 | 6.00 | 10/10 |
+| `smolagents` | 2690.1 | 115.5 | 2.00 | 10/10 |
+| `smolagents_multi` | 10578.3 | 589.9 | 6.00 | 10/10 |
 
 | kind | comparison | prompt | LLM calls |
 |---|---|--:|--:|
 | structural | `vanilla` → `vanilla_multi` | 2.50× | 2.00× |
-| structural | `langgraph` → `langgraph_multi` | 2.62× | 2.00× |
-| model-decided, speaker swap | `openai_agents` → `openai_agents_multi` | 2.76× | 2.00× |
-| model-decided, sub-agent as tool | `smolagents` → `smolagents_multi` | **4.03×** | **3.00×** |
+| structural | `langgraph` → `langgraph_multi` | 2.50× | 2.00× |
+| model-decided, speaker swap | `openai_agents` → `openai_agents_multi` | 2.64× | 2.00× |
+| model-decided, sub-agent as tool | `smolagents` → `smolagents_multi` | **3.93×** | **3.00×** |
 | model-decided, sub-agent as tool | `pydantic_ai` → `pydantic_ai_multi` | **3.57×** | **3.00×** |
 
 Three roles cost two model calls in every mechanism above except this one, which
@@ -230,7 +232,7 @@ sequence directly — a pipeline that collapsed to two roles posts
 **One thing this measurement does not include.** The mock delegates by passing
 the original task through verbatim, so the writer never receives the researcher's
 findings. That is the *cheapest* delegation possible; a real manager composing a
-task that carries its research would send more, not less. Read 4.03× as a floor.
+task that carries its research would send more, not less. Read 3.93× as a floor.
 It is also a property of the mechanism worth knowing on its own: with a speaker
 swap the transcript comes along automatically, and with a sub-agent it does not —
 context has to be passed by hand, and you pay for it again.
@@ -349,7 +351,7 @@ Recognising a delegate at all needs the arena's declared tool list, because
 `MockServer` the arena's tools. A bare `MockServer` in a test still recognises
 only the explicit `transfer_to_*` shape, which is the narrower behaviour on
 purpose. Verified behaviour-preserving: the handoff chain's numbers are unchanged
-to the decimal (2.76×, 2.00×).
+to the decimal (2.64×, 2.00×).
 
 ## How this scales: three laws, five implementations
 
@@ -477,10 +479,10 @@ signature as the 2N call law, now in a second dimension.
 the payload becomes the sub-agent's opening user message and is then re-sent on
 every request of that sub-agent's conversation.
 
-So the published 4.03× and 3.57× really were floors, and this says how far above
+So the published 3.93× and 3.57× really were floors, and this says how far above
 them a realistic pipeline sits. Forwarding a modest 553-character findings block
 takes `pydantic_ai_multi` from 3.57× to about 4.9× against its single-agent
-entry, while `openai_agents_multi` stays exactly where it was at 2.76×. The
+entry, while `openai_agents_multi` stays exactly where it was at 2.64×. The
 ranking does not invert; the gap roughly doubles.
 
 What this deliberately does not say is whether forwarding **helps**. The mock

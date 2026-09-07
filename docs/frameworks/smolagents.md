@@ -185,7 +185,7 @@ this is 3.3× to hold open the same option.
 **Taking the delegation costs more too — and here that is the framework's
 architecture, not its prompting.** `smolagents_multi` runs the same three roles
 as the other pipeline entries and spends **6 model calls where they spend 4**
-(4.03× / 3.00× against the single-agent entry, where every other mechanism is
+(3.93× / 3.00× against the single-agent entry, where every other mechanism is
 ~2.5× / 2.00×). A sub-agent's reply is a *tool result*, not the end of the run,
 so the manager is still going and has to produce its own final answer once the
 sub-agent returns. Every level of nesting costs one extra call. See
