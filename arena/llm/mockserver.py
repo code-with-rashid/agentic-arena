@@ -146,16 +146,21 @@ def _build_code_message(turn: dict[str, Any]) -> tuple[dict[str, Any], str]:
     """
     tool_calls = turn.get("tool_calls")
     if tool_calls:
-        call = tool_calls[0]
-        args = call.get("arguments", {})
-        if isinstance(args, str):
-            try:
-                args = json.loads(args)
-            except (ValueError, TypeError):
-                args = {}
-        kwargs = ", ".join(f"{name}={value!r}" for name, value in args.items())
-        code = f"result = {call['name']}({kwargs})\nprint(result)"
-        thought = f"I should use the {call['name']} tool."
+        lines = []
+        for i, call in enumerate(tool_calls):
+            args = call.get("arguments", {})
+            if isinstance(args, str):
+                try:
+                    args = json.loads(args)
+                except (ValueError, TypeError):
+                    args = {}
+            kwargs = ", ".join(f"{name}={value!r}" for name, value in args.items())
+            var = "result" if len(tool_calls) == 1 else f"result_{i}"
+            lines.append(f"{var} = {call['name']}({kwargs})")
+            lines.append(f"print({var})")
+        code = "\n".join(lines)
+        names = ", ".join(c["name"] for c in tool_calls)
+        thought = f"I should use the {names} tool(s)."
     else:
         code = f"final_answer({turn.get('content', '')!r})"
         thought = "I have enough information to answer."
