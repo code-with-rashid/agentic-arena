@@ -338,3 +338,45 @@ def test_the_batched_fault_table_agrees_across_the_docs():
     assert not disagreements, "the batched-fault table disagrees between pages:\n" + "\n".join(
         disagreements
     )
+
+
+def _measured_batch_verdict(name, fault):
+    """`both` / `good only` / `error only` / `raises` for one broken call batched
+    with one good one, measured the way the doc table was.
+
+    `_run` returns the exception class name (not "answered"/"gave up") when the
+    framework raises, and a raise means no second request the model ever saw —
+    so either signal is "raises".
+    """
+    outcome, requests = _run(name, [GOOD[0], FAULTS[fault]])
+    if outcome not in ("answered", "gave up") or len(requests) < 2:
+        return "raises"
+    good, broken = _outcomes_reaching_model(requests[1])
+    if good and broken:
+        return "both"
+    if good:
+        return "good only"
+    if broken:
+        return "error only"
+    return "neither"
+
+
+@pytest.mark.parametrize("name", BUILDABLE)
+def test_the_batched_fault_table_matches_a_fresh_measurement(name):
+    """Re-measure this framework's row and hold it to what `findings.md` §2b prints.
+
+    iteration 62 gated that the two doc copies agree with *each other*; this
+    gates that they agree with the *code*. The sibling `resilience` table drifted
+    (smolagents 4/8 -> 8/8) for iterations with nothing noticing, precisely
+    because its per-framework counts were reported and never re-checked. This is
+    cheap — three faults, one run each — so there is no reason to leave it
+    exposed the same way.
+    """
+    published = _batched_fault_table("docs/findings.md").get(name)
+    if published is None:
+        pytest.skip(f"{name} is not in the published batched-fault table")
+    measured = tuple(_measured_batch_verdict(name, fault) for fault in FAULTS)
+    assert measured == published, (
+        f"{name}: batched-fault row measured {measured}, docs/findings.md §2b says "
+        f"{published}. If the change is real, correct §2b and feature-matrix.md together."
+    )
