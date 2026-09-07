@@ -2,8 +2,14 @@
 
 ## Status
 
-Shipped as `arenas/durable_state/` — 8 items. `langgraph` 8/8 and `vanilla` 8/8;
-the other adapters report *unsupported* (no `resume` method).
+Shipped as `arenas/durable_state/` — 8 items. Five adapters score 8/8 across a
+real process restart (`tests/test_durable_across_a_restart.py` runs the two legs
+in two interpreters): `langgraph` and `google_adk` keep an on-disk sqlite store,
+`openai_agents` serialises the whole run, `pydantic_ai` and `vanilla` serialise
+the transcript. `microsoft_af` pauses but reports *unsupported* here — its
+`AgentSession` store does not survive a JSON round trip — and `smolagents` has no
+`resume` at all. What the pause costs in bytes, per mechanism, is in
+[findings.md §4](../findings.md#4-pausing-and-surviving-a-crash).
 
 Two decisions differ from the draft below:
 

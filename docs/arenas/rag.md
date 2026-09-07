@@ -3,7 +3,10 @@
 ## Status
 
 Shipped as `arenas/rag/` — 15 items: 9 single-hop, 3 multi-hop, 3 unanswerable.
-All five verified adapters score 15/15 in mock mode.
+Every framework walks it identically in mock mode — 15/15, exactly two hops on
+each multi-hop item, a passing refusal on each unanswerable one — because the
+script decides when the second search happens; the arena's teeth are its dataset
+design and its scorer, both gated in `tests/test_rag_arena.py`.
 
 Two decisions differ from the draft below:
 

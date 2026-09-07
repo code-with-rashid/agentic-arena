@@ -8,15 +8,15 @@ The harness half is done: `arena.types.ResumableRunner`, `EvalItem.resume_with`,
 leg-merging in `arena.runner`, and three check types (`suspended`,
 `no_tool_before_suspend`, `tool_not_used`). See `docs/methodology.md` §7.
 
-**Adapter coverage:** `langgraph` 12/12 (native `interrupt` + checkpointer) and
-`vanilla` 12/12 (emulated — transcript carried back in). Both produce an
-identical trace to the scorer, which is the point: the arena measures the
-behaviour, not the bookkeeping.
-
-`crewai`, `openai_agents`, `pydantic_ai` and `microsoft_af` report *unsupported*
-rather than failing — they have no `resume` method yet. That is deliberate:
-Agent Framework ships tool-approval middleware, and scoring it 0 because nobody
-has wired it up would be a misleading finding.
+**Adapter coverage:** six adapters pause 12/12, by six genuinely different
+mechanisms — `langgraph` (`interrupt` + checkpointer), `openai_agents`
+(`needs_approval` + `RunState`), `pydantic_ai` (`CallDeferred`), `microsoft_af`
+(`approval_mode` + `ToolApprovalMiddleware`), `google_adk`
+(`LongRunningFunctionTool`, which *reports* the pause but does not enforce it),
+and `vanilla` (emulated). All produce an identical trace to the scorer, which is
+the point: the arena measures the behaviour, not the bookkeeping. `smolagents`
+reports *unsupported* — it ships no interrupt primitive — and `crewai` is not
+verified here yet. See [findings.md §4](../findings.md#4-pausing-and-surviving-a-crash).
 
 ## Goal
 

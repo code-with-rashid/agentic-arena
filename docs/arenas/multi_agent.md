@@ -3,11 +3,14 @@
 ## Status
 
 Shipped as `arenas/multi_agent/` — 10 items over landmarks in the shared corpus.
-The eval is shape-based, so the current single-agent adapters role-play the
-pipeline and all score 10/10 in mock mode. What is **not** yet built: entries that
-use a framework's real multi-agent mechanism (a graph, a crew, handoffs). Those
-land as separate `<fw>-multi` adapter entries and are compared to the single-agent
-run on tokens and LLM calls — the cost of the abstraction is the finding.
+The eval is shape-based, so a single-agent adapter can role-play the pipeline and
+score 10/10 in mock mode. Five entries now use a framework's **real** multi-agent
+mechanism: `vanilla_multi` and `langgraph_multi` (structural — the graph always
+visits every stage), `openai_agents_multi` (a native `handoffs` chain), and
+`smolagents_multi` + `pydantic_ai_multi` (a sub-agent invoked as a tool). Each is
+compared to the single-agent run on tokens and LLM calls; the cost of the
+abstraction is the finding, and it follows an exact law — see
+[multi-agent.md](../multi-agent.md).
 
 ## Goal
 
