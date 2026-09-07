@@ -251,3 +251,45 @@ def test_no_unowned_sampling_parameter_reaches_the_wire(name):
         f"arena never chose and nothing holds constant across frameworks. Remove "
         f"it, or record it in SAMPLING_EXCEPTIONS with why the mechanism needs it"
     )
+
+
+# The arena the entry actually runs; a `_multi` exception has to be exercised on
+# the pipeline arena or it never delegates.
+_EXCEPTION_ARENA = {"smolagents": "tool_use", "smolagents_multi": "multi_agent"}
+
+
+@pytest.mark.parametrize("name", sorted(SAMPLING_EXCEPTIONS))
+def test_each_declared_sampling_exception_is_actually_used(name):
+    """An exception that is never exercised is dead config, not a waiver.
+
+    `SAMPLING_EXCEPTIONS` widens the envelope above so `smolagents`' `stop` does
+    not fail it. If upstream stopped sending `stop` — a ReAct-model refactor,
+    say — that waiver would quietly cover nothing, and `docs/fairness-controls.md`
+    and `docs/overhead.md` would still describe a parameter no longer on the
+    wire. So each declared key must appear on at least one request; drop it from
+    the table (and fix the docs) when it stops being true.
+    """
+    if name not in available_frameworks():
+        pytest.skip(f"{name} not registered")
+    arena = load_arena(_EXCEPTION_ARENA[name])
+    script = MockScript.load(arena.mock_script_path)
+    item = arena.dataset[0]
+    try:
+        with MockServer(script, arena_tools=list(arena.tools)) as server:
+            config = replace(
+                ArenaConfig(mode="mock"),
+                base_url=server.base_url,
+                api_key="mock-key",
+                max_tool_iterations=6,
+            )
+            load_framework(name).build(arena, config).run(item)
+            seen = {key for request in server.requests for key in request}
+    except Exception as exc:  # noqa: BLE001 - not installed in this venv
+        pytest.skip(f"{name} not runnable here: {type(exc).__name__}")
+
+    missing = SAMPLING_EXCEPTIONS[name] - seen
+    assert not missing, (
+        f"{name}: SAMPLING_EXCEPTIONS declares {sorted(SAMPLING_EXCEPTIONS[name])} but "
+        f"{sorted(missing)} never reached the wire — the waiver now covers nothing. "
+        f"Remove it here and correct docs/fairness-controls.md and docs/overhead.md"
+    )

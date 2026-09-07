@@ -111,7 +111,10 @@ was removed or recorded with a reason.
   because its text ReAct loop parses generation that halts at those markers. It
   is intrinsic to the mechanism, not a sampling choice, so it is an entry in the
   gate's exception table rather than a failure — the same treatment as
-  `strict: true` and `title` on the tool schemas.
+  `strict: true` and `title` on the tool schemas. The exception is itself
+  checked to be live: `tests/test_shared_controls.py` fails if `stop` stops
+  reaching the wire, so the waiver cannot quietly come to cover nothing while
+  this page still describes it.
 - **`tool_choice`.** Every adapter sends `"auto"` today. A framework that drove
   its loop with `"required"` or `"none"` would be a mechanism difference worth
   recording, not a fairness break — the arena does not dictate how a framework
