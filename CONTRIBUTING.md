@@ -145,7 +145,9 @@ namesakes on `multi_agent`, and `smolagents_code` (`CodeAgent`) against the
 5. Run `python -m arena validate` (CI does too). It catches the mistakes that
    otherwise surface as an unexplained 0/N: an item no mock scenario matches, an
    unknown check type, a tool the arena never declared, duplicate item ids, a
-   scenario that ends on a tool call.
+   scenario that ends on a tool call, and a tool/pause check (`min_tool_calls`,
+   `tool_used`, `suspended`, `call_counts`, …) the matched scenario can never
+   satisfy.
 6. Document it in the arenas table in `README.md` and in `ROADMAP.md`.
 
 ## Commit / PR conventions

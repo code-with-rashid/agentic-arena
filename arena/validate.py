@@ -2,7 +2,9 @@
 
 Catches the class of mistake that otherwise only shows up as a mysterious 0/15:
 a dataset item whose question matches no mock scenario, a check type that does
-not exist, a tool the arena never declared, a duplicate item id.
+not exist, a tool the arena never declared, a duplicate item id, and a tool or
+pause check (`min_tool_calls`, `tool_used`, `suspended`, `call_counts`, …) whose
+matched mock scenario can never satisfy it.
 
     python -m arena validate                # every arena
     python -m arena validate --arena rag    # just one
