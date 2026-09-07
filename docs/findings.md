@@ -280,13 +280,16 @@ by hand and pay for it again.)
 
 **And it generalises to a second, structurally different mechanism — at 3.3× the
 price.** smolagents' `managed_agents` advertises a sub-agent as an ordinary tool
-rather than as a transfer that swaps the speaker. Offering one, with no
-delegation happening at all, costs **~875 characters on every request** (linear
-after a ~385-char one-off preamble), against the OpenAI Agents SDK's 262-char
-`transfer_to_writer` schema. The reason is the same one behind smolagents' 3.90×
-in §1: each sub-agent is described **twice**, once as a JSON schema and once in
-prose. Both frameworks bill you for options rather than actions; they do not bill
-the same amount.
+rather than as a transfer that swaps the speaker. Swept the same way as the
+handoff, both curves are linear in delegates offered: `managed_agents` costs
+**~875 characters per delegate on every request** (after a ~385-char one-off
+preamble), the OpenAI Agents SDK's `handoffs` **~251**, from the first one, with
+no preamble and nothing added to the system prompt. The gap is the same one
+behind smolagents' 3.90× in §1 — each `managed_agent` is described **twice**, as
+a JSON schema and again in prose, while a `transfer_to_<name>` schema is a
+name-templated stub with an empty parameter object and no description of the
+target at all. Both frameworks bill you for options rather than actions; they do
+not bill the same amount, or in the same place.
 
 **Measured from one role to five, across five implementations in four
 libraries, every one follows an exact law:**
