@@ -422,14 +422,59 @@ because a library change could break a law while every depth-3 number on this
 page still looked right. Verified non-vacuous: with the mock's "delegate once per
 tool" rule disabled, three roles cost 72 calls instead of 6.
 
+## Does forwarding context change the ranking? No — it widens the gap
+
+Every number on this page is measured with the delegate told **only the original
+task**, the cheapest thing a manager could possibly forward. That is the obvious
+objection to the whole comparison: the design favours whichever mechanisms carry
+the transcript for free, so the ranking might be an artifact of the harness rather
+than a fact about delegation.
+
+Measured, with the **same payload handed to every framework** so that who pays is
+the mechanism and not whatever transcript a particular library happens to keep.
+Extra prompt tokens per item against forwarding nothing:
+
+| forwarded characters | 0 | 277 | 553 | 1105 |
+|---|--:|--:|--:|--:|
+| `vanilla_multi` — structural | 0 | **0** | **0** | **0** |
+| `langgraph_multi` — structural | 0 | **0** | **0** | **0** |
+| `openai_agents_multi` — speaker swap | 0 | **0** | **0** | **0** |
+| `smolagents_multi` — sub-agent as tool | 0 | 509 | 978 | 1916 |
+| `pydantic_ai_multi` — sub-agent as tool | 0 | 508 | 977 | 1915 |
+
+**Three of the four mechanisms forward for free; one pays.** A structural pipeline
+shares one transcript by construction. A speaker swap hands the *same*
+conversation on, and its `transfer_to_<agent>` tool declares no parameters at all
+— there is nowhere to put a payload and nothing that needs one. Only a sub-agent
+invoked as a tool starts a **fresh** conversation, so it has to be told, and it
+pays.
+
+**The two sub-agent implementations agree to within one token at every size** —
+509/978/1916 against 508/977/1915, in libraries that share no code. The same
+signature as the 2N call law, now in a second dimension.
+
+**And forwarding is priced like a system prompt, not like a message.** About
+**1.77 tokens per forwarded character**, not the 0.25 you would get from one copy:
+the payload becomes the sub-agent's opening user message and is then re-sent on
+every request of that sub-agent's conversation.
+
+So the published 4.03× and 3.57× really were floors, and this says how far above
+them a realistic pipeline sits. Forwarding a modest 553-character findings block
+takes `pydantic_ai_multi` from 3.57× to about 4.9× against its single-agent
+entry, while `openai_agents_multi` stays exactly where it was at 2.76×. The
+ranking does not invert; the gap roughly doubles.
+
+What this deliberately does not say is whether forwarding **helps**. The mock
+replays the same script either way, so the benefit stays held at zero by
+construction — the same caveat as everywhere else on this page, and the reason
+[`tests/test_delegation_forwarding.py`](../tests/test_delegation_forwarding.py)
+pins that the answer is byte-identical with and without the payload. A cost
+comparison that quietly became a quality comparison would be worthless.
+
 ## Still open
 
 - **CrewAI crews**, the same sub-agent-as-tool shape again, and still blocked on
   an adapter that has never been mock-verified.
-- **Whether forwarding context changes the ranking.** Every pipeline here passes
-  the minimum down the chain. A manager that forwards its findings pays more, and
-  the two mechanisms would not pay the same amount — the speaker-swap chain gets
-  the transcript for free.
 - **Whether the laws survive a real model.** They are structural, so they should,
   but a real model may delegate more than once or answer without delegating at
   all. That needs a live run.

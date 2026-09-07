@@ -121,6 +121,14 @@ jobs:
         # many delegates are offered. The byte counts are findings and live in
         # docs/multi-agent.md.
         run: pytest tests/test_delegation_advertising.py -q
+      - name: Who pays to forward context down a delegation chain
+        # Closes the objection to every pipeline number this repo publishes: they
+        # are measured with the delegate told only the task, which favours the
+        # mechanisms that carry the transcript for free. Measured with the same
+        # payload for everyone, three of the four mechanisms forward for nothing
+        # and one pays - so forwarding widens the published gap rather than
+        # creating it. Gates the shapes; the byte counts are findings.
+        run: pytest tests/test_delegation_forwarding.py -q
       - name: How delegation cost scales with the depth of the chain
         # The only job where both mechanisms are installed, so the one that can
         # compare them. Gates the two laws (a handoff chain costs N+1 model

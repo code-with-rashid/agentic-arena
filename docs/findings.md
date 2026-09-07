@@ -326,6 +326,32 @@ prompt, re-sent by every fresh sub-agent (the scaffolding from §1), and nothing
 about starting fresh. Note too which implementation is cheapest in prompt at four
 roles: the one that costs the *most* calls.
 
+**Forwarding context does not change the ranking — it widens the gap.** The
+obvious objection to everything above is that every pipeline here is measured with
+the delegate told only the task, which favours whichever mechanisms carry the
+transcript for free. Handing the *same* payload to every framework, extra prompt
+tokens per item against forwarding nothing:
+
+| forwarded characters | 0 | 277 | 553 | 1105 |
+|---|--:|--:|--:|--:|
+| `vanilla_multi`, `langgraph_multi` — structural | 0 | **0** | **0** | **0** |
+| `openai_agents_multi` — speaker swap | 0 | **0** | **0** | **0** |
+| `smolagents_multi` — sub-agent as tool | 0 | 509 | 978 | 1916 |
+| `pydantic_ai_multi` — sub-agent as tool | 0 | 508 | 977 | 1915 |
+
+Three of the four mechanisms forward for free — a structural pipeline shares one
+transcript, and a speaker swap's `transfer_to_<agent>` tool declares no parameters
+at all, so there is nowhere to put a payload. Only a sub-agent starting a fresh
+conversation has to be told, and the two implementations of that agree **to within
+one token at every size**, in libraries that share no code.
+
+It costs about **1.77 tokens per forwarded character**, not the 0.25 of a single
+copy: the payload becomes the sub-agent's opening message and rides every
+subsequent request of its conversation. So 4.03× and 3.57× were floors, and a
+modest 553-character findings block takes `pydantic_ai_multi` to roughly 4.9×
+while `openai_agents_multi` stays at 2.76×. The gap about doubles; it does not
+invert.
+
 Two things this deliberately does *not* say. The lower completion tokens on the
 handoff chain (140 vs 198) are not efficiency — the researcher emits a short
 transfer instead of a draft, so only the last agent writes a brief. And the mock
@@ -581,9 +607,8 @@ fine" is where benchmarks mislead:
 - **Whether the delegation laws in §3 survive a real model.** They are
   structural, so they should, but a real model may delegate more than once, or
   answer without delegating at all. Mock mode cannot tell you.
-- **Whether forwarding context between roles changes the ranking.** Every
-  pipeline measured here passes the minimum down the chain, which favours the
-  mechanisms that carry the transcript for free.
+- ~~Whether forwarding context between roles changes the ranking.~~ **Measured —
+  it does not; it widens the gap.** See §3.
 - **Whether any framework can be *configured* to manage context.** §1b measures
   the default path, where nobody truncates. Several of these libraries expose
   hooks that would let you trim or summarise; none of them is on by default, and
