@@ -55,6 +55,7 @@ batching must never make a framework *worse* than it is serially.
 """
 
 import json
+import re
 from dataclasses import replace
 from pathlib import Path
 
@@ -267,3 +268,73 @@ def test_the_shared_arena_tools_are_unchanged_by_this_file():
     """This file builds its own ArenaSpec; it must not have drifted from the real one."""
     assert _arena().tools == ["search"]
     assert "search" in load_arena("tool_use").tools
+
+
+# --- the batched-fault table is copied to two doc pages; keep them in step -----
+
+_ROOT = Path(__file__).resolve().parent.parent
+_BATCH_PAGES = ("docs/findings.md", "docs/feature-matrix.md")
+_FAULT_COLS = ("unknown tool", "malformed args", "missing")
+_CELL_VALUES = {"both", "good only", "error only", "raises"}
+_BATCH_FRAMEWORKS = {
+    "vanilla",
+    "pydantic_ai",
+    "microsoft_af",
+    "langgraph",
+    "smolagents",
+    "openai_agents",
+    "google_adk",
+}
+
+
+def _batched_fault_table(page):
+    """{framework: (unknown, malformed, missing)} parsed off a doc page.
+
+    Both pages carry the same table; `findings.md` groups the three "both/both/
+    both" frameworks on one row and `feature-matrix.md` lists them separately, so
+    a leading cell may name more than one framework.
+    """
+    text = (_ROOT / page).read_text(encoding="utf-8")
+    rows: dict[str, tuple[str, str, str]] = {}
+    for raw in text.splitlines():
+        line = raw.strip()
+        if not line.startswith("|") or line.startswith(("|--", "| |", "| unknown")):
+            continue
+        cells = [c.strip().replace("*", "") for c in line.strip("|").split("|")]
+        if len(cells) != 4:
+            continue
+        names = re.findall(r"`([a-z_]+)`", cells[0])
+        values = tuple(cells[1:])
+        if not names or any(v not in _CELL_VALUES for v in values):
+            continue
+        for name in names:
+            rows[name] = values
+    return rows
+
+
+@pytest.mark.parametrize("page", _BATCH_PAGES)
+def test_the_batched_fault_table_is_complete_on_each_page(page):
+    """Every framework's row is present — a deleted row must fail, not pass quietly."""
+    got = set(_batched_fault_table(page))
+    assert got == _BATCH_FRAMEWORKS, (
+        f"{page}: batched-fault table covers {sorted(got)}, expected {sorted(_BATCH_FRAMEWORKS)}"
+    )
+
+
+def test_the_batched_fault_table_agrees_across_the_docs():
+    """`findings.md` §2b and `feature-matrix.md` publish the same table.
+
+    The per-framework cells are findings, not gated against a run — but the two
+    copies must say the same thing. A correction that reaches one page and not
+    the other is the exact failure `test_published_numbers.py` was built for,
+    now for the one other multi-page results table.
+    """
+    findings, matrix = (_batched_fault_table(p) for p in _BATCH_PAGES)
+    disagreements = [
+        f"{fw}: findings={findings[fw]} feature-matrix={matrix[fw]}"
+        for fw in sorted(_BATCH_FRAMEWORKS)
+        if findings.get(fw) != matrix.get(fw)
+    ]
+    assert not disagreements, "the batched-fault table disagrees between pages:\n" + "\n".join(
+        disagreements
+    )
