@@ -106,6 +106,7 @@ def _validate_mock(
         return
 
     matches: list[str] = []
+    by_match: dict[str, dict[str, Any]] = {}
     for i, scenario in enumerate(scenarios):
         where = f"mock_script.json scenarios[{i}]"
         match = str(scenario.get("match", ""))
@@ -114,6 +115,7 @@ def _validate_mock(
         elif match.lower() in [m.lower() for m in matches]:
             report.errors.append(f"{where}: duplicate match {match!r}")
         matches.append(match)
+        by_match.setdefault(match.lower(), scenario)
 
         turns = scenario.get("turns", [])
         if not turns:
@@ -151,6 +153,76 @@ def _validate_mock(
         elif len(hits) > 1:
             report.warnings.append(
                 f"{item_id}: matches {len(hits)} scenarios {hits}; the first one wins"
+            )
+
+        if len(hits) == 1:
+            _validate_tool_checks(
+                item_id, item.get("checks", []), by_match[hits[0].lower()], report
+            )
+
+
+def _scripted_tool_calls(scenario: dict[str, Any]) -> list[str]:
+    """The tool-call names the mock will actually serve for this scenario.
+
+    The agent loops until a turn carries a final answer (content, no tool calls),
+    so every tool call scripted up to that point is one the adapter makes and
+    reports; turns after it are dead. This is what a `tool_used` / `*_tool_calls`
+    check is really being run against.
+    """
+    names: list[str] = []
+    for turn in scenario.get("turns", []) or []:
+        calls = turn.get("tool_calls") or []
+        for call in calls:
+            names.append(str(call.get("name", "")))
+        if not calls and turn.get("content") is not None:
+            break
+    return names
+
+
+def _validate_tool_checks(
+    item_id: str, checks: list[Any], scenario: dict[str, Any], report: Report
+) -> None:
+    """Catch a tool-count / tool-name check the matched scenario can never satisfy.
+
+    A `min_tool_calls: 2` on an item whose scenario scripts one `search`, or a
+    `tool_used: calculator` on a scenario that only calls `search`, fails every
+    mock run for a reason nothing else reports — it looks like an adapter bug.
+    Skipped for `deliberate_fault` scenarios, where the mismatch is the point.
+    """
+    if scenario.get("deliberate_fault"):
+        return
+    scripted = _scripted_tool_calls(scenario)
+    n, present = len(scripted), set(scripted)
+    for check in checks:
+        if not isinstance(check, dict):
+            continue
+        ctype, where = check.get("type"), f"{item_id}: {check.get('type')!r} check"
+        if ctype == "min_tool_calls" and isinstance(check.get("value"), int) and check["value"] > n:
+            report.errors.append(
+                f"{where} wants >= {check['value']} tool calls, but its mock scenario "
+                f"scripts {n} ({scripted}) — the item fails every mock run"
+            )
+        elif (
+            ctype == "max_tool_calls" and isinstance(check.get("value"), int) and check["value"] < n
+        ):
+            report.errors.append(
+                f"{where} allows <= {check['value']} tool calls, but its mock scenario "
+                f"scripts {n} ({scripted}) — the item fails every mock run"
+            )
+        elif ctype == "tool_used" and check.get("name") and check["name"] not in present:
+            report.errors.append(
+                f"{where} expects {check['name']!r}, but its mock scenario calls "
+                f"{sorted(present) or 'no tools'} — the item fails every mock run"
+            )
+        elif ctype == "no_tool" and n:
+            report.errors.append(
+                f"{where} expects no tool calls, but its mock scenario scripts {n} "
+                f"({scripted}) — the item fails every mock run"
+            )
+        elif ctype == "tool_not_used" and check.get("name") and check["name"] in present:
+            report.errors.append(
+                f"{where} forbids {check['name']!r}, but its mock scenario calls it "
+                f"({scripted}) — the item fails every mock run"
             )
 
 
