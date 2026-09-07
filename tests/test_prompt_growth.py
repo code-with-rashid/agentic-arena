@@ -76,10 +76,19 @@ def _script(turns):
     return MockScript({"default": {"turns": [*steps, {"content": ANSWER}]}})
 
 
+# `smolagents_code` is a `CodeAgent` — it re-serialises a `<code>` block and an
+# `Observation:` into the growing prompt every turn, a heavier per-turn increment
+# than a native or text-ReAct client (~205 tok/turn against ~147). That is a real
+# property of the execution model, not a drifting conversation, so it does not
+# belong in a test whose whole point is "everyone grows at the same rate". It is
+# a contrast entry, like the `_multi` pipelines, and is excluded the same way.
+_VARIANTS = {"smolagents_code"}
+
+
 def _buildable():
     out = []
     for name in available_frameworks():
-        if name in STUBS or name.endswith("_multi"):
+        if name in STUBS or name in _VARIANTS or name.endswith("_multi"):
             continue
         try:
             config = replace(ArenaConfig(mode="mock"), base_url="http://127.0.0.1:1", api_key="k")
