@@ -12,6 +12,10 @@ them went on asserting that a framework is **cheaper than the hand-rolled
 baseline** — the exact claim that had been withdrawn — until somebody happened to
 open one of those pages for an unrelated reason.
 
+`overhead.md` is the page that table is first written on, so it is covered here
+too — the correction above reached it, but nothing was stopping the next one from
+not.
+
 So this holds the docs to the run record:
 
   * every page that quotes a `tool_use` prompt-token count or a `× baseline`
@@ -64,6 +68,7 @@ KNOWN = set(PAGE_FRAMEWORK.values()) | {"vanilla"}
 # file passes by finding nothing: delete the row from a framework page and every
 # assertion below is vacuously true. The counts are deliberately exact.
 EXPECTED_CLAIMS = {
+    "docs/overhead.md": 14,  # the canonical table these numbers come from
     "docs/findings.md": 14,  # 7 frameworks x (tokens, ratio)
     "docs/decision-guide.md": 14,
     "docs/frameworks/langgraph.md": 1,  # tokens only; the ratio is prose
