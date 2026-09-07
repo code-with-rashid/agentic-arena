@@ -28,6 +28,13 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 The two `Recovers from ...` rows are measured, not judged — see the `resilience`
 arena and the comparison CI prints on every run.
 
+The `Typed / schema-validated output` row is the opposite: a **library-capability**
+claim, not a measurement. On the `structured_output` arena every adapter —
+`pydantic_ai` included, with its `output_type=str` — drives the model with a
+prompt and sends no `response_format`, so nothing here has exercised a native
+mechanism. See [structured-output.md](structured-output.md); wiring one per
+framework is a planned batch of contrast entries, not a filled cell yet.
+
 ### Retrying the gateway
 
 The `Retries a transient 429` row is measured by scripting the **provider**
