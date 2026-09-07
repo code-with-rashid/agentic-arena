@@ -52,19 +52,28 @@ fixed the crash and the final answers.
 
 ### What is still open
 
-The tool-call sink stays empty even though the answers come out right, which
-means CrewAI reaches the second scripted turn without `BaseTool._run` ever
-firing — it appears to write an `Observation:` back into the transcript by some
-path that bypasses the wrapper. Someone with a local 3.12 environment should:
+The tool-call sink stayed empty even though the answers come out right — CrewAI
+reaches the second scripted turn without `BaseTool._run` ever firing, writing an
+`Observation:` back by some path that bypasses the wrapper. The adapter now adds
+a second capture point that does not depend on the wrapper: a `step_callback` on
+the `Agent`, which CrewAI hands every agent step including tool actions
+(`.tool` / `.tool_input`). `tool_calls` is taken from there when it fires and
+falls back to the sink otherwise.
 
-1. Log inside `SearchTool._run` / `CalculatorTool._run` to confirm they never run.
+This needs a `crewai-debug.yml` run to confirm the `tool_used` checks now pass.
+If `step_callback` also comes back empty, someone with a local 3.12 environment
+should:
+
+1. Log inside `SearchTool._run` / `CalculatorTool._run` and inside the
+   `step_callback` to see which, if either, fires and what object shape the
+   callback receives.
 2. Dump the full transcript CrewAI builds (the `Observation:` text will say
    whether the tool errored, was not found, or was never attempted).
 3. If CrewAI resolves tools by a normalised name, align the `Action:` name the
    mock emits with whatever CrewAI advertises in its prompt.
-4. Consider reading tool calls from CrewAI's event bus instead of a wrapper sink.
 
-Until the sink works, `crewai` stays **out of the required `mock-smoke` matrix**.
+Until a debug run is green, `crewai` stays **out of the required `mock-smoke`
+matrix**.
 
 ```bash
 python3.12 -m venv .venv-crewai && . .venv-crewai/bin/activate
