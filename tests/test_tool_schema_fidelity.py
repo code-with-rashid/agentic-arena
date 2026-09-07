@@ -36,6 +36,7 @@ properties, reported in docs/tool-schemas.md and not failures.
 """
 
 import contextlib
+import json
 import tempfile
 from dataclasses import replace
 
@@ -249,3 +250,105 @@ def test_the_baseline_still_sends_the_canonical_spec_unmodified():
     for tool_name, spec in CANONICAL.items():
         assert wire[tool_name]["parameters"] == spec["parameters"], tool_name
         assert wire[tool_name]["description"] == spec["description"], tool_name
+
+
+# ---------------------------------------------------------------------------
+# Does the schema *stay* faithful? Everything above reads the first request.
+# ---------------------------------------------------------------------------
+
+# docs/fairness-controls.md names this as "not measured": the checks above read
+# the opening request only, so an adapter that advertised the arena's tools
+# correctly and then narrowed them mid-run would pass all of them. The `*_multi`
+# handoff entries change their tool set on purpose when the speaker swaps, so
+# this is scoped to single-agent adapters — and that change is asserted, below,
+# to be real for the pipelines, so the exclusion cannot quietly become a blind
+# spot.
+
+_RUN_SCRIPT = MockScript(
+    {
+        "default": {
+            "turns": [
+                {"tool_calls": [{"name": "search", "arguments": {"query": "eiffel tower"}}]},
+                {"tool_calls": [{"name": "search", "arguments": {"query": "eiffel tower height"}}]},
+                {"content": "330 metres."},
+            ]
+        }
+    }
+)
+
+SINGLE_AGENT = [n for n in BUILDABLE if not n.endswith("_multi")]
+PIPELINES = [n for n in BUILDABLE if n.endswith("_multi")]
+
+
+def _arena_tool_blocks(script, arena_id, name, item_text, *, iterations=6):
+    """The arena's own tool schemas on every request the adapter makes, in order.
+
+    Control tools (`transfer_to_*`, `final_answer`, …) are filtered out the same
+    way `_declared` filters them — the question is whether the *arena's* tools
+    stay put, not how a framework's plumbing tools come and go.
+    """
+    arena = load_arena(arena_id)
+    canonical = _canonical(arena)
+    with MockServer(script, arena_tools=list(arena.tools)) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            max_tool_iterations=iterations,
+            checkpoint_dir=tempfile.mkdtemp(prefix="arena-drift-"),
+        )
+        item = EvalItem(id="d-01", input=item_text, checks=[])
+        with contextlib.suppress(Exception):
+            load_framework(name).build(arena, config).run(item)
+        blocks = []
+        for request in server.requests:
+            keep = {}
+            for spec in request.get("tools") or []:
+                fn = spec.get("function", spec)
+                if fn.get("name") in canonical:
+                    keep[fn["name"]] = fn
+            blocks.append(keep)
+        return blocks
+
+
+@pytest.mark.parametrize("name", SINGLE_AGENT)
+def test_the_arena_tool_schema_is_identical_on_every_request(name):
+    """A single-agent adapter has one tool set for the whole run, so every
+    request after the first must repeat the first one's arena-tool schemas
+    *exactly* — not merely still carry the tool names.
+
+    Closes the gap named in docs/fairness-controls.md under "Not measured": the
+    other checks here read request 1 only, and a schema that quietly narrowed at
+    request 3 would slip past every one of them.
+    """
+    blocks = _arena_tool_blocks(_RUN_SCRIPT, "tool_use", name, ITEMS["tool_use"])
+    if len(blocks) < 2:
+        pytest.skip(f"{name} made {len(blocks)} request(s); nothing to compare")
+    first = blocks[0]
+    for i, later in enumerate(blocks[1:], start=2):
+        assert later == first, (
+            f"{name}: the arena tool schema changed between request 1 and request {i}.\n"
+            f"  request 1: {json.dumps(first, sort_keys=True)[:300]}\n"
+            f"  request {i}: {json.dumps(later, sort_keys=True)[:300]}"
+        )
+
+
+@pytest.mark.parametrize("name", PIPELINES)
+def test_a_pipeline_changes_its_tool_set_across_the_run(name):
+    """Why the test above is scoped to single agents — asserted, not assumed.
+
+    A `*_multi` entry hands different tools to different roles: the researcher
+    has `search`, the writer and editor do not. If a pipeline ever stopped doing
+    that it would be one agent in three hats, and excluding the pipelines from
+    the drift check would have become a real blind spot instead of a correct
+    scoping decision.
+    """
+    arena = load_arena("multi_agent")
+    script = MockScript.load(arena.mock_script_path)
+    blocks = _arena_tool_blocks(script, "multi_agent", name, arena.dataset[0].input, iterations=8)
+    assert len(blocks) >= 2, f"{name}: only {len(blocks)} request(s) — cannot see a change"
+    distinct = {json.dumps(b, sort_keys=True) for b in blocks}
+    assert len(distinct) > 1, (
+        f"{name}: advertised the same arena tools on all {len(blocks)} requests — a "
+        f"pipeline is supposed to give different roles different tools"
+    )

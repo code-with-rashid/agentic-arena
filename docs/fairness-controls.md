@@ -134,11 +134,16 @@ was removed or recorded with a reason.
     its own budget halfway through still fails.
   - `model` is aggregate too: the assertion is over the set of model names across
     *every* request, not the first.
-  - **tool schemas are read from the first request only.** An adapter that
-    advertised the arena's tools correctly and then narrowed them later would not
-    be caught. That is not purely hypothetical — the `_multi` handoff entries
-    legitimately change the tool set mid-run when the speaker swaps, which is why
-    the check is scoped to the opening request rather than extended naively.
+  - **tool schemas: the *content* checks read the first request only.** Whether
+    each parameter, type and description survives is asserted on the opening
+    request. What is now checked on *every* request, for single-agent adapters,
+    is that the arena-tool schema does not change after request 1
+    (`tests/test_tool_schema_fidelity.py`) — so an adapter that advertised the
+    tools correctly and then narrowed them at request 3 is caught, even though
+    the narrowed content itself is only inspected once. The `_multi` entries are
+    excluded because they change the tool set on purpose when the speaker swaps,
+    and a companion test asserts they really do, so the exclusion is not a blind
+    spot.
   - `request_timeout_s` is measured on the first attempt's abandonment.
 - **Live-mode-only controls.** `price_*` never leaves the harness, so nothing
   here says the cost column is right — only that the token counts feeding it are
