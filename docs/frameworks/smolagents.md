@@ -3,10 +3,12 @@
 [Adapter](../../frameworks/smolagents/adapter.py) · `smolagents[openai]==1.26.0` ·
 runs 5 of 7 arenas
 
-Hugging Face's minimal agent library. The arena uses `ToolCallingAgent` (the
-native-tool-calling agent) rather than `CodeAgent`, because `CodeAgent` answers by
-writing and executing Python, which is a different task shape and not comparable
-with the other five adapters on tool calls.
+Hugging Face's minimal agent library. The `smolagents` entry uses
+`ToolCallingAgent` (the native-tool-calling agent), which is what the six-way
+overhead and resilience comparisons rank. `CodeAgent` — the model writes and
+executes Python — is a different task shape, and it has its own contrast entry,
+`smolagents_code` (`tool_use` only); its cost is in [the prompt-size section
+below](#prompt-size-390-baseline-comparable).
 
 ## Wiring
 
@@ -89,12 +91,14 @@ reaches the model unaltered — for every adapter.
 | `structured_output` | 15/15 |
 | `rag` | 15/15 |
 | `multi_agent` | 10/10 |
-| `resilience` | **4/8** *(comparable)* |
+| `resilience` | **8/8**, at 3× the cost on four of them *(comparable)* |
 | `human_in_the_loop` | unsupported — no `resume` method |
 | `durable_state` | unsupported — no `resume` method |
 
-Mock pass rates are ~100% by construction and prove only correct wiring. The two
-columns that compare frameworks honestly are `resilience` and prompt size.
+Mock pass rates are ~100% by construction and prove only correct wiring. What
+compares frameworks honestly is prompt size and what a fault *costs* — the
+`resilience` pass rate is now 8/8 for `smolagents`, so the signal moved into the
+per-item LLM-call count.
 
 ### Prompt size: 3.90× baseline *(comparable)*
 
@@ -114,30 +118,46 @@ This is not waste in the abstract — that scaffolding is what drives weaker mod
 through a tool loop without native tool-calling support. It is waste if you pair
 it with a model that already tool-calls well.
 
-### `resilience`: 4/8, split exactly along one line
+**And `CodeAgent` is heavier still — 6.95×.** `frameworks/smolagents_code` runs
+the same library and tools as a `CodeAgent`: the model replies with a Python
+`<code>` block that *calls* the tool functions, which smolagents executes.
 
-The four losses are not "the model gave up". They divide perfectly on a single
-question: **does the failure reach the transcript?**
+| entry | prompt tok | vs base | completion |
+|---|--:|--:|--:|
+| `smolagents` (`ToolCallingAgent`) | 2936 | 3.90× | 74.7 |
+| `smolagents_code` (`CodeAgent`) | 5240 | **6.95×** | 60.7 |
 
-| item | fault | recorded? | result |
-|---|---|---|---|
-| `res-01` | malformed JSON arguments | yes | pass |
-| `res-03` | tool ran, returned `ERROR` | yes | pass |
-| `res-06` | tool ran, returned `No results.` | yes | pass |
-| `res-07` | tool ran, evaluator refused | yes | pass |
-| `res-02` | tool name does not exist | **no** | fail |
-| `res-04` | required argument missing | **no** | fail |
-| `res-05` | argument not in the schema | **no** | fail |
-| `res-08` | arguments serialised as `null` | **no** | fail |
+`CodeAgent`'s system prompt is a longer few-shot — several worked examples of
+writing Python against notional tools — so it puts ~1.8× the `ToolCallingAgent`
+prompt on every request. Its *completion* tokens are lower (60.7 vs 74.7): a
+`<code>` blob is terser than a JSON tool call plus reasoning. Same 2.07 LLM
+calls, because the scripted turns are identical. If you reach for `CodeAgent`
+for its execution model, this is the wire bill it comes with.
+
+### `resilience`: 8/8, but four of them cost 3× the rest
+
+Every fault is eventually answered — but the eight divide perfectly on one
+question, **does the failure reach the transcript?**, and that line is the cost.
+
+| item | fault | recorded? | LLM calls |
+|---|---|---|--:|
+| `res-01` | malformed JSON arguments | yes | 2 |
+| `res-03` | tool ran, returned `ERROR` | yes | 2 |
+| `res-06` | tool ran, returned `No results.` | yes | 2 |
+| `res-07` | tool ran, evaluator refused | yes | 2 |
+| `res-02` | tool name does not exist | **no** | **6** |
+| `res-04` | required argument missing | **no** | **6** |
+| `res-05` | argument not in the schema | **no** | **6** |
+| `res-08` | arguments serialised as `null` | **no** | **6** |
 
 The dividing line is `smolagents`' own **tool-validation layer**. Anything that
 gets as far as running the tool comes back as an observation and lands in the
 conversation; anything the dispatcher rejects first — unknown name, missing
 argument, unexpected argument, null arguments — raises and is dropped.
 
-The evidence is on the wire. On all four failures every request after the first
+The evidence is on the wire. On all four of those, every request after the first
 sent exactly `['system', 'user']` — the prompt never changes, so the model emits
-the identical bad call five times in a row, verbatim:
+the identical bad call until the step budget is gone, verbatim:
 
 ```
 Argument expr is required
@@ -148,14 +168,23 @@ Argument expr is required
 Reached max steps.
 ```
 
-On all four passes the second request carried
-`['system', 'user', 'assistant', 'user']`. The attempt was recorded, the model
-could see what it had done, and it corrected on the next turn.
+`smolagents` then returns its last memory step, which happens to contain the
+answer the mock served, so `numeric_equals` passes — that is why this row reads
+8/8 and not 4/8. What it spent getting there is **six LLM calls and ~2.7× the
+prompt tokens** against the two calls the other four faults take.
 
-So this is not about error severity, and `res-01` proves it: malformed JSON is the
-*least* structured failure of the eight and it recovers, because it is handled at
-parse time and written back. Self-correction is impossible without the feedback,
-and four of these eight faults never produce any.
+On the four recorded faults the second request carried
+`['system', 'user', 'assistant', 'user']` — the attempt was there, the model
+could see what it had done, and it corrected on the next turn. `res-01` is the
+proof it is feedback and not severity: malformed JSON is the *least* structured
+failure of the eight and it recovers cheaply, because it is caught at parse time
+and written back.
+
+> **Correction.** This section read `4/8` for several iterations. The mechanism
+> is unchanged — the validator-rejected faults still burn the whole budget with
+> no tool call — but `smolagents` now surfaces a final answer from its last
+> memory step rather than returning `""`, so the item passes at a cost instead
+> of failing. `check_resilience.py` gates the count now.
 
 ### `managed_agents`: the same design decision, again
 
