@@ -44,6 +44,11 @@ schema. That scaffolding is what lets it drive models that tool-call badly; if
 yours tool-calls well, it is ~3.8 KB per request you are paying for nothing. See
 [overhead.md](overhead.md).
 
+If you specifically want its `CodeAgent` — the model writes and executes Python
+rather than emitting tool calls — that entry (`smolagents_code`) is heavier
+again, **6.95×**, for the same reason plus a longer few-shot prompt; completions
+run a little terser. **[measured]**
+
 ### That 3.90× is a *short-item* number
 
 The table above is a two-call task, which is where a fixed per-request cost looks
