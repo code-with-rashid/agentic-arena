@@ -17,8 +17,10 @@ Two adapter facts follow from that:
     `arena.llm.mockserver._looks_like_code_agent`), so `CodeAgent` faces the
     identical sequence of scripted decisions as every other adapter.
 
-Scoped to `tool_use`: it is a contrast entry, run where the overhead comparison
-lives, not a general-purpose adapter.
+Scoped to `tool_use` and `rag`: it is a contrast entry, run where a tool loop is
+what is being compared. `rag` is the same `search` loop with a second hop, so
+`CodeAgent` walks it the same way every other adapter does (see
+`tests/test_rag_arena.py`); `tool_use` is where the overhead number lives.
 """
 
 from __future__ import annotations
@@ -133,7 +135,9 @@ class Adapter:
     name = "smolagents_code"
     # A contrast entry, like the `_multi` pipelines: `--framework all` runs it
     # only where it is meant to be compared. Naming it explicitly works anywhere.
-    arenas = ("tool_use",)
+    # `tool_use` carries the overhead number; `rag` is the same tool loop with a
+    # second hop, and CodeAgent clears it 15/15 like everyone else.
+    arenas = ("tool_use", "rag")
 
     @property
     def lib_version(self) -> str:
