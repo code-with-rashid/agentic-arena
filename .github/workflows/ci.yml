@@ -241,6 +241,7 @@ jobs:
           - { python-version: "3.13", framework: smolagents, arena: tool_use }
           - { python-version: "3.13", framework: smolagents, arena: rag }
           - { python-version: "3.13", framework: smolagents_code, arena: tool_use }
+          - { python-version: "3.13", framework: smolagents_code, arena: rag }
           - { python-version: "3.13", framework: google_adk, arena: tool_use }
           - { python-version: "3.13", framework: google_adk, arena: rag }
     steps:
