@@ -11,7 +11,16 @@ from .runner import run as run_arena
 from .scorecard import latest_run, write_scorecard
 
 
-def _cmd_list(_args: argparse.Namespace) -> int:
+def _cmd_list(args: argparse.Namespace) -> int:
+    if args.arena:
+        from .registry import load_arena
+
+        arena = load_arena(args.arena)
+        print(f"{arena.id} - {len(arena.dataset)} item(s):")
+        for item in arena.dataset:
+            print(f"  {item.id}  {item.input[:70]}")
+        return 0
+
     print("Arenas:")
     for name in available_arenas():
         print(f"  - {name}")
@@ -122,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
 
     p_list = sub.add_parser("list", help="list arenas and framework adapters")
+    p_list.add_argument("--arena", default=None, help="instead, list this arena's dataset item ids")
     p_list.set_defaults(func=_cmd_list)
 
     p_run = sub.add_parser("run", help="run one arena against one or more adapters")

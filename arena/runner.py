@@ -195,9 +195,13 @@ def run(
     arena = load_arena(arena_id)
 
     if only:
-        missing = only - {item.id for item in arena.dataset}
+        ids = [item.id for item in arena.dataset]
+        missing = only - set(ids)
         if missing:
-            raise SystemExit(f"no such item(s) in {arena_id!r}: {', '.join(sorted(missing))}")
+            raise SystemExit(
+                f"no such item(s) in {arena_id!r}: {', '.join(sorted(missing))}\n"
+                f"available: {', '.join(ids)}"
+            )
         arena = replace(arena, dataset=[item for item in arena.dataset if item.id in only])
 
     if arena.durable and not config.checkpoint_dir:

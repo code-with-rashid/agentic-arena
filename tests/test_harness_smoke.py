@@ -66,8 +66,18 @@ def test_run_can_filter_to_specific_items():
 def test_run_rejects_an_unknown_item_id():
     import pytest
 
-    with pytest.raises(SystemExit):
+    with pytest.raises(SystemExit) as exc:
         run("tool_use", ["vanilla"], config=ArenaConfig(mode="mock"), only={"tu-03", "nope-99"})
+    # the message lists the real ids so `--item` is self-documenting
+    assert "nope-99" in str(exc.value) and "tu-01" in str(exc.value)
+
+
+def test_list_arena_prints_item_ids(capsys):
+    from arena.__main__ import main
+
+    assert main(["list", "--arena", "tool_use"]) == 0
+    out = capsys.readouterr().out
+    assert "tu-01" in out and "tu-15" in out
 
 
 def test_latest_run_skips_a_partial_run(tmp_path, monkeypatch):
