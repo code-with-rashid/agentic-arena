@@ -51,6 +51,14 @@ is already written down, and being jittered it is not one a test could assert
 tightly anyway. Reproduce it with
 
     python .github/scripts/report_transport.py --deep
+
+**Delegation pipelines** are covered at the end of this file. Everything above
+runs one agent; a `*_multi` entry makes four to six requests through up to three
+agent objects, and nothing checked that a transient 429 part-way down the chain
+is survived without the retry being miscounted as a delegation step. It is —
+every pipeline that retries does so exactly once and runs the identical scripted
+conversation — but that is the fairness-bug shape (a control the arena owns, that
+each framework has to carry in its own wiring) and so it is a gate, not a note.
 """
 
 import contextlib
@@ -61,7 +69,7 @@ import pytest
 
 from arena.config import ArenaConfig
 from arena.llm.mockserver import MockScript, MockServer
-from arena.registry import available_frameworks, load_framework
+from arena.registry import available_frameworks, load_arena, load_framework
 from arena.types import ArenaSpec, EvalItem
 
 STUBS = {"claude_agent_sdk"}
@@ -357,3 +365,84 @@ def test_smolagents_outer_retry_layer_does_not_cover_timeouts():
         "docs/transport.md says a hung provider fails fast and needs re-measuring"
     )
     assert not predicate(TimeoutError("hung")), "a timeout now triggers the 2-4 minute outer sleep"
+
+
+# ---------------------------------------------------------------------------
+# Delegation pipelines: a transient fault part-way down a multi-agent chain.
+# ---------------------------------------------------------------------------
+
+_MULTI_ARENA = load_arena("multi_agent")
+_MULTI_SCRIPT = MockScript.load(_MULTI_ARENA.mock_script_path)
+_MULTI_ITEM = _MULTI_ARENA.dataset[0]
+
+
+def _pipelines():
+    out = []
+    for name in available_frameworks():
+        if not name.endswith("_multi"):
+            continue
+        try:
+            config = replace(ArenaConfig(mode="mock"), base_url="http://127.0.0.1:1", api_key="k")
+            load_framework(name).build(_MULTI_ARENA, config)
+        except Exception:  # noqa: BLE001 - not installed in this venv
+            continue
+        out.append(name)
+    return out
+
+
+PIPELINES = _pipelines()
+
+
+def _run_pipeline(name, faults):
+    """Run one multi_agent item through a gateway that fails on `faults`.
+
+    Returns `(outcome, attempts, served_requests)`. `served_requests` is the
+    number of scripted turns the pipeline actually consumed — the delegation
+    machinery reads it off the transcript, so a faulted attempt leaking into it
+    would make the manager re-delegate.
+    """
+    with MockServer(_MULTI_SCRIPT, arena_tools=list(_MULTI_ARENA.tools), faults=faults) as server:
+        config = replace(
+            ArenaConfig(mode="mock"),
+            base_url=server.base_url,
+            api_key="mock-key",
+            max_tool_iterations=8,
+        )
+        try:
+            result = load_framework(name).build(_MULTI_ARENA, config).run(_MULTI_ITEM)
+            outcome = "answered" if (result.output_text or "").strip() else "gave up"
+        except Exception as exc:  # noqa: BLE001 - the outcome under test
+            outcome = f"raised {type(exc).__name__}"
+        return outcome, len(server.attempts), len(server.requests)
+
+
+@pytest.mark.parametrize("name", PIPELINES)
+def test_a_pipeline_survives_one_transient_429_without_miscounting_it(name):
+    """One 429 on the first call of a chain: retried once, or raised — never a
+    silent give-up, and never a change to the conversation the pipeline runs.
+
+    The precise part is what a single-agent run cannot check. A pipeline that
+    retries must do so *exactly* once (one extra attempt against the clean run)
+    and must still serve the same number of scripted turns — if the faulted
+    attempt were recorded, the manager would see an unfinished delegation and
+    hand off again, which is the bug `test_a_faulted_attempt_consumes_no_scripted_turn`
+    guards for one agent and this guards for the chain.
+    """
+    clean_outcome, clean_attempts, clean_requests = _run_pipeline(name, [])
+    assert clean_outcome == "answered", f"{name}: not healthy on a clean gateway ({clean_outcome})"
+
+    outcome, attempts, requests = _run_pipeline(name, [429, 200])
+    if outcome == "answered":
+        assert attempts == clean_attempts + 1, (
+            f"{name}: survived a 429 but in {attempts} attempts against a clean "
+            f"{clean_attempts} — expected exactly one retry"
+        )
+        assert requests == clean_requests, (
+            f"{name}: the 429 moved the served turn count {clean_requests} -> {requests}; "
+            f"a faulted attempt is being counted as part of the conversation"
+        )
+    else:
+        assert outcome.startswith("raised"), (
+            f"{name}: one transient 429 became {outcome!r} — a lost pipeline item with "
+            f"no exception to catch"
+        )
