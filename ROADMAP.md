@@ -37,6 +37,12 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - ✅ Google ADK adapter — via LiteLLM to the shared gateway; runs every arena it
       is registered for, including both delegation shapes (`sub_agents` and
       `AgentTool`)
+- ✅ `smolagents_code` — a `CodeAgent` contrast entry (the model writes and
+      executes Python) beside the `ToolCallingAgent` `smolagents` entry. Scoped to
+      the three single-agent tool arenas (`tool_use`, `rag`, `structured_output`),
+      15/15 in mock, 6.95× baseline wire cost against `ToolCallingAgent`'s 3.90×.
+      Needed a new `arena.llm.mockserver` accommodation to render a scripted turn
+      as a `<code>` blob; see `docs/frameworks/smolagents.md`
 - 🚧 `docs/feature-matrix.md` — filled for every built adapter; `❓` cells remain for
       capabilities no arena exercises yet
 - ✅ Per-framework deep dives in `docs/frameworks/` for the built adapters
