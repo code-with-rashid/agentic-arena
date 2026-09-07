@@ -13,6 +13,10 @@
 - [Framework overhead](overhead.md) — what each library adds to the wire for an
   identical task, and what happens to that cost once the tool loop gets long.
   One of only two things mock mode can compare honestly.
+- [Multi-agent](multi-agent.md) — what delegation costs, measured across five
+  pipelines (hand-rolled, graph, handoff chain, sub-agent-as-a-tool) to an exact
+  law in LLM calls, and how much of a handoff's extra prompt is the
+  `transfer_to_*` schemas rather than the transfer.
 - [When the gateway fails](transport.md) — retry and backoff behaviour when the
   provider returns 429/500/400. The one dimension where the hand-rolled baseline
   loses outright.
@@ -24,6 +28,8 @@
   and what that means for what the arena is grading.
 - [Dependencies](dependencies.md) — the pinning policy, why the harness has zero
   runtime deps, and the deprecation register.
+- [Next phases](next-phases.md) — what is scaffolded but not yet real, and what
+  the first live scorecard needs.
 - Per-framework deep dives: [`frameworks/`](frameworks/)
 - Per-arena reference notes: [`arenas/`](arenas/) — what each arena tests, its
   traps, and where its design is written down.
