@@ -19,7 +19,7 @@ identically for every framework:
 
 | framework | asks the provider? | valid | not JSON | wrong types | missing field | extra field |
 |---|---|---|---|---|---|---|
-| all seven | **no — prompt only** | unchanged (2) | unchanged (2) | unchanged (2) | unchanged (2) | unchanged (2) |
+| all seven, and the `smolagents_code` (`CodeAgent`) contrast entry | **no — prompt only** | unchanged (2) | unchanged (2) | unchanged (2) | unchanged (2) | unchanged (2) |
 
 "unchanged" means the framework returned the model's text byte-for-byte;
 the bracketed number is LLM calls.

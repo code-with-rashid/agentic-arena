@@ -7,7 +7,8 @@ Hugging Face's minimal agent library. The `smolagents` entry uses
 `ToolCallingAgent` (the native-tool-calling agent), which is what the six-way
 overhead and resilience comparisons rank. `CodeAgent` — the model writes and
 executes Python — is a different task shape, and it has its own contrast entry,
-`smolagents_code` (`tool_use` and `rag`); its cost is in [the prompt-size section
+`smolagents_code` (the three single-agent tool arenas — `tool_use`, `rag`,
+`structured_output`); its cost is in [the prompt-size section
 below](#prompt-size-390-baseline-comparable).
 
 ## Wiring
@@ -275,8 +276,9 @@ applies - which is what it was doing until
   the adapter implements no `resume` and the two pause arenas report *unsupported*
   rather than failed. Emulating one by hand (as `vanilla` does) would measure the
   adapter, not the framework.
-- **`CodeAgent` runs only `tool_use` and `rag`.** It ships as its own entry,
-  `frameworks/smolagents_code` — a genuinely different execution model, so a
-  separate adapter rather than a swap inside this one. It is scoped to the two
-  tool-loop arenas where the `ToolCallingAgent` contrast is meaningful; `pause`,
-  `durable` and `multi_agent` are out of scope for the same reasons they are here.
+- **`CodeAgent` runs the three single-agent tool arenas.** It ships as its own
+  entry, `frameworks/smolagents_code` — a genuinely different execution model, so
+  a separate adapter rather than a swap inside this one. It is scoped to
+  `tool_use`, `rag` and `structured_output`, where the `ToolCallingAgent`
+  contrast is meaningful; `pause`, `durable` and `multi_agent` are out of scope
+  for the same reasons they are here.
