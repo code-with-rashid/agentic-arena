@@ -167,6 +167,35 @@ def test_reachability_check_ignores_deliberate_fault_scenarios(tmp_path, monkeyp
     assert not any("fails every mock run" in e for e in report.errors), report.errors
 
 
+def test_catches_suspended_check_when_the_scenario_never_pauses(tmp_path, monkeypatch):
+    bad = {**GOOD_ITEM, "checks": [{"type": "suspended"}]}
+    errs = _errors(tmp_path, monkeypatch, items=[bad])
+    assert any("fails every mock run" in e and "pause" in e for e in errs), errs
+
+
+def test_suspended_check_passes_when_the_scenario_scripts_request_approval(tmp_path, monkeypatch):
+    spec = GOOD_SPEC.replace(
+        'tools = ["search", "calculator"]',
+        'tools = ["search", "calculator", "request_approval"]',
+    )
+    mock = {
+        "scenarios": [
+            {
+                "match": "2 plus 2",
+                "turns": [
+                    {"tool_calls": [{"name": "request_approval", "arguments": {"summary": "x"}}]},
+                    {"content": "4"},
+                ],
+            }
+        ],
+        "default": {"turns": [{"content": "no"}]},
+    }
+    item = {**GOOD_ITEM, "checks": [{"type": "suspended"}]}
+    _write(tmp_path, monkeypatch, spec=spec, items=[item], mock=mock)
+    report = V.validate_arena("demo")
+    assert report.ok, report.errors
+
+
 def test_reachability_check_passes_when_the_scenario_can_satisfy_it(tmp_path, monkeypatch):
     ok = {
         **GOOD_ITEM,
