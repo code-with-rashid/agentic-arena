@@ -49,8 +49,9 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   cost (heavier than `ToolCallingAgent`'s 3.90×). Needed a new
   `arena.llm.mockserver` accommodation to render a scripted turn as a `<code>`
   blob.
-- `python -m arena run --arena <id> --framework all --mode mock` → the six above
-  run, the rest report themselves unavailable cleanly.
+- `python -m arena run --arena <id> --framework all --mode mock` → the seven
+  above run (plus `smolagents_code` on the three arenas it is scoped to), and
+  `crewai` / `claude_agent_sdk` report themselves unavailable cleanly.
 - `pytest -q` → all offline; `ruff check .` + `ruff format --check .` clean.
 - Usage accounting is a CI gate: each adapter's reported tokens/LLM calls are
   held against what the mock actually served, on the plain and the resumed
