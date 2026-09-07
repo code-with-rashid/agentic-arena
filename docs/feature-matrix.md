@@ -11,7 +11,7 @@ Legend: ✅ built-in · 🟡 possible with work · ❌ not really · ❓ not yet
 | OpenAI-compatible base_url | ✅ | ✅ | ✅ (LiteLLM) | ✅ | ❓ | ✅ | ✅ (Chat Completions client) | ✅ (`OpenAIServerModel`, needs the `[openai]` extra) | ✅ (via LiteLLM only) |
 | Streaming tokens | ❌ | ✅ | 🟡 | ❓ | ❓ | ❓ | ❓ | ❓ | ❓ |
 | Recovers from malformed tool args | ✅ | ❌ | ✅ | ✅ | ❓ | ✅ | ✅ | ✅ | ❌ (raises) |
-| Runs every tool call in a batched turn | ✅ | 🟡 (drops a malformed sibling) | ❓ | ✅ | ❓ | ✅ | ✅ | 🟡 (drops the whole batch) | ✅ |
+| Runs every tool call in a batched turn | ✅ | 🟡 (drops a malformed sibling) | ❌ (one `Action:` per turn — text ReAct) | ✅ | ❓ | ✅ | ✅ | 🟡 (drops the whole batch) | ✅ |
 | Recovers from an unknown tool name | ✅ | ✅ | ✅ | ❌ (raises) | ❓ | ✅ | ✅ | ❌ (not written back) | ❌ (raises) |
 | Native OpenAI tool calling | ✅ | ✅ | ❌ (text ReAct loop) | ✅ | ❓ | ✅ | ✅ | ✅ (plus a `final_answer` control tool) | ✅ (through LiteLLM) |
 | Tool-call history exposed | ✅ | ✅ | 🟡 (via wrapper) | ✅ (`new_items`) | ❓ | ✅ (`all_messages()`) | ✅ (`messages` contents) | ✅ (`memory.steps`) | ✅ (event stream) |
@@ -50,10 +50,12 @@ not an item, so a framework that retries twice can spend three times it.
 ### Batched tool calls, and a quieter failure mode
 
 A model may return several tool calls in one turn. With two *valid* calls all
-seven adapters do the right thing — both run, both results reach the model. The
-interesting case is when one call in the batch is broken. For each fault, batched
-with one good call, two questions of the next request: did the **successful**
-call's result reach the model, and was the broken call **reported** at all?
+seven adapters do the right thing — both run, both results reach the model.
+(`crewai` is absent: it drives a text ReAct loop and emits one `Action:` per
+turn, so a batched turn never arises.) The interesting case is when one call in
+the batch is broken. For each fault, batched with one good call, two questions of
+the next request: did the **successful** call's result reach the model, and was
+the broken call **reported** at all?
 
 | | unknown tool | malformed args | missing required arg |
 |---|---|---|---|
