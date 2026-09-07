@@ -187,3 +187,51 @@ def test_who_writes_a_checkpoint_and_who_serialises_the_transcript(tmp_path):
                 f"on-disk store, so it is now keeping it somewhere the harness does not "
                 f"own and cannot clear between runs"
             )
+
+
+def test_the_resume_handle_is_a_pointer_for_a_checkpointer_and_the_transcript_for_a_serialiser(
+    tmp_path,
+):
+    """What the pause actually costs, measured on the two-lookup `durable_state` item.
+
+    The docs say a checkpointer is "what you want once the state stops fitting in
+    a message list". This puts a number on that. `resume_state` is the only thing
+    the harness carries across the restart, and:
+
+      * a checkpointer (`langgraph`, `google_adk`) puts a **handle** there — a
+        thread/session id and a config pointer, a few hundred bytes — and keeps
+        the run in its own on-disk store;
+      * a serialiser (`vanilla`, `pydantic_ai`, `openai_agents`) puts the
+        **conversation** there, so `resume_state` *is* the transcript plus
+        whatever the framework wraps it in, and it grows with every turn.
+
+    Gated loosely: a checkpointer's handle must stay under 1 KB, and at least one
+    serialiser must carry several times that, so the split cannot quietly invert
+    (a checkpointer that started dumping the transcript into `resume_state` would
+    have thrown away the one property it exists for). The byte counts themselves
+    are a finding and live in docs/findings.md.
+    """
+    if "vanilla" not in RESUMABLE:
+        pytest.skip("baseline not buildable here")
+
+    footprint = {}
+    for name in RESUMABLE:
+        first, _ = _both_legs(name, tmp_path)
+        footprint[name] = (first["state_bytes"], first["checkpoint_bytes"])
+
+    serialisers = {"vanilla", "pydantic_ai", "openai_agents"} & set(footprint)
+    checkpointers = {"langgraph", "google_adk"} & set(footprint)
+
+    for name in checkpointers:
+        state_bytes, checkpoint_bytes = footprint[name]
+        assert state_bytes < 1024, (
+            f"{name} carries {state_bytes} B in resume_state — a checkpointer's handle "
+            f"should be a pointer, not the transcript; it has stopped using its store"
+        )
+        assert checkpoint_bytes > 0, f"{name} wrote no on-disk store: {footprint[name]}"
+
+    if serialisers:
+        assert max(footprint[n][0] for n in serialisers) > 2048, (
+            f"no serialiser carries a transcript-sized resume_state: "
+            f"{ {n: footprint[n] for n in serialisers} } — the mechanism split has collapsed"
+        )

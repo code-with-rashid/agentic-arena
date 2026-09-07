@@ -405,6 +405,28 @@ and read as a broken framework rather than an absent feature.
 scratch instead of resuming drops to **0/8**: it still reaches the right answer,
 by redoing both lookups, and the `call_counts` check catches the duplicated work.
 
+**What the pause costs, and why "fits in a message list" is the whole point.**
+`resume_state` is the only thing carried across the restart. On the two-lookup
+`durable_state` item:
+
+| adapter | `resume_state` | on-disk store | what is in the state |
+|---|--:|--:|---|
+| `google_adk` | 112 B | 57 KB sqlite | a session id |
+| `langgraph` | 401 B | 76 KB sqlite | a thread id + config |
+| `vanilla` | 2.5 KB | — | the whole transcript |
+| `pydantic_ai` | 6.1 KB | — | message history as JSON |
+| `openai_agents` | 17 KB | — | `RunState.to_json()` — the entire run object |
+
+A checkpointer's `resume_state` is a **handle** — a few hundred bytes whatever
+the conversation did — because the run lives in its store (a fixed sqlite floor,
+not proportional to turns). A serialiser's `resume_state` **is** the
+conversation, so it grows with every turn, and `openai_agents` is heaviest
+because it serialises the run object rather than just the messages. Both survive
+the restart; only the first kind still does once the transcript is large. The
+under-1-KB handle and the several-KB transcript are gated as a split in
+`tests/test_durable_across_a_restart.py` so a checkpointer that started inlining
+the transcript would fail.
+
 → [feature-matrix.md](feature-matrix.md) · per-framework pages in [frameworks/](frameworks/)
 
 ```bash

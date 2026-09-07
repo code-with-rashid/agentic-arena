@@ -62,15 +62,19 @@ def main() -> None:
                 print(json.dumps({"ok": False, "why": "did not suspend"}))
                 return
             # Exactly what the harness carries across the gap: JSON, nothing else.
-            state_file.write_text(json.dumps(result.resume_state), encoding="utf-8")
+            serialised = json.dumps(result.resume_state)
+            state_file.write_text(serialised, encoding="utf-8")
+            checkpoint_files = sorted(p for p in checkpoints.rglob("*") if p.is_file())
             print(
                 json.dumps(
                     {
                         "ok": True,
                         "tool_calls": [c.get("name") for c in result.tool_calls],
-                        "checkpoint_files": sorted(
-                            p.name for p in checkpoints.rglob("*") if p.is_file()
-                        ),
+                        "checkpoint_files": [p.name for p in checkpoint_files],
+                        # The durable footprint: what rides in the JSON gap, and
+                        # what the adapter left on disk for itself.
+                        "state_bytes": len(serialised.encode("utf-8")),
+                        "checkpoint_bytes": sum(p.stat().st_size for p in checkpoint_files),
                     }
                 )
             )
