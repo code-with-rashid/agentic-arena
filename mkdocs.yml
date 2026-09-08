@@ -1,0 +1,83 @@
+site_name: agentic-arena
+site_description: Compare, explore, and choose the right agentic framework — with numbers you can regenerate.
+site_url: https://code-with-rashid.github.io/agentic-arena/
+repo_url: https://github.com/code-with-rashid/agentic-arena
+repo_name: code-with-rashid/agentic-arena
+edit_uri: edit/main/docs/
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.top
+    - content.code.copy
+    - toc.follow
+
+# Links from docs/ into the repo (ROADMAP.md, adapter source under frameworks/,
+# tests/) are correct for browsing on GitHub but are not part of the site.
+# docs/hooks/fix_links.py rewrites exactly those to absolute github.com URLs at
+# build time, so the build stays clean under --strict without touching source.
+hooks:
+  - docs/hooks/fix_links.py
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - toc:
+      permalink: true
+  - tables
+
+nav:
+  - Home: index.md
+  - Findings: findings.md
+  - Methodology: methodology.md
+  - Fairness controls: fairness-controls.md
+  - Decision guide: decision-guide.md
+  - Feature matrix: feature-matrix.md
+  - Comparisons:
+      - Framework overhead: overhead.md
+      - Multi-agent / delegation: multi-agent.md
+      - When the gateway fails: transport.md
+      - Tool schemas: tool-schemas.md
+      - Structured output: structured-output.md
+  - Arenas:
+      - Overview: arenas/README.md
+      - structured_output: arenas/structured_output.md
+      - multi_agent: arenas/multi_agent.md
+      - rag: arenas/rag.md
+      - human_in_the_loop: arenas/human_in_the_loop.md
+      - durable_state: arenas/durable_state.md
+  - Frameworks:
+      - Overview: frameworks/README.md
+      - LangGraph: frameworks/langgraph.md
+      - Pydantic AI: frameworks/pydantic-ai.md
+      - OpenAI Agents SDK: frameworks/openai-agents-sdk.md
+      - Microsoft Agent Framework: frameworks/microsoft-agent-framework.md
+      - Smolagents: frameworks/smolagents.md
+      - Google ADK: frameworks/google-adk.md
+      - CrewAI: frameworks/crewai.md
+      - Claude Agent SDK: frameworks/claude-agent-sdk.md
+  - Project:
+      - Dependencies: dependencies.md
+      - Next phases: next-phases.md
+      - Scorecard example: scorecard-example.md

@@ -33,6 +33,9 @@ runs/
 results/**/raw/
 results/**/*.tmp
 
+# MkDocs build output (`mkdocs build` / `mkdocs serve`)
+site/
+
 # Framework checkpoint stores. The harness puts these under runs/checkpoints/,
 # but an adapter built outside a run must never leave one in the working tree.
 *.sqlite
