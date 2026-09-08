@@ -98,6 +98,15 @@ def _cmd_scorecard(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_chart(args: argparse.Namespace) -> int:
+    from .charts import write_charts
+
+    record = latest_run(args.arena, mode=args.mode)
+    out = write_charts(record)
+    print(f"charts: {out}")
+    return 0
+
+
 def _print_unicode(text: str) -> None:
     """Write UTF-8 text to stdout without dying on a legacy console codepage.
 
@@ -159,6 +168,11 @@ def main(argv: list[str] | None = None) -> int:
     p_sc.add_argument("--arena", required=True)
     p_sc.add_argument("--mode", choices=["mock", "live"], default=None)
     p_sc.set_defaults(func=_cmd_scorecard)
+
+    p_ch = sub.add_parser("chart", help="render scorecard bar charts (SVG) from the latest run")
+    p_ch.add_argument("--arena", required=True)
+    p_ch.add_argument("--mode", choices=["mock", "live"], default=None)
+    p_ch.set_defaults(func=_cmd_chart)
 
     p_sum = sub.add_parser("summary", help="one cross-arena view from the latest run of each arena")
     p_sum.add_argument("--mode", choices=["mock", "live"], default=None)

@@ -13,8 +13,9 @@ terse index, this file records the reasoning and the current batch of work._
 > `smolagents_code`, a `CodeAgent` contrast to the `ToolCallingAgent` `smolagents`
 > adapter — runs `tool_use` / `rag` / `structured_output` at 6.95× baseline wire
 > cost, and `arena validate` grew a reachability check for a tool/pause check its
-> mock scenario can never satisfy. The reasoning below is kept as the record of
-> how that batch was planned.
+> mock scenario can never satisfy. `python -m arena chart` now renders the
+> scorecard as SVG bar charts (Phase 3's "latency / token / cost charts" item).
+> The reasoning below is kept as the record of how that batch was planned.
 
 ## Where things stand
 

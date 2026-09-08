@@ -91,7 +91,10 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - ⬜ Reliability runs (`--repeat 10`) + variance reporting
 - ✅ Cross-arena summary (`python -m arena summary`) — coverage grid plus the
       three comparisons that hold offline; CI publishes it as an artifact
-- ⬜ Latency / token / cost charts generated into `results/charts/`
+- ✅ Latency / token / cost charts — `python -m arena chart --arena <id>` renders
+      pass-rate / mean-tokens / mean-LLM-calls / est-cost bar charts as
+      hand-written SVG (no plotting dependency) into `<scorecard dir>/charts/`;
+      live runs land in `results/<arena>/charts/`, mock runs stay under `runs/`
 
 ## Phase 4 — Polish + community ⬜
 

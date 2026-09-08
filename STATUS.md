@@ -57,7 +57,9 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   held against what the mock actually served, on the plain and the resumed
   path. Caught langgraph dropping a whole leg on `durable_state`.
 - `python -m arena scorecard --arena <id>` regenerates the scorecard (live →
-  `results/<id>/`, mock → `runs/scorecards/<id>/`).
+  `results/<id>/`, mock → `runs/scorecards/<id>/`). `python -m arena chart
+  --arena <id>` writes SVG bar charts (pass rate, mean tokens, mean LLM calls,
+  est. cost) into a `charts/` subdir beside it — hand-drawn, no plotting dep.
 - `python -m arena summary --print` renders every arena in one view — coverage,
   fault recovery, prompt size, pause support. CI uploads it as an artifact.
 - Dev conveniences: `arena run --item <id>` runs a subset (partial run, no

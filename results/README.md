@@ -13,11 +13,15 @@ Each `results/<arena>/` holds:
 - `scorecard.md` — human-readable table, with the model / date / versions header
 - `scorecard.csv` — same rows, for spreadsheets / plotting
 - `scorecard.json` — full aggregated rows + run metadata
+- `charts/` — `pass-rate.svg`, `mean-tokens.svg`, `mean-llm-calls.svg`,
+  `est-cost.svg` (hand-written SVG, no plotting dependency) plus an `index.md`
+  that embeds them
 
 Regenerate from the most recent matching run:
 
 ```bash
 python -m arena scorecard --arena <arena> --mode live
+python -m arena chart --arena <arena> --mode live
 ```
 
 Raw per-item run JSON lives in `../runs/` and is git-ignored (large, and
