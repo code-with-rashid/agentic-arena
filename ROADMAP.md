@@ -102,7 +102,11 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 
 ## Phase 4 — Polish + community ⬜
 
-- ⬜ Docs site (MkDocs Material) published to GitHub Pages
+- 🚧 Docs site (MkDocs Material) published to GitHub Pages — `mkdocs.yml` + a
+      build hook (`docs/hooks/fix_links.py`) that rewrites links leaving the docs
+      tree to `github.com/blob/main` URLs, so `mkdocs build --strict` is clean
+      and gated by the `docs` workflow. The deploy job is wired; it goes live
+      once Pages is switched on in repo settings (Source: GitHub Actions)
 - ✅ Version pinning per adapter + Dependabot for controlled refreshes
       (`.github/dependabot.yml`, one grouped monthly PR per adapter;
       policy + deprecation register in `docs/dependencies.md`)
