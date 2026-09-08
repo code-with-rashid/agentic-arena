@@ -107,6 +107,13 @@ def _cmd_chart(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_refreshed(args: argparse.Namespace) -> int:
+    from .refreshed import write_index
+
+    print(f"refresh index: {write_index()}")
+    return 0
+
+
 def _print_unicode(text: str) -> None:
     """Write UTF-8 text to stdout without dying on a legacy console codepage.
 
@@ -173,6 +180,11 @@ def main(argv: list[str] | None = None) -> int:
     p_ch.add_argument("--arena", required=True)
     p_ch.add_argument("--mode", choices=["mock", "live"], default=None)
     p_ch.set_defaults(func=_cmd_chart)
+
+    p_rf = sub.add_parser(
+        "refreshed", help="roll every committed scorecard into results/REFRESHED.md"
+    )
+    p_rf.set_defaults(func=_cmd_refreshed)
 
     p_sum = sub.add_parser("summary", help="one cross-arena view from the latest run of each arena")
     p_sum.add_argument("--mode", choices=["mock", "live"], default=None)
