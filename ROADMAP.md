@@ -105,8 +105,9 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - 🚧 Docs site (MkDocs Material) published to GitHub Pages — `mkdocs.yml` + a
       build hook (`docs/hooks/fix_links.py`) that rewrites links leaving the docs
       tree to `github.com/blob/main` URLs, so `mkdocs build --strict` is clean
-      and gated by the `docs` workflow. The deploy job is wired; it goes live
-      once Pages is switched on in repo settings (Source: GitHub Actions)
+      and gated by the `docs` workflow on every docs change. The deploy job is
+      wired but opt-in (keeps `main` green): enable Pages in repo settings
+      (Source: GitHub Actions) and set the repo variable `PAGES_ENABLED=true`
 - ✅ Version pinning per adapter + Dependabot for controlled refreshes
       (`.github/dependabot.yml`, one grouped monthly PR per adapter;
       policy + deprecation register in `docs/dependencies.md`)

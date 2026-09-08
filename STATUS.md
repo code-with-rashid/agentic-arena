@@ -84,7 +84,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
 | Durable pause for `microsoft_af` | its `AgentSession` message store does not survive a JSON round trip, and restoring approval state re-queues the request | needs a real session store (`FileSessionStore`) wired to the harness checkpoint dir |
 | `multi_agent` real orchestration | only the single-agent role-play entry exists | add `<fw>-multi` adapter entries that use each framework's own graph/crew/handoff mechanism; compare tokens + LLM calls against the single-agent run |
 | `results/` | **empty** — no live scorecard exists yet. Mock runs now write to `runs/scorecards/` instead, so `results/` stays live-only by construction. A format sample lives in `docs/scorecard-example.md`. | wire a key into `full-run`, then commit its output |
-| Docs site | plain markdown in `docs/` | MkDocs Material + GitHub Pages (Phase 4) |
+| Docs site | `mkdocs.yml` + Material theme; `mkdocs build --strict` gated by the `docs` workflow on every docs change | enable Pages (Settings → Pages → Source: GitHub Actions) and set repo variable `PAGES_ENABLED=true` — then the wired `deploy` job publishes on push to `main` |
 
 ## To produce the first real scorecard
 

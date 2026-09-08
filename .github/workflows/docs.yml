@@ -32,11 +32,13 @@ jobs:
           path: site
 
   deploy:
-    # Publishes the built site to GitHub Pages. Requires Pages to be enabled once
-    # in repo settings (Settings -> Pages -> Source: GitHub Actions); until then
-    # this job fails while `build` above stays green.
+    # Publishes the built site to GitHub Pages. Opt-in so `main` stays green
+    # until the repo owner is ready: enable Pages once (Settings -> Pages ->
+    # Source: GitHub Actions) AND add a repo variable PAGES_ENABLED=true
+    # (Settings -> Secrets and variables -> Actions -> Variables). Until both are
+    # set this job is skipped and only `build` runs.
     needs: build
-    if: github.event_name != 'pull_request'
+    if: ${{ github.event_name != 'pull_request' && vars.PAGES_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write
