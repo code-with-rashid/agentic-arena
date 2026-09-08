@@ -452,7 +452,7 @@ under-1-KB handle and the several-KB transcript are gated as a split in
 `tests/test_durable_across_a_restart.py` so a checkpointer that started inlining
 the transcript would fail.
 
-→ [feature-matrix.md](feature-matrix.md) · per-framework pages in [frameworks/](frameworks/)
+→ [feature-matrix.md](feature-matrix.md) · per-framework pages in [frameworks/](frameworks/README.md)
 
 ```bash
 python -m arena run --arena human_in_the_loop --framework all --mode mock --no-scorecard
