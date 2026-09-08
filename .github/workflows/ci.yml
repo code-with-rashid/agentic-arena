@@ -44,6 +44,13 @@ jobs:
           python -m arena chart --arena tool_use --mode mock
           test -f runs/scorecards/tool_use/charts/pass-rate.svg
 
+      - name: Repeated runs feed the reliability report
+        run: |
+          python -m arena run --arena tool_use --framework vanilla --repeat 3 --mode mock
+          python -m arena scorecard --arena tool_use --mode mock
+          grep -q "repeat(s)" runs/scorecards/tool_use/scorecard.md
+          grep -q "same verdict on every repeat" runs/scorecards/tool_use/scorecard.md
+
   comparison:
     # The only job that installs every adapter, so it carries everything that
     # needs the real libraries rather than the stdlib baseline alone:

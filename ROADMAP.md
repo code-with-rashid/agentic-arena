@@ -88,7 +88,11 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       `pydantic_ai_multi` (sub-agent as a tool). Delegation cost measured to an
       exact law (N+1 / N+2 / 2N calls) across five implementations; see
       `docs/multi-agent.md`
-- ⬜ Reliability runs (`--repeat 10`) + variance reporting
+- ✅ Reliability / variance reporting — `--repeat N` runs N independent legs and
+      the scorecard reports `pass_rate_stddev` (shown as `±`), the per-repeat
+      rates, and the ids of items that flip between legs (methodology §6).
+      Exercised offline at zero variance (mock is deterministic); a live
+      `--repeat` run is what fills in the real spread
 - ✅ Cross-arena summary (`python -m arena summary`) — coverage grid plus the
       three comparisons that hold offline; CI publishes it as an artifact
 - ✅ Latency / token / cost charts — `python -m arena chart --arena <id>` renders
