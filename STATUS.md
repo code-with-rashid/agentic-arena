@@ -67,9 +67,11 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
   is the whole local gate (ruff + `arena validate` + pytest). `arena validate`
   also flags a `min_tool_calls` / `tool_used` / `suspended` / `call_counts` check
   its matched mock scenario can never satisfy.
-- CI: `lint-and-test` (3.11–3.13, runs `arena validate` + pytest), `resilience`
-  (reports the recovery table; fails only if the stdlib baseline breaks), and
-  `mock-smoke` (a framework × arena matrix).
+- CI: `lint-and-test` (3.11–3.13, runs `arena validate` + pytest, plus end-to-end
+  smokes that the SVG charts render and that a `--repeat 3` run produces the
+  scorecard's reliability section), `resilience` (reports the recovery table;
+  fails only if the stdlib baseline breaks), and `mock-smoke` (a framework ×
+  arena matrix).
 
 ## What is scaffolded but not yet real
 
