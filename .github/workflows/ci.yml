@@ -51,6 +51,11 @@ jobs:
           grep -q "repeat(s)" runs/scorecards/tool_use/scorecard.md
           grep -q "same verdict on every repeat" runs/scorecards/tool_use/scorecard.md
 
+      - name: results/REFRESHED.md is in sync
+        run: |
+          python -m arena refreshed
+          git diff --exit-code results/REFRESHED.md
+
   comparison:
     # The only job that installs every adapter, so it carries everything that
     # needs the real libraries rather than the stdlib baseline alone:

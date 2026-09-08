@@ -106,7 +106,12 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
 - ✅ Version pinning per adapter + Dependabot for controlled refreshes
       (`.github/dependabot.yml`, one grouped monthly PR per adapter;
       policy + deprecation register in `docs/dependencies.md`)
-- ⬜ "Results last refreshed on <date> with <versions>" automation
+- ✅ "Results last refreshed on <date> with <versions>" — `python -m arena
+      refreshed` rolls every `results/<arena>/scorecard.json` into one
+      `results/REFRESHED.md` table (run date, model, harness + adapter versions,
+      newest run across all arenas); `arena scorecard --mode live` refreshes it
+      automatically, and CI fails if it drifts. Ships as a placeholder until the
+      first live scorecard exists
 - ⬜ Seed `good first issue`s for every empty framework × arena cell
 - ⬜ Launch write-up
 

@@ -17,6 +17,11 @@ Each `results/<arena>/` holds:
   `est-cost.svg` (hand-written SVG, no plotting dependency) plus an `index.md`
   that embeds them
 
+`REFRESHED.md` at this level rolls all of the above up into one table — when each
+arena was last run, with which model and adapter versions. It is generated
+(`python -m arena refreshed`, and automatically by `arena scorecard --mode
+live`), and CI fails if it drifts.
+
 Regenerate from the most recent matching run:
 
 ```bash

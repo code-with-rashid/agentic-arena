@@ -208,4 +208,10 @@ def write_scorecard(record: dict[str, Any]) -> Path:
         ),
         encoding="utf-8",
     )
+    if record.get("mode") == "live":
+        # Keep the top-level "last refreshed" rollup in step with the committed
+        # scorecards. Only live runs reach `results/`, so only they change it.
+        from .refreshed import write_index
+
+        write_index()
     return out_dir / "scorecard.md"
