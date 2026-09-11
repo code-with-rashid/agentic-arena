@@ -31,7 +31,7 @@ follow-up passes left in place. Delete it once the project has its own rhythm._
     calls instead of 2x, and does so identically in three libraries that share
     no code — including Pydantic AI, which has no delegation feature at all
   - `durable_state` — 8 items; the harness throws the runner away at the
-    checkpoint and rebuilds it. All four resumable adapters 8/8, by four
+    checkpoint and rebuilds it. All five resumable adapters 8/8, by five
     different mechanisms — see docs/feature-matrix.md
 - Seven adapters run in mock mode:
   `vanilla`, `langgraph` (LangGraph 1.2.11), `pydantic_ai` (pydantic-ai-slim 2.37),

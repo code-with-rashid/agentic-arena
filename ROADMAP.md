@@ -81,7 +81,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started
       does not enforce it (🟡), survives a crash
 - ✅ Arena 7 `durable_state` — the harness discards the runner at the pause and
       JSON round-trips the resume state, so only a real checkpoint or a
-      serialised transcript survives. Six adapters 8/8 by six mechanisms;
+      serialised transcript survives. Five adapters 8/8 by five mechanisms;
       `test_durable_across_a_restart.py` runs the two legs in two interpreters
 - ✅ Real multi-agent adapter entries — `vanilla_multi`, `langgraph_multi`
       (structural), `openai_agents_multi` (handoff chain), `smolagents_multi` +
