@@ -228,3 +228,33 @@ def test_baseline_passes_and_really_pauses_on_every_item():
     assert booked == {f"hitl-0{n}" for n in range(1, 7)}, (
         f"exactly the approved items should book; got {sorted(booked)}"
     )
+
+
+@pytest.mark.parametrize("tool,field", [("request_approval", "summary"), ("save_progress", "note")])
+def test_baseline_preserves_pause_description_from_json_arguments(tool, field):
+    from dataclasses import replace
+
+    from arena.llm.mockserver import MockScript, MockServer
+    from arena.registry import load_framework
+
+    script = MockScript(
+        {
+            "default": {
+                "turns": [
+                    {
+                        "tool_calls": [
+                            {"name": tool, "arguments": {field: "Keep this pause description"}},
+                        ]
+                    }
+                ]
+            }
+        }
+    )
+    with MockServer(script) as server:
+        agent = load_framework("vanilla").build(
+            replace(ARENA, tools=[tool]),
+            replace(ArenaConfig(), base_url=server.base_url),
+        )
+        result = agent.run(EvalItem(id="pause-description", input="Pause now"))
+    assert result.suspended
+    assert result.suspend_request == "Keep this pause description"

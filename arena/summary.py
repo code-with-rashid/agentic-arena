@@ -238,9 +238,17 @@ def render(records: list[dict[str, Any]], mode: str) -> str:
             "the framework varies.",
             "",
         ]
+    if mode == "codex":
+        out += [
+            "> Codex bridge functional tests, not native API benchmarks. "
+            "Temperature is not applied; usage and latency include Codex context. "
+            "No API cost estimate; subscription limits apply.",
+            "",
+        ]
     _coverage(records, names, out)
-    _resilience(records, names, out)
-    _overhead(records, names, out)
+    if mode == "mock":
+        _resilience(records, names, out)
+        _overhead(records, names, out)
     _pauses(records, names, out)
     out.append("---")
     out.append("")
@@ -258,6 +266,6 @@ def write_summary(mode: str = "mock", arena_ids: list[str] | None = None):
     # Same rule as scorecards: results/ only ever holds live numbers.
     base = RESULTS_DIR if mode == "live" else RUNS_DIR
     base.mkdir(parents=True, exist_ok=True)
-    path = base / "summary.md"
+    path = base / ("codex-summary.md" if mode == "codex" else "summary.md")
     path.write_text(render(records, mode), encoding="utf-8")
     return path.relative_to(REPO_ROOT), records

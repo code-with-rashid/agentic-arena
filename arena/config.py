@@ -14,13 +14,42 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 
-def _env(name: str, default: str = "") -> str:
-    return os.environ.get(name, default).strip()
+def _dotenv(path: Path) -> dict[str, str]:
+    """Read simple KEY=value settings without executing shell code.
+
+    Only the project's settings are consumed. Values are literal (no variable
+    expansion), with optional matching quotes and whitespace-separated comments.
+    """
+    if not path.is_file():
+        return {}
+    values = {}
+    for line in path.read_text(encoding="utf-8-sig").splitlines():
+        line = line.strip()
+        if line.startswith("export "):
+            line = line[7:].lstrip()
+        name, sep, value = line.partition("=")
+        name = name.strip()
+        if not sep or not (
+            name.startswith("ARENA_") or name in {"OPENAI_API_KEY", "OPENAI_BASE_URL"}
+        ):
+            continue
+        value = value.strip()
+        if value.startswith(("'", '"')):
+            end = value.find(value[0], 1)
+            if end < 0 or (
+                value[end + 1 :].strip() and not value[end + 1 :].lstrip().startswith("#")
+            ):
+                raise ValueError(f"invalid quoted value for {name} in .env")
+            value = value[1:end]
+        else:
+            value = value.split(" #", 1)[0].rstrip()
+        values[name] = value
+    return values
 
 
 @dataclass(frozen=True)
 class ArenaConfig:
-    mode: str = "mock"  # "mock" | "live"
+    mode: str = "mock"  # "mock" | "live" | "codex" (functional bridge)
     model: str = "gpt-4.1-mini"
     base_url: str = "https://api.openai.com/v1"
     api_key: str = "mock-key"
@@ -42,6 +71,11 @@ class ArenaConfig:
 
     @classmethod
     def from_env(cls, *, mode: str | None = None, repeat: int | None = None) -> ArenaConfig:
+        settings = _dotenv(REPO_ROOT / ".env")
+
+        def _env(name: str, default: str = "") -> str:
+            return os.environ.get(name, settings.get(name, default)).strip()
+
         resolved_mode = (mode or _env("ARENA_LLM_MODE", "mock")).lower()
 
         def _float(name: str, default: float) -> float:
@@ -53,13 +87,22 @@ class ArenaConfig:
 
         return cls(
             mode=resolved_mode,
-            model=_env("ARENA_MODEL", "gpt-4.1-mini"),
+            # A copied .env commonly contains an API-only ARENA_MODEL. Keep the
+            # subscription bridge on its own model knob so switching modes does
+            # not accidentally ask Codex for an unavailable API model id.
+            model=(
+                _env("ARENA_CODEX_MODEL", "gpt-6-astra")
+                if resolved_mode == "codex"
+                else _env("ARENA_MODEL", "gpt-4.1-mini")
+            ),
             base_url=_env("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
             api_key=_env("OPENAI_API_KEY", "mock-key") or "mock-key",
             price_input_per_m=_float("ARENA_PRICE_INPUT_PER_M", 0.40),
             price_output_per_m=_float("ARENA_PRICE_OUTPUT_PER_M", 1.60),
             repeat=repeat if repeat is not None else 1,
-            request_timeout_s=_float("ARENA_REQUEST_TIMEOUT_S", 60.0),
+            request_timeout_s=_float(
+                "ARENA_REQUEST_TIMEOUT_S", 180.0 if resolved_mode == "codex" else 60.0
+            ),
             temperature=_float("ARENA_TEMPERATURE", 0.0),
         )
 

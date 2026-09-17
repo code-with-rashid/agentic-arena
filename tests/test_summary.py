@@ -127,3 +127,21 @@ def test_pause_section_reports_both_arenas_separately():
     S._pauses(records, ["x"], out)
     row = next(line for line in out if line.startswith("| `x`"))
     assert "yes (1/1)" in row and "| no |" in row, row
+
+
+def test_codex_summary_does_not_claim_mock_fault_or_overhead_comparisons():
+    records = [_record("resilience", [_fw("vanilla", items=[_item("a")])])]
+    text = S.render(records, "codex")
+    assert "functional tests" in text
+    assert "recovery from scripted faults" not in text
+    assert "Coverage" in text
+
+
+def test_codex_summary_does_not_overwrite_mock_or_live(tmp_path, monkeypatch):
+    monkeypatch.setattr(S, "RUNS_DIR", tmp_path / "runs")
+    monkeypatch.setattr(S, "RESULTS_DIR", tmp_path / "results")
+    monkeypatch.setattr(S, "collect", lambda mode, ids=None: [])
+    monkeypatch.setattr(S, "REPO_ROOT", tmp_path)
+    path, _ = S.write_summary("codex")
+    assert path == type(path)("runs/codex-summary.md")
+    assert not (tmp_path / "results").exists()

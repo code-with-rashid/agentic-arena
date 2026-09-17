@@ -14,6 +14,7 @@ framework checkpointer, and the feature matrix records it as emulated.
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from arena import tools
@@ -82,7 +83,14 @@ class _Runner:
                 if tc["name"] in tools.SUSPEND_TOOLS:
                     # Do not execute it and do not log it as a tool call: asking
                     # for permission (or checkpointing) is the pause, not an action.
-                    args = tc["arguments"] if isinstance(tc["arguments"], dict) else {}
+                    args = tc["arguments"]
+                    if isinstance(args, str):
+                        try:
+                            args = json.loads(args)
+                        except json.JSONDecodeError:
+                            args = {}
+                    if not isinstance(args, dict):
+                        args = {}
                     summary = args.get("summary") or args.get("note") or ""
                     return _finish(
                         output_text=last_content,

@@ -7,6 +7,7 @@ import platform
 import shutil
 import time
 import traceback
+from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
@@ -99,7 +100,12 @@ def _run_item(agent: Any, item: EvalItem, rebuild: Any = None) -> AgentResult:
     return _merge_legs(legs)
 
 
-def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> dict[str, Any]:
+def _run_one_framework(
+    fw_name: str,
+    arena: ArenaSpec,
+    config: ArenaConfig,
+    progress: Callable[[str, str, bool], None] | None = None,
+) -> dict[str, Any]:
     record: dict[str, Any] = {"framework": fw_name, "items": [], "available": True}
     try:
         adapter = load_framework(fw_name)
@@ -181,6 +187,8 @@ def _run_one_framework(fw_name: str, arena: ArenaSpec, config: ArenaConfig) -> d
                     **({"traceback": error_tb} if error_tb else {}),
                 }
             )
+            if progress is not None:
+                progress(fw_name, item.id, outcome.passed)
     return record
 
 
@@ -190,6 +198,7 @@ def run(
     *,
     config: ArenaConfig | None = None,
     only: set[str] | None = None,
+    progress: Callable[[str, str, bool], None] | None = None,
 ) -> dict[str, Any]:
     config = config or ArenaConfig.from_env()
     arena = load_arena(arena_id)
@@ -213,17 +222,28 @@ def run(
         checkpoints.mkdir(parents=True, exist_ok=True)
         config = replace(config, checkpoint_dir=str(checkpoints))
 
-    mock: MockServer | None = None
+    mock: Any = None
     if config.mode == "mock":
         # The declared tool list lets the mock tell a delegate advertised as an
         # ordinary tool from a task tool the arena actually asked for.
         mock = MockServer(arena.mock_script_path, arena_tools=arena.tools).start()
         config = replace(config, base_url=mock.base_url, api_key="mock-key")
+    elif config.mode == "codex":
+        from .llm.codex_bridge import CodexBridge
+
+        mock = CodexBridge(config.model, timeout_s=max(1, config.request_timeout_s - 10)).start()
+        config = replace(
+            config,
+            base_url=mock.base_url,
+            api_key=mock.api_key,
+            price_input_per_m=0,
+            price_output_per_m=0,
+        )
 
     started = _now_iso()
     t0 = time.perf_counter()
     try:
-        frameworks = [_run_one_framework(name, arena, config) for name in framework_names]
+        frameworks = [_run_one_framework(name, arena, config, progress) for name in framework_names]
     finally:
         if mock is not None:
             mock.stop()
@@ -233,7 +253,20 @@ def run(
         "arena": arena.id,
         "arena_description": arena.description,
         "mode": config.mode,
-        "model": config.model if config.mode == "live" else "mock-model",
+        "model": "mock-model" if config.mode == "mock" else config.model,
+        **(
+            {
+                "bridge": {
+                    "backend": "codex exec",
+                    "purpose": "functional testing only",
+                    "temperature_applied": False,
+                    "usage_scope": "Codex context and transport envelope included",
+                    "billing": "subscription usage; API cost not applicable",
+                }
+            }
+            if config.mode == "codex"
+            else {}
+        ),
         "temperature": config.temperature,
         "repeat": config.repeat,
         "dataset_size": len(arena.dataset),
