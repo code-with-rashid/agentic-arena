@@ -131,6 +131,8 @@ def write_charts(record: dict[str, Any]) -> Path:
     subtitle = f"{record['arena']} · {record['model']} · {record['started_at']}"
     if record.get("mode") == "mock":
         subtitle += "  — mock mode: plumbing only, not a quality signal"
+    elif record.get("mode") == "codex":
+        subtitle += " — Codex bridge: functional tests only; API cost N/A"
 
     labels = [r["framework"] for r in rows]
     index = [f"# Charts — `{record['arena']}`", "", f"_{subtitle}_", ""]

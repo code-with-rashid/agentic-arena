@@ -102,7 +102,12 @@ def _render_markdown(record: dict[str, Any], rows: list[dict[str, Any]]) -> str:
         f"> {record['arena_description']}",
         "",
         f"- **Mode:** {record['mode']}"
-        + ("  ⚠️ plumbing only — not a quality signal" if record["mode"] == "mock" else ""),
+        + ("  ⚠️ plumbing only — not a quality signal" if record["mode"] == "mock" else "")
+        + (
+            " — Codex bridge: functional testing only; not a native API benchmark"
+            if record["mode"] == "codex"
+            else ""
+        ),
         f"- **Model:** {record['model']}",
         f"- **Dataset:** {record['dataset_size']} items × {record['repeat']} repeat(s)",
         f"- **Run at:** {record['started_at']} ({record['duration_s']}s)",
@@ -124,6 +129,14 @@ def _render_markdown(record: dict[str, Any], rows: list[dict[str, Any]]) -> str:
             f"{r['mean_latency_s']:.3f}s | {r['mean_tokens']:.0f} | {r['mean_llm_calls']:.2f} | "
             f"${r['est_cost_usd']:.4f} |"
         )
+
+    if record["mode"] == "codex":
+        lines += [
+            "",
+            "Codex adds its own context and JSON translation. Temperature is not applied; "
+            "tokens and latency include the bridge. $0 means no API cost estimate, "
+            "not free usage: requests consume the signed-in Codex allowance.",
+        ]
 
     if record.get("repeat", 1) > 1:
         lines += [
@@ -193,6 +206,8 @@ def output_dir_for(record: dict[str, Any]) -> Path:
     """
     if record.get("mode") == "live":
         return RESULTS_DIR / record["arena"]
+    if record.get("mode") == "codex":
+        return RUNS_DIR / "codex-scorecards" / record["arena"]
     return RUNS_DIR / "scorecards" / record["arena"]
 
 

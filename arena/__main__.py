@@ -44,7 +44,7 @@ def _resolve_frameworks(values: list[str], arena_id: str | None = None) -> list[
 def _cmd_run(args: argparse.Namespace) -> int:
     frameworks = _resolve_frameworks(args.framework, args.arena)
     config = ArenaConfig.from_env(mode=args.mode, repeat=args.repeat)
-    if config.mode == "live" and config.api_key in ("", "mock-key"):
+    if config.mode == "live" and config.api_key in ("", "mock-key", "sk-replace-me"):
         print(
             "refusing live run: set OPENAI_API_KEY (and OPENAI_BASE_URL / ARENA_MODEL)",
             file=sys.stderr,
@@ -56,7 +56,17 @@ def _cmd_run(args: argparse.Namespace) -> int:
     if only:
         print(f"items: {', '.join(sorted(only))}  (partial run, no scorecard)")
     print(f"frameworks: {', '.join(frameworks)}")
-    record = run_arena(args.arena, frameworks, config=config, only=only)
+
+    def progress(framework: str, item_id: str, passed: bool) -> None:
+        print(f"  {framework}/{item_id}: {'passed' if passed else 'failed'}", flush=True)
+
+    record = run_arena(
+        args.arena,
+        frameworks,
+        config=config,
+        only=only,
+        progress=progress if config.mode != "mock" else None,
+    )
 
     for fw in record["frameworks"]:
         if not fw.get("available"):
@@ -155,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument(
         "--framework", action="append", default=[], help="repeatable; 'all' for every adapter"
     )
-    p_run.add_argument("--mode", choices=["mock", "live"], default=None)
+    p_run.add_argument("--mode", choices=["mock", "live", "codex"], default=None)
     p_run.add_argument("--repeat", type=int, default=1)
     p_run.add_argument("--no-scorecard", action="store_true")
     p_run.add_argument(
@@ -173,12 +183,12 @@ def main(argv: list[str] | None = None) -> int:
 
     p_sc = sub.add_parser("scorecard", help="regenerate a scorecard from the latest run")
     p_sc.add_argument("--arena", required=True)
-    p_sc.add_argument("--mode", choices=["mock", "live"], default=None)
+    p_sc.add_argument("--mode", choices=["mock", "live", "codex"], default=None)
     p_sc.set_defaults(func=_cmd_scorecard)
 
     p_ch = sub.add_parser("chart", help="render scorecard bar charts (SVG) from the latest run")
     p_ch.add_argument("--arena", required=True)
-    p_ch.add_argument("--mode", choices=["mock", "live"], default=None)
+    p_ch.add_argument("--mode", choices=["mock", "live", "codex"], default=None)
     p_ch.set_defaults(func=_cmd_chart)
 
     p_rf = sub.add_parser(
@@ -187,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
     p_rf.set_defaults(func=_cmd_refreshed)
 
     p_sum = sub.add_parser("summary", help="one cross-arena view from the latest run of each arena")
-    p_sum.add_argument("--mode", choices=["mock", "live"], default=None)
+    p_sum.add_argument("--mode", choices=["mock", "live", "codex"], default=None)
     p_sum.add_argument("--print", action="store_true", help="also write it to stdout")
     p_sum.set_defaults(func=_cmd_summary)
 

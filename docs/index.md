@@ -1,5 +1,20 @@
 # agentic-arena docs
 
+## Start with the question you need answered
+
+| Question | Best starting point |
+|---|---|
+| Which framework fits my workflow? | [Decision guide](decision-guide.md) and [feature matrix](feature-matrix.md) |
+| What has this project actually measured? | [Findings](findings.md), with reproduction commands |
+| Is the comparison fair? | [Methodology](methodology.md) and [fairness controls](fairness-controls.md) |
+| Can I test a real model without API billing? | [Codex subscription functional tests](codex-bridge.md) |
+| How do I add an adapter or arena? | [Contributing guide](https://github.com/code-with-rashid/agentic-arena/blob/main/CONTRIBUTING.md) |
+
+The evidence has three levels: `mock` proves wiring and isolates framework
+mechanics; `codex` exercises real responses through a subscription-backed
+translation layer; `live` is the native OpenAI-compatible provider benchmark.
+Only native `live` scorecards are published under `results/`.
+
 - **[Findings](findings.md)** — every result the repo has measured, in one page,
   with the command that regenerates each number. Start here if you want the
   answers rather than the machinery.
@@ -7,6 +22,8 @@
 - [Fairness controls](fairness-controls.md) — every control the arena owns and who
   checks it actually reaches each adapter. Four bugs of that shape have been found
   one at a time; this is the list that finds the next one by inspection.
+- [Codex subscription tests](codex-bridge.md) — real-model functional checks with
+  an existing ChatGPT/Codex login, clearly separated from native API benchmarks.
 - [Decision guide](decision-guide.md) — how to pick a framework. Every claim tagged
   [measured] or [claimed]; nothing about answer quality until a live run exists.
 - [Feature matrix](feature-matrix.md) — capabilities that aren't scorecard numbers.

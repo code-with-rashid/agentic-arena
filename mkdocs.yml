@@ -52,6 +52,7 @@ nav:
   - Findings: findings.md
   - Methodology: methodology.md
   - Fairness controls: fairness-controls.md
+  - Codex subscription tests: codex-bridge.md
   - Decision guide: decision-guide.md
   - Feature matrix: feature-matrix.md
   - Comparisons:
