@@ -61,6 +61,7 @@ nav:
       - Deploy: journeys/deploy.md
   - Harness architecture: concepts/architecture.md
   - Build your own harness: build/README.md
+  - Minimal tool loop: build/loop.md
   - Findings: findings.md
   - Methodology: methodology.md
   - Fairness controls: fairness-controls.md
