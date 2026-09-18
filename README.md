@@ -7,6 +7,24 @@
 
 > Compare, explore, and choose the right agentic framework — with numbers you can regenerate.
 
+Agentic Arena is growing into a **concept-first field guide and practical lab for
+agentic development**. Learn the mechanics, assemble a stack, or build a harness
+from scratch. Existing framework comparisons supply reproducible evidence.
+
+| What do you need to do? | Start here |
+|---|---|
+| Understand the mechanics | [Learn](docs/journeys/learn.md) |
+| Build an agent or your own harness | [Build](docs/journeys/build.md) |
+| Select components and tradeoffs | [Choose](docs/journeys/choose.md) |
+| Connect tools and agents | [Connect](docs/journeys/connect.md) |
+| Diagnose cost and reliability | [Debug](docs/journeys/debug.md) |
+| Define authority and boundaries | [Secure](docs/journeys/secure.md) |
+| Verify a claim or compare designs | [Evaluate](docs/journeys/evaluate.md) |
+| Recover and operate a workload | [Deploy](docs/journeys/deploy.md) |
+
+See the [ecosystem coverage map](docs/ecosystem.md) for available evidence and
+research gaps. No single provider, framework, or harness defines these paths.
+
 Agent framework comparisons usually mix models, prompts, tools, and tasks, then
 attribute the outcome to the framework. Agentic Arena holds those inputs constant.
 It runs shared reference workloads through the adapters that support them and records the

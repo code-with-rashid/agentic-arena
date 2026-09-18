@@ -49,6 +49,18 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Ecosystem map: ecosystem.md
+  - Start from a problem:
+      - Learn: journeys/learn.md
+      - Build: journeys/build.md
+      - Choose: journeys/choose.md
+      - Connect: journeys/connect.md
+      - Debug: journeys/debug.md
+      - Secure: journeys/secure.md
+      - Evaluate: journeys/evaluate.md
+      - Deploy: journeys/deploy.md
+  - Harness architecture: concepts/architecture.md
+  - Build your own harness: build/README.md
   - Findings: findings.md
   - Methodology: methodology.md
   - Fairness controls: fairness-controls.md
