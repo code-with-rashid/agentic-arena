@@ -65,6 +65,7 @@ nav:
   - Context and memory: build/context.md
   - Tools and interoperability: build/protocols.md
   - Reliability and restart: build/reliability.md
+  - Evaluation workbench: build/evaluation.md
   - Troubleshooting:
       - Problem register: problems/index.md
       - Context growth: problems/context-growth.md
