@@ -1,5 +1,7 @@
 # agentic-arena docs
 
+Diagnose a concrete failure with the [problem register](problems/index.md).
+
 Start from your problem:
 [Learn](journeys/learn.md) · [Build](journeys/build.md) ·
 [Choose](journeys/choose.md) · [Connect](journeys/connect.md) ·
