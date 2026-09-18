@@ -1,0 +1,2 @@
+# Optional lesson only; protocol/tool API reviewed against this exact SDK tag.
+mcp==2.2.0

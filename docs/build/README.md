@@ -3,6 +3,7 @@
 1. Read [architecture](../concepts/architecture.md).
 2. Run [the model/tool loop](loop.md) and its failure experiments.
 3. Explore [context, retrieval, and memory](context.md).
+4. Exercise [tool interoperability over MCP](protocols.md).
 
 Start with [architecture](../concepts/architecture.md): a model proposes actions;
 the harness owns state, dispatch, authority, budgets, observation, and stopping.

@@ -63,6 +63,7 @@ nav:
   - Build your own harness: build/README.md
   - Minimal tool loop: build/loop.md
   - Context and memory: build/context.md
+  - Tools and interoperability: build/protocols.md
   - Troubleshooting:
       - Problem register: problems/index.md
       - Context growth: problems/context-growth.md
