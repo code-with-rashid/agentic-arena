@@ -62,6 +62,7 @@ nav:
   - Harness architecture: concepts/architecture.md
   - Build your own harness: build/README.md
   - Minimal tool loop: build/loop.md
+  - Context and memory: build/context.md
   - Troubleshooting:
       - Problem register: problems/index.md
       - Context growth: problems/context-growth.md
