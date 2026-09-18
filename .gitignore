@@ -28,6 +28,13 @@ htmlcov/
 .DS_Store
 Thumbs.db
 
+# Obsidian: share portable link settings, keep personal state local
+knowledge/.obsidian/*
+!knowledge/.obsidian/app.json
+knowledge/.trash/
+knowledge/personal/*
+!knowledge/personal/README.md
+
 # Arena run artifacts (raw traces are large; scorecards under results/ ARE committed)
 runs/
 results/**/raw/

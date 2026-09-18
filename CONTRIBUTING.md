@@ -5,6 +5,11 @@ cell**. This guide walks through that, plus adding a whole new framework or aren
 
 ## Ground rules
 
+For research, project profiles, and direction notes, start with the
+[knowledge base](knowledge/README.md) and its
+[maintenance workflow](knowledge/operations/maintenance.md). It provides reusable
+templates and distinguishes upstream claims from locally reproduced evidence.
+
 - Keep the comparison fair. Read [docs/methodology.md](docs/methodology.md) first.
   An adapter must not swap the model, change what the shared tools do, or special-case
   individual eval items.

@@ -187,8 +187,8 @@ No live scorecard exists yet, so **nothing here is about answer quality**. What
   smolagents, whose templated system prompt is resent on every request and
   re-describes the tools it has already sent as a schema.
 - Under eight scripted faults, LangGraph and the OpenAI Agents SDK each lose one
-  item and smolagents loses four — exactly the four its tool validator rejects
-  before the tool body runs, which it never writes back into the conversation.
+  item. smolagents completes all eight, but validator-rejected calls consume its
+  six-call budget because the error never reaches the model's transcript.
 - Six frameworks pause for a human, by six genuinely different mechanisms, all
   producing an identical trace to the scorer. Five of the six survive the process
   being killed; Agent Framework's pause does not. Google ADK's pause is
@@ -207,6 +207,13 @@ gotchas found while writing each adapter, and a clear split between what is
 measured and what is merely claimed upstream.
 
 ## Documentation
+
+The [Agentic Ecosystem Knowledge Base](knowledge/README.md) maps the broader
+development lifecycle, related repositories, research evidence, and our planned
+extensions. Open `knowledge/` as an Obsidian vault, or read its Markdown in any
+editor. Start with the [ecosystem vision](knowledge/strategy/vision.md) and
+[delivery plan](knowledge/strategy/delivery-plan.md). Coding harnesses can use
+[knowledge/HARNESS.md](knowledge/HARNESS.md) as their reference entry point.
 
 The full docs — methodology, per-framework deep dives, decision guide, fairness
 controls, and every measured finding — live in [`docs/`](docs/index.md) and build
