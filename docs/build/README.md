@@ -1,5 +1,7 @@
 # Build your own harness
 
+Continue with [reliability, approval and restart](reliability.md).
+
 1. Read [architecture](../concepts/architecture.md).
 2. Run [the model/tool loop](loop.md) and its failure experiments.
 3. Explore [context, retrieval, and memory](context.md).
