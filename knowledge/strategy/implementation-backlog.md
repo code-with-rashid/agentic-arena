@@ -6,10 +6,12 @@ tags: [agentic-ecosystem]
 
 # Ordered Implementation Backlog
 
-Implementation is now available on the review branch; see the
+The roadmap was merged in [PR #120](https://github.com/code-with-rashid/agentic-arena/pull/120),
+deployed to the [public field guide](https://code-with-rashid.github.io/agentic-arena/),
+and its issues were closed on 2026-09-19. See the
 [2026-09-19 evidence record](../research/2026-09-19-implementation.md) and
 [build path](../../docs/build/README.md). The GitHub tracker remains authoritative
-for acceptance/merge status. Optional runtime verification is stated separately.
+for future work. Optional runtime verification is stated separately.
 
 [Roadmap issue #119](https://github.com/code-with-rashid/agentic-arena/issues/119) is the public tracker. All issues were open when created. Check GitHub for current state; this note is not a separate completion ledger.
 

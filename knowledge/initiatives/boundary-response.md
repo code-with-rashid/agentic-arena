@@ -8,11 +8,11 @@ tags: [agentic-ecosystem]
 
 # Boundary Response Arena
 
-Status: implemented for review in [PR #120](https://github.com/code-with-rashid/agentic-arena/pull/120);
-[issue #107](https://github.com/code-with-rashid/agentic-arena/issues/107) remains open
-until acceptance and merge. The [arena guide](../../docs/arenas/boundary_response.md)
-contains the current contract, metrics and limits. The final local two-repeat run
-passed 96/96 mock cases across vanilla, LangGraph and OpenAI Agents.
+Status: merged in [PR #120](https://github.com/code-with-rashid/agentic-arena/pull/120)
+at commit `ca622bf`; [issue #107](https://github.com/code-with-rashid/agentic-arena/issues/107)
+is complete. The [arena guide](../../docs/arenas/boundary_response.md) contains the
+current contract, metrics and limits. The final local two-repeat run passed 96/96
+mock cases across vanilla, LangGraph and OpenAI Agents.
 
 Roadmap update: this is a supporting reliability/security experiment, not the
 project's organizing direction or first implementation task. It follows the

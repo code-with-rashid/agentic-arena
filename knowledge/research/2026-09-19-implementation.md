@@ -28,11 +28,11 @@ Coverage gaps remain visible; this milestone does not cover every future topic.
 | #117 | [Security/operations](../../docs/build/security-operations.md) | Container recipe passed in Linux CI, including effective limits and teardown; local Docker startup unavailable |
 | #118 | [Design dossier](../../docs/build/design-dossier.md) | Proposed contracts, alternatives and acceptance experiments; no production runtime |
 
-Dependencies are implemented as ordered commits on one review branch,
+Dependencies were implemented as ordered commits on one branch,
 `codex/ecosystem-field-guide`, rather than separately merged prerequisite PRs.
-Issues remain open until the work is accepted and merged.
+PR #120 was merged to `main` as `ca622bf` and issues #107–#119 were closed.
 
-Review: [PR #120](https://github.com/code-with-rashid/agentic-arena/pull/120).
+Merge: [PR #120](https://github.com/code-with-rashid/agentic-arena/pull/120).
 The final end-to-end command used two repetitions and generated the standard
 scorecard with separate boundary dimensions: **96/96 item runs passed**,
 32/32 per adapter, 20/20 propagated denials and 28/28 permitted effects per
@@ -57,6 +57,16 @@ Docker 28.0.4 observed UID 65534, zero effective capabilities, no-new-privileges
 temporary write and successful teardown. Image digest:
 `python@sha256:64259673bf7dc32a42821929e59682f6cfda0341f0a5345af35d209db236940e`.
 This is a scoped runtime observation, not certification.
+
+## Deployment
+
+GitHub Pages was enabled with the repository's existing Actions workflow and the
+documented `PAGES_ENABLED=true` gate. The build and deploy jobs passed in
+[run 35439663925](https://github.com/code-with-rashid/agentic-arena/actions/runs/35439663925).
+The live site was inspected at
+[code-with-rashid.github.io/agentic-arena](https://code-with-rashid.github.io/agentic-arena/)
+and exposes the journeys, build lessons, boundary arena, security guide, and
+design dossier through its navigation.
 
 No paid/native model calls were made for this milestone. Real-model recovery,
 delegation boundary provenance, distributed leases, production identity,
