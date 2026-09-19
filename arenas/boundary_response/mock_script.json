@@ -1,0 +1,364 @@
+{
+  "scenarios": [
+    {
+      "match": "[file-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[file-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[network-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[network-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[credential-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[credential-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[approval-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[approval-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[policy_failure-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[policy_failure-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[mixed_batch-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            },
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "fallback"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[mixed_batch-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            },
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "fallback"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[repeated_denial-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[repeated_denial-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[recovery-allowed]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "fallback"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    },
+    {
+      "match": "[recovery-denied]",
+      "turns": [
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "primary"
+              }
+            }
+          ]
+        },
+        {
+          "tool_calls": [
+            {
+              "name": "boundary_action",
+              "arguments": {
+                "action": "fallback"
+              }
+            }
+          ]
+        },
+        {
+          "content": "Fixture task finished."
+        }
+      ]
+    }
+  ]
+}

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import platform
+import subprocess
 from dataclasses import asdict, dataclass
 from hashlib import sha256
 from pathlib import Path
-import platform
-import subprocess
 
 SCHEMA = "arena.evidence/v1"
 

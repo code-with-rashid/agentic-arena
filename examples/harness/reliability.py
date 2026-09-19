@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-from contextlib import closing
 import json
 import os
-from pathlib import Path
 import sqlite3
 import subprocess
 import sys
 import tempfile
+from contextlib import closing, suppress
+from pathlib import Path
 
 
 class Sink:
@@ -83,10 +83,8 @@ async def cancellation_demo():
     task = asyncio.create_task(bounded(work))
     await asyncio.wait_for(started.wait(), 1)
     task.cancel()
-    try:
+    with suppress(asyncio.CancelledError):
         await task
-    except asyncio.CancelledError:
-        pass
     return cleaned.is_set()
 
 

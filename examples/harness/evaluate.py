@@ -1,11 +1,13 @@
 """Compare retry identity designs using a shared task and an independent sink."""
 
 from __future__ import annotations
+
 import argparse
 import json
-from pathlib import Path
 import tempfile
 import time
+from pathlib import Path
+
 from arena.evidence import ActionEvent, audit, provenance
 from examples.harness.reliability import Sink
 
@@ -24,7 +26,7 @@ def compare() -> dict:
                 calls.append(call)
                 operation = "booking" if stable else f"booking-{attempt}"
 
-                def event(kind, value):
+                def event(kind, value, events=events, call=call):
                     events.append(
                         ActionEvent(
                             "retry-comparison", DATASET["id"], call, "lesson", kind, value

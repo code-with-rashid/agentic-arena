@@ -602,6 +602,7 @@ class _Handler(BaseHTTPRequestHandler):
         self.server.served.append(  # type: ignore[attr-defined]
             {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}
         )
+        self.server.response_messages.append(message)  # type: ignore[attr-defined]
 
         if req.get("stream"):
             # A real provider sends usage on a streamed response only when the
@@ -738,6 +739,7 @@ class MockServer:
         self._httpd.script = self.script  # type: ignore[attr-defined]
         self._httpd.requests = []  # type: ignore[attr-defined]
         self._httpd.served = []  # type: ignore[attr-defined]
+        self._httpd.response_messages = []  # type: ignore[attr-defined]
         self._httpd.arena_tools = list(arena_tools) if arena_tools is not None else None  # type: ignore[attr-defined]
         self._httpd.faults = list(faults)  # type: ignore[attr-defined]
         self._httpd.retry_after = retry_after  # type: ignore[attr-defined]
@@ -745,6 +747,11 @@ class MockServer:
         self._httpd.forward_context = str(forward_context)  # type: ignore[attr-defined]
         self._httpd.attempts = []  # type: ignore[attr-defined]
         self._thread: threading.Thread | None = None
+
+    @property
+    def response_messages(self) -> list[dict[str, Any]]:
+        """Messages emitted on the mock wire, independent of adapter reports."""
+        return self._httpd.response_messages  # type: ignore[attr-defined,no-any-return]
 
     @property
     def requests(self) -> list[dict[str, Any]]:
