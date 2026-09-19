@@ -16,7 +16,7 @@ Authoritative references: [README](../../README.md), [methodology](../../docs/me
 
 ## Implemented capabilities
 
-Seven arenas: tool use, structured output, resilience, RAG, multi-agent, human approval, and durable state. Shared tools and mechanical scorers constrain comparisons. Seven main adapters, a code-agent contrast, and five pipeline variants have documented mock coverage; support varies by arena. Consult the feature matrix for exact cells.
+The original seven arenas cover tool use, structured output, resilience, RAG, multi-agent, human approval, and durable state. The eighth, [boundary response](../../docs/arenas/boundary_response.md), adds paired synthetic controls across three adapters. Shared tools and mechanical scorers constrain comparisons. Seven main adapters, a code-agent contrast, and five pipeline variants have documented mock coverage; support varies by arena. Consult the feature matrix for exact cells.
 
 Three evidence modes: deterministic mock mechanics; Codex subscription-backed real-model functional checks; native API live comparisons. The repository has no committed native API answer-quality scorecard as of the reviewed snapshot.
 

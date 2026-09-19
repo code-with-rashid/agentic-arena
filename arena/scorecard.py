@@ -130,6 +130,34 @@ def _render_markdown(record: dict[str, Any], rows: list[dict[str, Any]]) -> str:
             f"${r['est_cost_usd']:.4f} |"
         )
 
+    if record.get("arena") == "boundary_response":
+        lines += [
+            "",
+            "## Boundary dimensions (synthetic fixtures only)",
+            "",
+            "Zero denominators are not assessed; this is not a security rating.",
+            "",
+            "| Framework | Denial propagation | Allowed work | Fail closed | Complete traces | Request amplification |",
+            "|---|---:|---:|---:|---:|---:|",
+        ]
+        for framework in record["frameworks"]:
+            if not framework["available"]:
+                continue
+            metrics = [item["metrics"] for item in framework["items"]]
+
+            def fraction(key, metrics=metrics):
+                passed = sum(m[key]["passed"] for m in metrics)
+                total = sum(m[key]["total"] for m in metrics)
+                return f"{passed}/{total}" if total else "not assessed"
+
+            count = len(metrics)
+            amplification = sum(m["retry_amplification"] for m in metrics) / count if count else 0
+            lines.append(
+                f"| {framework['framework']} | {fraction('denial_propagation')} | "
+                f"{fraction('allowed_work')} | {sum(m['fail_closed'] for m in metrics)}/{count} | "
+                f"{sum(m['trace_complete'] for m in metrics)}/{count} | {amplification:.2f} |"
+            )
+
     if record["mode"] == "codex":
         lines += [
             "",

@@ -25,7 +25,7 @@ Coverage gaps remain visible; this milestone does not cover every future topic.
 | #115 | [Reliability](../../docs/build/reliability.md) | Actual child-process crash after sink commit; fresh-process replay; cancellation/deadline cleanup |
 | #116 | [Evaluation](../../docs/build/evaluation.md) | Independent sink comparison; corrupted trace and false effect detected |
 | #107 | [Boundary response](../../docs/arenas/boundary_response.md) | 16 mock cases each through vanilla, LangGraph 1.2.11 and OpenAI Agents 0.22.0 |
-| #117 | [Security/operations](../../docs/build/security-operations.md) | Runnable container recipe; local Docker engine did not become ready; Linux CI verification tracked in PR |
+| #117 | [Security/operations](../../docs/build/security-operations.md) | Container recipe passed in Linux CI, including effective limits and teardown; local Docker startup unavailable |
 | #118 | [Design dossier](../../docs/build/design-dossier.md) | Proposed contracts, alternatives and acceptance experiments; no production runtime |
 
 Dependencies are implemented as ordered commits on one review branch,
@@ -43,9 +43,13 @@ and blanket refusal. These are mock mechanics, not model quality.
 
 The local Docker CLI was installed, but startup/info commands did not complete.
 The waiting client processes were stopped. This is an environment limitation,
-not a passing containment result. The opt-in recipe is exercised by the
-`learning-contracts` Linux CI workflow and records runtime/image identity and
-teardown. Review its actual run before claiming the recipe verified.
+not a passing containment result. The opt-in recipe passed in
+[Linux CI run 35425706375](https://github.com/code-with-rashid/agentic-arena/actions/runs/35425706375).
+Docker 28.0.4 observed UID 65534, zero effective capabilities, no-new-privileges,
+128 MiB memory, 32 processes, 0.5 CPU, only loopback, a read-only root, a permitted
+temporary write and successful teardown. Image digest:
+`python@sha256:64259673bf7dc32a42821929e59682f6cfda0341f0a5345af35d209db236940e`.
+This is a scoped runtime observation, not certification.
 
 No paid/native model calls were made for this milestone. Real-model recovery,
 delegation boundary provenance, distributed leases, production identity,
@@ -67,4 +71,3 @@ Open this repository's `knowledge/` folder as an Obsidian vault. Start with
 `knowledge/personal/` folder. Keep private plans and subjective preferences
 there; update public experiment notes only with reproducible, non-sensitive
 evidence. [Maintenance](../operations/maintenance.md) defines the update loop.
-

@@ -1,5 +1,9 @@
 # Framework deep dives
 
+Coverage counts below refer to the original seven arenas. The eighth,
+[boundary response](../arenas/boundary_response.md), currently covers only
+vanilla, LangGraph and OpenAI Agents SDK.
+
 One page per adapter — wiring notes, the gotchas that cost real debugging time,
 and results. Written and maintained by whoever owns the adapter.
 

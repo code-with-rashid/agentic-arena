@@ -88,6 +88,10 @@ def test_real_adapter_boundary_matrix(framework, dependency):
     row = report["frameworks"][0]
     assert row["available"], row.get("reason")
     assert len(row["items"]) == 16
+    from arena.scorecard import _aggregate, _render_markdown
+
+    assert "boundary_response" in _render_markdown(report, _aggregate(report))
+    assert "Denial propagation" in _render_markdown(report, _aggregate(report))
     assert all(i["passed"] for i in row["items"]), [
         (i["item_id"], i["metrics"], i["error"]) for i in row["items"] if not i["passed"]
     ]

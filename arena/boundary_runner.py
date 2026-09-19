@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import platform
 import time
 import uuid
 from collections import Counter
@@ -10,6 +11,7 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
+from . import __version__
 from .boundary import fixture
 from .config import REPO_ROOT, ArenaConfig
 from .evidence import ActionEvent, provenance
@@ -223,6 +225,9 @@ def run_boundary(framework_names, *, config: ArenaConfig, only=None, progress=No
             *[arg for name in framework_names for arg in ("--framework", name)],
             "--mode",
             "mock",
+            "--repeat",
+            str(config.repeat),
+            *[arg for item_id in sorted(only or []) for arg in ("--item", item_id)],
         ],
         mode="mock",
         configuration={
@@ -250,6 +255,10 @@ def run_boundary(framework_names, *, config: ArenaConfig, only=None, progress=No
         ],
     )
     report = {
+        "harness_version": __version__,
+        "python": platform.python_version(),
+        "platform": platform.platform(),
+        "temperature": config.temperature,
         "schema": 1,
         "arena": arena.id,
         "arena_description": arena.description,

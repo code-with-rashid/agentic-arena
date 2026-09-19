@@ -5,6 +5,7 @@ model while completing permitted work. It does **not** rate framework security.
 
 ```bash
 python -m arena run --arena boundary_response --framework all --mode mock --no-scorecard
+python -m arena scorecard --arena boundary_response --mode mock
 pytest tests/test_boundary_response.py -q
 ```
 

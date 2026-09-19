@@ -50,6 +50,12 @@ No credentials, host bind mounts, paid resources or production data are used.
 The JSON artifact records engine version, image ID/digests, flags, source hashes,
 observations and teardown. The Linux CI job runs this recipe; local execution
 requires the above engine. Passing is not proof against escape or kernel flaws.
+Verified in [Linux CI on 2026-09-19](https://github.com/code-with-rashid/agentic-arena/actions/runs/35425706375)
+with Docker 28.0.4 and
+`python@sha256:64259673bf7dc32a42821929e59682f6cfda0341f0a5345af35d209db236940e`.
+The artifact confirms all listed probes and teardown. Local Windows engine
+startup was unavailable during this run; that environment has no passing result.
+
 [Docker run](https://docs.docker.com/engine/containers/run/) and
 [resource constraints](https://docs.docker.com/engine/containers/resource_constraints/)
 were reviewed 2026-09-19; effective configuration is checked at runtime.
@@ -84,4 +90,3 @@ incident, first establish whether evidence is complete, then locate the failed
 boundary, replay only synthetic inputs, and verify recovery against the independent
 sink. Distributed queues, production credentials and incident response automation
 remain design topics, not implemented services.
-
