@@ -66,6 +66,8 @@ nav:
   - Tools and interoperability: build/protocols.md
   - Reliability and restart: build/reliability.md
   - Evaluation workbench: build/evaluation.md
+  - Security and operations: build/security-operations.md
+  - Harness design dossier: build/design-dossier.md
   - Troubleshooting:
       - Problem register: problems/index.md
       - Context growth: problems/context-growth.md
@@ -93,6 +95,7 @@ nav:
       - rag: arenas/rag.md
       - human_in_the_loop: arenas/human_in_the_loop.md
       - durable_state: arenas/durable_state.md
+      - boundary_response: arenas/boundary_response.md
   - Frameworks:
       - Overview: frameworks/README.md
       - LangGraph: frameworks/langgraph.md

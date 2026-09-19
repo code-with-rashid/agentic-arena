@@ -2,6 +2,11 @@
 
 Continue with [reliability, approval and restart](reliability.md).
 
+Then compare designs in the [evaluation workbench](evaluation.md), inspect
+[boundary response](../arenas/boundary_response.md), choose
+[security and operational boundaries](security-operations.md), and use the
+[design dossier](design-dossier.md) to plan a separate harness implementation.
+
 1. Read [architecture](../concepts/architecture.md).
 2. Run [the model/tool loop](loop.md) and its failure experiments.
 3. Explore [context, retrieval, and memory](context.md).
