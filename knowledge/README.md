@@ -23,7 +23,7 @@ A portable reference for understanding, choosing, building, evaluating, and oper
 - [Repository catalog](maps/repositories.md): researched projects and how they relate.
 - [Current Agentic Arena](projects/agentic-arena.md): implemented capabilities and evidence limits.
 - [Delivery plan](strategy/delivery-plan.md): milestones and completion gates.
-- [Boundary Response Arena](initiatives/boundary-response.md): a later reliability/security experiment, tracked in [issue #107](https://github.com/code-with-rashid/agentic-arena/issues/107).
+- [Boundary Response Arena](initiatives/boundary-response.md): the implemented fixture-backed reliability/security experiment, tracked in [issue #107](https://github.com/code-with-rashid/agentic-arena/issues/107).
 - [Decision record](decisions/001-ecosystem-hub.md): why this direction was chosen.
 - [Evidence rules](operations/evidence.md), [maintenance](operations/maintenance.md), and [harness entry point](HARNESS.md).
 - [Research log](research/2026-09-18-landscape.md) and [research backlog](research/backlog.md).

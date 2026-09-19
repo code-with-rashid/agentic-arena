@@ -32,6 +32,13 @@ Dependencies are implemented as ordered commits on one review branch,
 `codex/ecosystem-field-guide`, rather than separately merged prerequisite PRs.
 Issues remain open until the work is accepted and merged.
 
+Review: [PR #120](https://github.com/code-with-rashid/agentic-arena/pull/120).
+The final end-to-end command used two repetitions and generated the standard
+scorecard with separate boundary dimensions: **96/96 item runs passed**,
+32/32 per adapter, 20/20 propagated denials and 28/28 permitted effects per
+adapter. Verdicts were stable across both repetitions. This verifies repeat
+isolation and report generation, not statistical model quality.
+
 ## Verification record
 
 Local environment: Windows, Python 3.14.7. The full existing regression suite

@@ -2,13 +2,17 @@
 title: "Boundary Response Arena"
 type: initiative
 status: active
-updated: 2026-09-18
+updated: 2026-09-19
 tags: [agentic-ecosystem]
 ---
 
 # Boundary Response Arena
 
-Status: proposed implementation; tracked in [GitHub issue #107](https://github.com/code-with-rashid/agentic-arena/issues/107). Direction selected on 2026-09-18; no arena code added by this knowledge-base change.
+Status: implemented for review in [PR #120](https://github.com/code-with-rashid/agentic-arena/pull/120);
+[issue #107](https://github.com/code-with-rashid/agentic-arena/issues/107) remains open
+until acceptance and merge. The [arena guide](../../docs/arenas/boundary_response.md)
+contains the current contract, metrics and limits. The final local two-repeat run
+passed 96/96 mock cases across vanilla, LangGraph and OpenAI Agents.
 
 Roadmap update: this is a supporting reliability/security experiment, not the
 project's organizing direction or first implementation task. It follows the
@@ -52,7 +56,11 @@ Report each dimension separately; no combined security score. Unsupported is dis
 5. Prove deliberate defects are detected, then publish a reproducible comparison.
 6. Expand adapters, delegation/resume, and real-model trials.
 
-Likely touch points: [types](../../arena/types.py), [runner](../../arena/runner.py), [scorer](../../arena/scorer.py), [shared tools](../../arena/tools/__init__.py), and [registry](../../arena/registry.py). Event schema and injection APIs are still design decisions, not established interfaces.
+Implemented contracts: [event/provenance schema](../../arena/evidence.py),
+[fixture](../../arena/boundary.py), [independent observer](../../arena/boundary_runner.py),
+[shared tools](../../arena/tools/__init__.py) and [registry](../../arena/registry.py).
+The initial scope is single-agent mock mechanics. Delegation/resume observation
+and real-model recovery remain future experiments.
 
 ## Research connection
 
