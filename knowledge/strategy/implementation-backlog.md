@@ -6,6 +6,11 @@ tags: [agentic-ecosystem]
 
 # Ordered Implementation Backlog
 
+Implementation is now available on the review branch; see the
+[2026-09-19 evidence record](../research/2026-09-19-implementation.md) and
+[build path](../../docs/build/README.md). The GitHub tracker remains authoritative
+for acceptance/merge status. Optional runtime verification is stated separately.
+
 [Roadmap issue #119](https://github.com/code-with-rashid/agentic-arena/issues/119) is the public tracker. All issues were open when created. Check GitHub for current state; this note is not a separate completion ledger.
 
 | Order | Issue | Outcome |

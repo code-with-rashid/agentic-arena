@@ -8,6 +8,8 @@ tags: [agentic-ecosystem]
 
 # Agentic Ecosystem Knowledge Base
 
+Latest work: [roadmap implementation and verification](research/2026-09-19-implementation.md).
+
 A portable reference for understanding, choosing, building, evaluating, and operating agentic systems. Maintained alongside Agentic Arena. Open the repository's `knowledge/` directory as an existing vault in Obsidian, then open this note. No community plugins or paid sync are required. Standard Markdown links also work on GitHub and in coding harnesses.
 
 ## Start here

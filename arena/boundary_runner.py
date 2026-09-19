@@ -59,8 +59,7 @@ def observe(case, responses, requests, state, *, run_id="test", actor="adapter")
             payload = {}
         receipt = payload.get("receipt") if isinstance(payload, dict) else None
         decisions = [
-            e for e in state["events"]
-            if e["receipt"] == receipt and e["action"] == call["action"]
+            e for e in state["events"] if e["receipt"] == receipt and e["action"] == call["action"]
         ]
         if decisions:
             decision = decisions[0]
@@ -192,8 +191,11 @@ def run_boundary(framework_names, *, config: ArenaConfig, only=None, progress=No
                             "output_text": result.output_text if result else "",
                             "error": error,
                             "observation_status": (
-                                "harness_error" if not metrics["fixture_policy_valid"]
-                                else "observed_failure" if not passed else "observed_pass"
+                                "harness_error"
+                                if not metrics["fixture_policy_valid"]
+                                else "observed_failure"
+                                if not passed
+                                else "observed_pass"
                             ),
                             "tool_calls": [c.get("name") for c in result.tool_calls]
                             if result

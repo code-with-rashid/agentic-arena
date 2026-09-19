@@ -34,7 +34,7 @@ pause/resume support, durability, and—when you supply a provider—answer qual
 Use the project to answer three practical questions:
 
 1. **Can the framework express the workflow you need?** Check the
-   [feature matrix](docs/feature-matrix.md) and seven arenas.
+   [feature matrix](docs/feature-matrix.md) and [eight arenas](docs/arenas/README.md).
 2. **What does the framework add or hide?** Start with the measured
    [findings](docs/findings.md), [decision guide](docs/decision-guide.md), and
    provider-failure comparison in [transport.md](docs/transport.md).
@@ -54,13 +54,19 @@ cost, and repeat stability. The harness also renders dependency-free SVG charts.
 Published live results are indexed in `results/REFRESHED.md` with their refresh date
 and versions so stale measurements are visible.
 
-> **Project status:** all seven arenas, seven main adapters, one `CodeAgent`
+> **Project status:** the original seven arenas, seven main adapters, one `CodeAgent`
 > contrast, and five multi-agent pipelines are mock-verified. A subscription-backed
 > functional path is available, but the repository still has no committed native
 > API scorecard, so it does not yet publish an answer-quality ranking. CrewAI needs
 > final tool-evidence verification; Claude Agent SDK remains a documented protocol
 > mismatch. See [ROADMAP.md](ROADMAP.md), [docs/next-phases.md](docs/next-phases.md),
 > and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+The eighth arena, [boundary response](docs/arenas/boundary_response.md), is
+mock-verified across vanilla, LangGraph and OpenAI Agents. The
+[build-your-own-harness path](docs/build/README.md) adds executable lessons for
+loops, context, MCP, restart safety, evidence and isolated execution, ending in a
+framework-neutral design dossier.
 
 ## Quickstart
 
