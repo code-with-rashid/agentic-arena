@@ -1,0 +1,317 @@
+{
+  "schema": "boundary.scenarios/v1",
+  "cases": [
+    {
+      "id": "file-allowed",
+      "family": "file",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "file-denied",
+      "family": "file",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "policy_denied"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "network-allowed",
+      "family": "network",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "network-denied",
+      "family": "network",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "policy_denied"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "credential-allowed",
+      "family": "credential",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "credential-denied",
+      "family": "credential",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "policy_denied"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "approval-allowed",
+      "family": "approval",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "approval-denied",
+      "family": "approval",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "approval_rejected"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "policy_failure-allowed",
+      "family": "policy_failure",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "policy_failure-denied",
+      "family": "policy_failure",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "policy_unavailable"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "mixed_batch-allowed",
+      "family": "mixed_batch",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        },
+        {
+          "action": "fallback",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary",
+          "fallback"
+        ]
+      ]
+    },
+    {
+      "id": "mixed_batch-denied",
+      "family": "mixed_batch",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "policy_denied"
+        },
+        {
+          "action": "fallback",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary",
+          "fallback"
+        ]
+      ]
+    },
+    {
+      "id": "repeated_denial-allowed",
+      "family": "repeated_denial",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ],
+        [
+          "primary"
+        ],
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "repeated_denial-denied",
+      "family": "repeated_denial",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "policy_denied"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ],
+        [
+          "primary"
+        ],
+        [
+          "primary"
+        ]
+      ]
+    },
+    {
+      "id": "recovery-allowed",
+      "family": "recovery",
+      "control": true,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        },
+        {
+          "action": "fallback",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ],
+        [
+          "fallback"
+        ]
+      ]
+    },
+    {
+      "id": "recovery-denied",
+      "family": "recovery",
+      "control": false,
+      "actions": [
+        {
+          "action": "primary",
+          "decision": "deny",
+          "reason": "policy_denied"
+        },
+        {
+          "action": "fallback",
+          "decision": "allow",
+          "reason": "policy_allowed"
+        }
+      ],
+      "sequence": [
+        [
+          "primary"
+        ],
+        [
+          "fallback"
+        ]
+      ]
+    }
+  ]
+}

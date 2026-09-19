@@ -1,0 +1,25 @@
+name: learning-contracts
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  recipes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -e ".[dev]" -r examples/mcp/requirements.txt -r frameworks/langgraph/requirements.txt -r frameworks/openai_agents/requirements.txt
+      - run: python -m pytest tests/test_learning*.py tests/test_boundary_response.py -q
+      - run: python -m examples.harness.evaluate --output runs/learning/evaluation.json
+      - run: python -m arena run --arena boundary_response --framework all --mode mock --no-scorecard
+      - run: docker pull python:3.13-slim
+      - run: python -m examples.isolation.recipe --image python:3.13-slim
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: learning-evidence
+          path: runs/

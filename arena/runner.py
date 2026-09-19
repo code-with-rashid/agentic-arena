@@ -201,6 +201,10 @@ def run(
     progress: Callable[[str, str, bool], None] | None = None,
 ) -> dict[str, Any]:
     config = config or ArenaConfig.from_env()
+    if arena_id == "boundary_response":
+        from .boundary_runner import run_boundary
+
+        return run_boundary(framework_names, config=config, only=only, progress=progress)
     arena = load_arena(arena_id)
 
     if only:

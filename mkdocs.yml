@@ -49,6 +49,33 @@ markdown_extensions:
 
 nav:
   - Home: index.md
+  - Ecosystem map: ecosystem.md
+  - Start from a problem:
+      - Learn: journeys/learn.md
+      - Build: journeys/build.md
+      - Choose: journeys/choose.md
+      - Connect: journeys/connect.md
+      - Debug: journeys/debug.md
+      - Secure: journeys/secure.md
+      - Evaluate: journeys/evaluate.md
+      - Deploy: journeys/deploy.md
+  - Harness architecture: concepts/architecture.md
+  - Build your own harness: build/README.md
+  - Minimal tool loop: build/loop.md
+  - Context and memory: build/context.md
+  - Tools and interoperability: build/protocols.md
+  - Reliability and restart: build/reliability.md
+  - Evaluation workbench: build/evaluation.md
+  - Security and operations: build/security-operations.md
+  - Harness design dossier: build/design-dossier.md
+  - Troubleshooting:
+      - Problem register: problems/index.md
+      - Context growth: problems/context-growth.md
+      - Tool errors: problems/tool-errors.md
+      - Retries: problems/retry-amplification.md
+      - Approval: problems/approval.md
+      - Restart: problems/restart.md
+      - Delegation: problems/delegation-cost.md
   - Findings: findings.md
   - Methodology: methodology.md
   - Fairness controls: fairness-controls.md
@@ -68,6 +95,7 @@ nav:
       - rag: arenas/rag.md
       - human_in_the_loop: arenas/human_in_the_loop.md
       - durable_state: arenas/durable_state.md
+      - boundary_response: arenas/boundary_response.md
   - Frameworks:
       - Overview: frameworks/README.md
       - LangGraph: frameworks/langgraph.md

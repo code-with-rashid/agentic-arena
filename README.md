@@ -7,6 +7,24 @@
 
 > Compare, explore, and choose the right agentic framework — with numbers you can regenerate.
 
+Agentic Arena is growing into a **concept-first field guide and practical lab for
+agentic development**. Learn the mechanics, assemble a stack, or build a harness
+from scratch. Existing framework comparisons supply reproducible evidence.
+
+| What do you need to do? | Start here |
+|---|---|
+| Understand the mechanics | [Learn](docs/journeys/learn.md) |
+| Build an agent or your own harness | [Build](docs/journeys/build.md) |
+| Select components and tradeoffs | [Choose](docs/journeys/choose.md) |
+| Connect tools and agents | [Connect](docs/journeys/connect.md) |
+| Diagnose cost and reliability | [Debug](docs/journeys/debug.md) |
+| Define authority and boundaries | [Secure](docs/journeys/secure.md) |
+| Verify a claim or compare designs | [Evaluate](docs/journeys/evaluate.md) |
+| Recover and operate a workload | [Deploy](docs/journeys/deploy.md) |
+
+See the [ecosystem coverage map](docs/ecosystem.md) for available evidence and
+research gaps. No single provider, framework, or harness defines these paths.
+
 Agent framework comparisons usually mix models, prompts, tools, and tasks, then
 attribute the outcome to the framework. Agentic Arena holds those inputs constant.
 It runs shared reference workloads through the adapters that support them and records the
@@ -16,7 +34,7 @@ pause/resume support, durability, and—when you supply a provider—answer qual
 Use the project to answer three practical questions:
 
 1. **Can the framework express the workflow you need?** Check the
-   [feature matrix](docs/feature-matrix.md) and seven arenas.
+   [feature matrix](docs/feature-matrix.md) and [eight arenas](docs/arenas/README.md).
 2. **What does the framework add or hide?** Start with the measured
    [findings](docs/findings.md), [decision guide](docs/decision-guide.md), and
    provider-failure comparison in [transport.md](docs/transport.md).
@@ -36,13 +54,19 @@ cost, and repeat stability. The harness also renders dependency-free SVG charts.
 Published live results are indexed in `results/REFRESHED.md` with their refresh date
 and versions so stale measurements are visible.
 
-> **Project status:** all seven arenas, seven main adapters, one `CodeAgent`
+> **Project status:** the original seven arenas, seven main adapters, one `CodeAgent`
 > contrast, and five multi-agent pipelines are mock-verified. A subscription-backed
 > functional path is available, but the repository still has no committed native
 > API scorecard, so it does not yet publish an answer-quality ranking. CrewAI needs
 > final tool-evidence verification; Claude Agent SDK remains a documented protocol
 > mismatch. See [ROADMAP.md](ROADMAP.md), [docs/next-phases.md](docs/next-phases.md),
 > and [CONTRIBUTING.md](CONTRIBUTING.md).
+
+The eighth arena, [boundary response](docs/arenas/boundary_response.md), is
+mock-verified across vanilla, LangGraph and OpenAI Agents. The
+[build-your-own-harness path](docs/build/README.md) adds executable lessons for
+loops, context, MCP, restart safety, evidence and isolated execution, ending in a
+framework-neutral design dossier.
 
 ## Quickstart
 
@@ -187,8 +211,8 @@ No live scorecard exists yet, so **nothing here is about answer quality**. What
   smolagents, whose templated system prompt is resent on every request and
   re-describes the tools it has already sent as a schema.
 - Under eight scripted faults, LangGraph and the OpenAI Agents SDK each lose one
-  item and smolagents loses four — exactly the four its tool validator rejects
-  before the tool body runs, which it never writes back into the conversation.
+  item. smolagents completes all eight, but validator-rejected calls consume its
+  six-call budget because the error never reaches the model's transcript.
 - Six frameworks pause for a human, by six genuinely different mechanisms, all
   producing an identical trace to the scorer. Five of the six survive the process
   being killed; Agent Framework's pause does not. Google ADK's pause is
@@ -207,6 +231,13 @@ gotchas found while writing each adapter, and a clear split between what is
 measured and what is merely claimed upstream.
 
 ## Documentation
+
+The [Agentic Ecosystem Knowledge Base](knowledge/README.md) maps the broader
+development lifecycle, related repositories, research evidence, and our planned
+extensions. Open `knowledge/` as an Obsidian vault, or read its Markdown in any
+editor. Start with the [ecosystem vision](knowledge/strategy/vision.md) and
+[delivery plan](knowledge/strategy/delivery-plan.md). Coding harnesses can use
+[knowledge/HARNESS.md](knowledge/HARNESS.md) as their reference entry point.
 
 The full docs — methodology, per-framework deep dives, decision guide, fairness
 controls, and every measured finding — live in [`docs/`](docs/index.md) and build

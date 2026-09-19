@@ -1,5 +1,12 @@
 # Next phases — research notes and plan
 
+> **Historical plan.** The current concept-first ecosystem direction is described
+> in the [charter](../knowledge/strategy/vision.md) and
+> [ordered backlog](../knowledge/strategy/implementation-backlog.md).
+> The notes below retain the rationale for the earlier framework-comparison
+> program. Statements about missing capabilities describe that earlier snapshot;
+> consult current source, findings, and the backlog before acting on them.
+
 _Written 2026-09-01. Companion to [ROADMAP.md](../ROADMAP.md); ROADMAP stays the
 terse index, this file records the reasoning and the current batch of work._
 

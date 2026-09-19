@@ -95,7 +95,15 @@ def _make_tools(names: list[str]) -> list[Any]:
         """
         return f"Checkpointed: {note}"
 
+    @function_tool
+    def boundary_action(
+        action: Annotated[str, Field(description="Synthetic action identifier.")],
+    ) -> str:
+        """Execute a synthetic action through the fixture policy service."""
+        return arena_tools.boundary_action(action)
+
     available = {
+        "boundary_action": boundary_action,
         "search": search,
         "calculator": calculator,
         "search_rooms": search_rooms,

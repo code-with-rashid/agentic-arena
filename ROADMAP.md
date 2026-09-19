@@ -1,5 +1,18 @@
 # Roadmap
 
+## Current direction
+
+Agentic Arena is growing into a concept-first field guide and practical lab for
+the agentic ecosystem. It supports both assembling existing components and
+learning to build a harness independently. No provider, framework, or harness
+defines the curriculum. See the [charter](knowledge/strategy/vision.md),
+[ordered implementation plan](knowledge/strategy/implementation-backlog.md), and
+[GitHub tracker #119](https://github.com/code-with-rashid/agentic-arena/issues/119).
+
+The phase checklist below records the original comparison-harness program.
+It is historical context, not the order of the new ecosystem work. Native API
+quality rankings remain pending reproducible provider-backed scorecards.
+
 Status legend: ✅ done · 🚧 in progress · ⬜ not started
 
 ## Phase 0 — Scaffold ✅

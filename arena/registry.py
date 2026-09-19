@@ -35,6 +35,8 @@ def frameworks_for_arena(arena_id: str) -> list[str]:
     Naming an adapter explicitly on the command line always runs it - this only
     changes what `all` expands to.
     """
+    if arena_id == "boundary_response":
+        return ["vanilla", "langgraph", "openai_agents"]
     out = []
     for name in available_frameworks():
         declared = _declared_arenas(name)

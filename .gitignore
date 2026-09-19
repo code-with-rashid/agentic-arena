@@ -4,6 +4,8 @@ __pycache__/
 *.egg-info/
 .eggs/
 build/
+!docs/build/
+!docs/build/**
 dist/
 .venv/
 venv/
@@ -27,6 +29,13 @@ htmlcov/
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Obsidian: share portable link settings, keep personal state local
+knowledge/.obsidian/*
+!knowledge/.obsidian/app.json
+knowledge/.trash/
+knowledge/personal/*
+!knowledge/personal/README.md
 
 # Arena run artifacts (raw traces are large; scorecards under results/ ARE committed)
 runs/

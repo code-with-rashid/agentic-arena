@@ -307,10 +307,10 @@ self-host vs SaaS, licence, provider lock-in, and existing infrastructure.
 ```mermaid
 flowchart TD
     A[Need an agent] --> B{Must it pause for<br/>human approval and survive<br/>a process restart?}
-    B -- yes --> LG[LangGraph<br/>only demonstrated durable pause]
+    B -- yes --> DP[Compare five demonstrated durable mechanisms<br/>see durability matrix]
     B -- no --> C{Is the control flow<br/>more than one agent<br/>with a few tools?}
     C -- no --> D{Do you want<br/>zero dependencies?}
-    D -- yes --> V[Hand-rolled loop<br/>~140 lines<br/>not cheaper on tokens]
+    D -- yes --> V[Hand-rolled loop<br/>wire-cost floor tied by LangGraph]
     D -- no --> E{Typed, schema-validated<br/>output a hard requirement?}
     E -- yes --> PA[Pydantic AI]
     E -- no --> OA[OpenAI Agents SDK<br/>or Pydantic AI]

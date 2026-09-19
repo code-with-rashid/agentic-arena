@@ -7,6 +7,7 @@ and this file becomes its reference notes.
 | Arena | Design | Implemented |
 |---|---|---|
 | `tool_use` | (shipped) | ✅ `arenas/tool_use/` |
+| `boundary_response` | [boundary_response.md](boundary_response.md) | 16 paired fixture cases; vanilla, LangGraph and OpenAI Agents only |
 | `structured_output` | [structured_output.md](structured_output.md) | ✅ `arenas/structured_output/` |
 | `resilience` | (built directly; see the arena.toml) | ✅ `arenas/resilience/` |
 | `multi_agent` | [multi_agent.md](multi_agent.md) | ✅ `arenas/multi_agent/` — single-agent entries **and** five `*_multi` pipelines (structural, handoff, sub-agent-as-tool) |

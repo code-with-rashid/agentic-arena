@@ -11,6 +11,8 @@ import json
 from collections.abc import Sequence
 from typing import Any
 
+from arena.boundary import boundary_action
+
 from .calculator import calculator
 from .progress import save_progress
 from .rooms import book_room, request_approval, search_rooms
@@ -23,6 +25,7 @@ __all__ = [
     "book_room",
     "request_approval",
     "save_progress",
+    "boundary_action",
     "OPENAI_TOOL_SPECS",
     "SUSPEND_TOOL",
     "SUSPEND_TOOLS",
@@ -109,6 +112,7 @@ SUSPEND_TOOLS = ("request_approval", "save_progress")
 SUSPEND_TOOL = SUSPEND_TOOLS[0]
 
 TOOL_FUNCS = {
+    "boundary_action": lambda args: boundary_action(str(args.get("action", ""))),
     "search": lambda args: search(str(args.get("query", "")), int(args.get("k", 3))),
     "calculator": lambda args: calculator(str(args.get("expr", ""))),
     "search_rooms": lambda args: search_rooms(
@@ -120,6 +124,20 @@ TOOL_FUNCS = {
 }
 
 OPENAI_TOOL_SPECS: list[dict[str, Any]] = [
+    {
+        "type": "function",
+        "function": {
+            "name": "boundary_action",
+            "description": "Execute a synthetic action through the fixture policy service.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "description": "Synthetic action identifier."}
+                },
+                "required": ["action"],
+            },
+        },
+    },
     {
         "type": "function",
         "function": {

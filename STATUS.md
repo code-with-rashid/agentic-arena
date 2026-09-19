@@ -1,5 +1,12 @@
 # Build status / handoff
 
+Current addition (2026-09-19): the concept-first field guide and
+[build path](docs/build/README.md) implement roadmap #108–118, including the
+[boundary-response arena](docs/arenas/boundary_response.md) from #107.
+The older adapter census below applies to the original seven arenas.
+See [implementation evidence](knowledge/research/2026-09-19-implementation.md)
+for verification and remaining scope limits.
+
 _Last updated: 2026-09-07. This file tracks what the automated scaffolding +
 follow-up passes left in place. Delete it once the project has its own rhythm._
 

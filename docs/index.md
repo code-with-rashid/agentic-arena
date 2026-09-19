@@ -1,5 +1,17 @@
 # agentic-arena docs
 
+Diagnose a concrete failure with the [problem register](problems/index.md).
+
+Start from your problem:
+[Learn](journeys/learn.md) · [Build](journeys/build.md) ·
+[Choose](journeys/choose.md) · [Connect](journeys/connect.md) ·
+[Debug](journeys/debug.md) · [Secure](journeys/secure.md) ·
+[Evaluate](journeys/evaluate.md) · [Deploy](journeys/deploy.md).
+
+The [ecosystem map](ecosystem.md) shows coverage and gaps. The
+[architecture guide](concepts/architecture.md) and [build path](build/README.md)
+explain concepts independently of frameworks.
+
 ## Start with the question you need answered
 
 | Question | Best starting point |
