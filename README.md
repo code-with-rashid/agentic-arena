@@ -1,270 +1,121 @@
-# agentic-arena
+# Agentic Arena
 
 [![ci](https://github.com/code-with-rashid/agentic-arena/actions/workflows/ci.yml/badge.svg)](https://github.com/code-with-rashid/agentic-arena/actions/workflows/ci.yml)
 [![docs](https://github.com/code-with-rashid/agentic-arena/actions/workflows/docs.yml/badge.svg)](https://github.com/code-with-rashid/agentic-arena/actions/workflows/docs.yml)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![license](https://img.shields.io/github/license/code-with-rashid/agentic-arena)](LICENSE)
 
-> Compare, explore, and choose the right agentic framework — with numbers you can regenerate.
+**Learn agentic systems, build a harness from first principles, and compare frameworks with evidence you can regenerate.**
 
-Agentic Arena is growing into a **concept-first field guide and practical lab for
-agentic development**. Learn the mechanics, assemble a stack, or build a harness
-from scratch. Existing framework comparisons supply reproducible evidence.
+[Open the interactive field guide →](https://code-with-rashid.github.io/agentic-arena/)
 
-| What do you need to do? | Start here |
+Agentic Arena has four separate spaces so you can focus on one job at a time:
+
+| Space | Use it when you want to |
 |---|---|
-| Understand the mechanics | [Learn](docs/journeys/learn.md) |
-| Build an agent or your own harness | [Build](docs/journeys/build.md) |
-| Select components and tradeoffs | [Choose](docs/journeys/choose.md) |
-| Connect tools and agents | [Connect](docs/journeys/connect.md) |
-| Diagnose cost and reliability | [Debug](docs/journeys/debug.md) |
-| Define authority and boundaries | [Secure](docs/journeys/secure.md) |
-| Verify a claim or compare designs | [Evaluate](docs/journeys/evaluate.md) |
-| Recover and operate a workload | [Deploy](docs/journeys/deploy.md) |
+| [Learn](https://code-with-rashid.github.io/agentic-arena/learn/) | understand the concepts in a deliberate order |
+| [Build](https://code-with-rashid.github.io/agentic-arena/build/) | create a framework-neutral harness and make it reliable |
+| [Compare](https://code-with-rashid.github.io/agentic-arena/compare/) | inspect measured findings and choose components |
+| [Reference](https://code-with-rashid.github.io/agentic-arena/reference/) | look up run modes, methods, controls, and commands |
 
-See the [ecosystem coverage map](docs/ecosystem.md) for available evidence and
-research gaps. No single provider, framework, or harness defines these paths.
+## What is in the repository?
 
-Agent framework comparisons usually mix models, prompts, tools, and tasks, then
-attribute the outcome to the framework. Agentic Arena holds those inputs constant.
-It runs shared reference workloads through the adapters that support them and records the
-differences that remain: framework overhead, retries, tool behavior, orchestration,
-pause/resume support, durability, and—when you supply a provider—answer quality.
+The project combines a concept-first field guide with a reproducible comparison
+lab. Shared workloads run through framework adapters while the model, tools,
+datasets, and scoring stay fixed. The differences that remain expose framework
+overhead, retries, tool behavior, orchestration, pause/resume support, and
+durability.
 
-Use the project to answer three practical questions:
+```text
+arena/              comparison harness and scoring
+arenas/             shared evaluation workloads
+frameworks/         framework adapters
+docs/               public field guide
+examples/harness/   executable build-from-scratch lessons
+knowledge/          Obsidian research and project memory
+results/            published native live scorecards
+```
 
-1. **Can the framework express the workflow you need?** Check the
-   [feature matrix](docs/feature-matrix.md) and [eight arenas](docs/arenas/README.md).
-2. **What does the framework add or hide?** Start with the measured
-   [findings](docs/findings.md), [decision guide](docs/decision-guide.md), and
-   provider-failure comparison in [transport.md](docs/transport.md).
-3. **Does it still work with your model and gateway?** Run the same dataset in
-   `codex` mode for a functional check or `live` mode for a native API benchmark.
+## Try the lab in five minutes
 
-### Know what each run proves
-
-| Mode | Best for | Credentials | Evidence and output |
-|---|---|---|---|
-| `mock` | Adapter wiring, framework overhead, retries, pause/durability mechanics | None | Deterministic CI evidence under `runs/`; **not answer quality** |
-| `codex` | Real-model functional checks before buying API credits | ChatGPT/Codex sign-in | Subscription-backed results under `runs/codex-scorecards/`; **not native API performance or cost** |
-| `live` | Reproducible framework comparison against one OpenAI-compatible provider | Provider API key | Native latency, token, cost, and quality scorecards under `results/` |
-
-Every scorecard includes pass rate, errors, latency, tokens, model calls, estimated
-cost, and repeat stability. The harness also renders dependency-free SVG charts.
-Published live results are indexed in `results/REFRESHED.md` with their refresh date
-and versions so stale measurements are visible.
-
-> **Project status:** the original seven arenas, seven main adapters, one `CodeAgent`
-> contrast, and five multi-agent pipelines are mock-verified. A subscription-backed
-> functional path is available, but the repository still has no committed native
-> API scorecard, so it does not yet publish an answer-quality ranking. CrewAI needs
-> final tool-evidence verification; Claude Agent SDK remains a documented protocol
-> mismatch. See [ROADMAP.md](ROADMAP.md), [docs/next-phases.md](docs/next-phases.md),
-> and [CONTRIBUTING.md](CONTRIBUTING.md).
-
-The eighth arena, [boundary response](docs/arenas/boundary_response.md), is
-mock-verified across vanilla, LangGraph and OpenAI Agents. The
-[build-your-own-harness path](docs/build/README.md) adds executable lessons for
-loops, context, MCP, restart safety, evidence and isolated execution, ending in a
-framework-neutral design dossier.
-
-## Quickstart
+Python 3.11 or newer is required. The core harness has no runtime dependencies.
 
 ```bash
-# 1. Clone and install the harness (Python 3.11+; no framework deps needed for the mock run)
 git clone https://github.com/code-with-rashid/agentic-arena
 cd agentic-arena
 python -m pip install -e .
 
-# 2. Run the tool-use arena for the dependency-free baseline adapter, against the mock LLM
+# Run the dependency-free baseline against a deterministic local model.
 python -m arena run --arena tool_use --framework vanilla --mode mock
 
-# 3. Regenerate the scorecard from the last run
-python -m arena scorecard --arena tool_use
-
-# 4. Statically check every arena spec, dataset, and mock script (no LLM, no network)
-python -m arena validate
-
-# 5. One cross-arena view: coverage, plus the measurements that actually compare
+# See coverage and the evidence that is comparable offline.
 python -m arena summary --print
-
-# 6. Render the scorecard as SVG bar charts (pass rate, tokens, LLM calls, cost)
-python -m arena chart --arena tool_use
 ```
 
-## Run against a real model
+Use `python -m arena validate` to check every arena specification and dataset.
 
-### Native API benchmark
+## Know what a run proves
 
-Copy `.env.example` to `.env` and fill in your gateway, API key, model, and
-per-token prices, or export the variables below. The harness loads the root
-`.env` automatically; exported environment variables take precedence. Values
-are literal (no shell commands or variable expansion). For a local gateway that
-does not require authentication, use a nonempty placeholder such as `local-key`.
+| Mode | What it is for | Credentials |
+|---|---|---|
+| `mock` | adapter wiring and controlled framework mechanics | none |
+| `codex` | real-model functional checks through a Codex subscription | Codex sign-in |
+| `live` | native provider benchmarks for latency, usage, cost, and quality | provider API key |
+
+Mock pass rates are not answer-quality rankings. Codex mode is not a native API
+cost or latency benchmark. Only repeated `live` runs belong in published
+scorecards. The [run-mode guide](https://code-with-rashid.github.io/agentic-arena/reference/run-modes/)
+explains the evidence boundary.
+
+## What is covered?
+
+The lab currently exercises:
+
+- tool use and schema fidelity
+- structured output
+- recovery from malformed calls and provider failures
+- multi-agent orchestration and delegation cost
+- retrieval and grounded answers
+- human approval and pause/resume
+- durable state across process restarts
+- behavior at authority and execution boundaries
+
+Adapters cover a dependency-free baseline plus LangGraph, Pydantic AI, OpenAI
+Agents SDK, Microsoft Agent Framework, smolagents, Google ADK, and CrewAI.
+Claude Agent SDK is documented as a protocol mismatch with the shared
+OpenAI-compatible gateway. See the [framework profiles](https://code-with-rashid.github.io/agentic-arena/frameworks/)
+for current support and the [measured findings](https://code-with-rashid.github.io/agentic-arena/findings/)
+for results.
+
+## Run with a real model
+
+For a native OpenAI-compatible endpoint, copy `.env.example` to `.env`, set the
+provider URL, key, and model, then install the adapter you want to test:
 
 ```bash
 python -m pip install -r frameworks/langgraph/requirements.txt
-export ARENA_LLM_MODE=live
-export OPENAI_BASE_URL=https://api.openai.com/v1      # or any OpenAI-compatible gateway
-export OPENAI_API_KEY=sk-...
-export ARENA_MODEL=gpt-4.1-mini                       # one model, same for every framework
 python -m arena run --arena tool_use --framework langgraph --mode live --repeat 3
 ```
 
-### Subscription-backed functional check
-
-For functional testing with an existing ChatGPT/Codex subscription, install the
-Codex CLI, sign in with `codex login`, and run:
+If you have a ChatGPT/Codex subscription but no API key, sign in with the Codex
+CLI and run a functional check:
 
 ```bash
 python -m arena run --arena tool_use --framework vanilla --mode codex
 ```
 
-This starts a key-protected localhost bridge using `codex exec`, with no OpenAI
-API key. It defaults to `gpt-6-astra`; `ARENA_CODEX_MODEL` overrides the model and
-must name a model available to your Codex account. It consumes your Codex allowance.
-See [the bridge guide](docs/codex-bridge.md) for standalone endpoint setup and
-limitations. Results go to `runs/codex-scorecards/`, never published `results/`.
+Read the [Codex bridge guide](https://code-with-rashid.github.io/agentic-arena/codex-bridge/)
+before interpreting those results.
 
-## The arenas
+## Contribute
 
-Each arena is a frozen spec plus a graded eval dataset. An adapter "passes" an item
-when its output satisfies every check for that item.
+Good contributions make one claim easier to understand or verify: improve a
+lesson, add a workload, implement an adapter, reproduce a result, or challenge a
+methodological assumption. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the
+[next phases](https://code-with-rashid.github.io/agentic-arena/next-phases/).
 
-| # | Arena | Exercises | Status |
-|---|-------|-----------|--------|
-| 1 | `tool_use` — single agent with web-search + calculator tools | tool-calling loop, baseline DX | ✅ spec + dataset + scorer |
-| 2 | `structured_output` — look up a landmark, return a schema-checked JSON record | output validation, typing | ✅ spec + dataset + scorer |
-| 3 | `resilience` — the model misbehaves on purpose; the agent must recover | error handling, graceful degradation | ✅ spec + dataset + scorer |
-| 4 | `multi_agent` — researcher → writer → editor pipeline | orchestration, handoffs | ✅ + 5 `*_multi` pipelines (structural, handoff, sub-agent-as-tool) |
-| 5 | `rag` — agent over a fixed local corpus; single-hop, multi-hop, and unanswerable | retrieval integration, grounding | ✅ spec + dataset + scorer |
-| 6 | `human_in_the_loop` — approval gate, pause + resume | interrupts, HITL | ✅ 6 adapters pause, 6 distinct mechanisms |
-| 7 | `durable_state` — resume after a crash | checkpointing, durability | ✅ 5 adapters 8/8 across a real process restart |
+The research vault under [`knowledge/`](knowledge/README.md) records ecosystem
+projects, decisions, experiments, and direction. Open that directory in Obsidian
+when you need the project’s deeper working memory.
 
-## The frameworks
-
-| Framework | Adapter | Language | Notes |
-|-----------|---------|----------|-------|
-| _baseline_ `vanilla` | ✅ | Python (stdlib) | hand-rolled agent loop; the "what does the framework buy you?" control |
-| LangGraph | ✅ | Python | graph/state-machine orchestration |
-| CrewAI | 🚧 3.12-only | Python | role-based crews; on Python 3.12 it installs and answers correctly, `tool_used` evidence pending a debug run ([status](frameworks/crewai/README.md)) |
-| OpenAI Agents SDK | ✅ | Python | `openai-agents`; tracing disabled for the arena |
-| Pydantic AI | ✅ | Python | `pydantic-ai-slim`; typed, model-agnostic |
-| Microsoft Agent Framework | ✅ | Python | `agent-framework-openai` (merged AutoGen + Semantic Kernel) |
-| smolagents | ✅ | Python | `smolagents[openai]`; `ToolCallingAgent` — ends its loop by calling `final_answer` |
-| Google ADK | ✅ | Python | `google-adk` + `litellm` (required to leave Gemini); the only real loop cap out of the box |
-| Claude Agent SDK | 🚫 stub | Python | drives the `claude` CLI over the Anthropic Messages API — doesn't fit the shared OpenAI-compatible gateway ([why](frameworks/claude_agent_sdk/README.md)) |
-
-Seven adapters run all seven arenas; an eighth, `smolagents_code`, is a
-`CodeAgent` contrast entry on `tool_use` and `rag`. Five `*_multi` pipeline
-entries run on `multi_agent` (`vanilla_multi` and `langgraph_multi` for
-structural delegation, `openai_agents_multi` for a handoff chain,
-`smolagents_multi` and `pydantic_ai_multi` for a sub-agent invoked as a tool).
-`vanilla`, `pydantic_ai`, `microsoft_af` and `smolagents` recover from all eight
-`resilience` faults — `smolagents` at 3× the LLM calls on the four it rejects
-before the tool runs; `langgraph` and `openai_agents` lose one each, `google_adk`
-two. Six of the seven pause for a human (12/12); five of those also
-survive having the runner thrown away (8/8). `microsoft_af` pauses but is
-*unsupported* on `durable_state`, and `smolagents` is *unsupported* on both pause
-arenas — reported as unsupported rather than failed.
-
-**[What we found so far →](docs/findings.md)** — every measured result in one
-page, with the command that regenerates each number. The next contribution step
-is a live scorecard (needs an API key).
-
-## How comparison stays fair
-
-See [docs/methodology.md](docs/methodology.md) for the full rules. In short:
-
-1. **One model.** `ARENA_MODEL` is passed to every adapter. No adapter picks its own.
-2. **One set of tools.** `arena.tools` provides the search and calculator
-   implementations. Adapters wire them into their framework but do not change what
-   they do.
-3. **One task spec + eval set per arena.** Adapters may phrase the system prompt in
-   whatever way is idiomatic for the framework; that difference *is* part of what's
-   being compared, and prompts are checked into each adapter for inspection.
-4. **Mock mode tests plumbing, live mode tests behavior.** Mock-mode pass rates are
-   not a quality signal — they only prove the adapter wires everything together.
-   Only `--mode live` numbers go in published scorecards.
-5. **Cost numbers are checked, not trusted.** The mock records what it served, and
-   CI holds every adapter's self-reported usage against it — including across a
-   suspend/resume, where the harness sums legs. An adapter that under-reports would
-   otherwise post better numbers than it earned with a fully green scorecard.
-
-Three things mock mode *can* compare honestly, because the model is held identical
-and only the framework varies: the `resilience` arena's recovery rates,
-[how much each framework puts on the wire](docs/overhead.md) for the same task
-(a ~1.15× spread among six, and **3.90×** for smolagents), and whether an adapter
-can genuinely pause for a human. CI prints all three on every run, and
-`python -m arena summary` collects them.
-
-## What has been measured so far
-
-No live scorecard exists yet, so **nothing here is about answer quality**. What
-*is* measured, offline and reproducibly:
-
-- The hand-rolled baseline **is** the floor on the wire, and `langgraph` ties it
-  byte for byte. This page said the opposite for fifteen iterations, until the
-  tool schemas were compared for *content* rather than size and it turned out the
-  cheaper frameworks were sending less — see [tool-schemas.md](docs/tool-schemas.md).
-- Prompt overhead is a 1.15× band for six frameworks, and **3.90×** for
-  smolagents, whose templated system prompt is resent on every request and
-  re-describes the tools it has already sent as a schema.
-- Under eight scripted faults, LangGraph and the OpenAI Agents SDK each lose one
-  item. smolagents completes all eight, but validator-rejected calls consume its
-  six-call budget because the error never reaches the model's transcript.
-- Six frameworks pause for a human, by six genuinely different mechanisms, all
-  producing an identical trace to the scorer. Five of the six survive the process
-  being killed; Agent Framework's pause does not. Google ADK's pause is
-  *reported* rather than enforced — ignore the signal and the agent acts anyway.
-- Splitting one agent into a three-role pipeline costs **2× the LLM calls and
-  ~2.5× the prompt tokens** — and costs that whether you build it with a graph
-  library or a `for` loop. LangGraph's orchestration machinery itself adds
-  nothing measurable.
-- A native handoff chain costs ~10% more again, and **94% of that is the
-  `transfer_to_*` schemas riding on every request** rather than the transfers
-  themselves: you pay for a handoff by advertising it, not by taking it
-  ([multi-agent.md](docs/multi-agent.md)).
-
-[**docs/decision-guide.md**](docs/decision-guide.md) has the tables, the adoption
-gotchas found while writing each adapter, and a clear split between what is
-measured and what is merely claimed upstream.
-
-## Documentation
-
-The [Agentic Ecosystem Knowledge Base](knowledge/README.md) maps the broader
-development lifecycle, related repositories, research evidence, and our planned
-extensions. Open `knowledge/` as an Obsidian vault, or read its Markdown in any
-editor. Start with the [ecosystem vision](knowledge/strategy/vision.md) and
-[delivery plan](knowledge/strategy/delivery-plan.md). Coding harnesses can use
-[knowledge/HARNESS.md](knowledge/HARNESS.md) as their reference entry point.
-
-The full docs — methodology, per-framework deep dives, decision guide, fairness
-controls, and every measured finding — live in [`docs/`](docs/index.md) and build
-as a [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) site, gated
-on every docs change by the `docs` workflow (`mkdocs build --strict`). Publishing
-to GitHub Pages is wired but opt-in and not yet enabled, so for now browse the
-source directly on GitHub, or build it locally:
-
-```bash
-python -m pip install -e ".[docs]"
-mkdocs serve
-```
-
-## Repo layout
-
-```
-arena/            the shared harness (installable package)
-  llm/            OpenAI-compatible client + stdlib mock server
-  tools/          deterministic search + calculator handed to every adapter
-arenas/<name>/    arena.toml spec + dataset.jsonl + mock_script.json
-frameworks/<name>/ one adapter.py per framework implementing the Framework protocol
-results/          committed live scorecards (json + markdown + csv), SVG charts,
-                  and REFRESHED.md — a staleness table rolled up across all of them
-docs/             methodology, decision guide, feature matrix, per-framework deep
-                  dives — served as a MkDocs Material site (see Documentation, above)
-```
-
-## License
-
-[Apache-2.0](LICENSE).
+Apache-2.0 licensed.

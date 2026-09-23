@@ -2,7 +2,7 @@
 title: "Vision: an Agentic Development and Research Hub"
 type: strategy
 status: active
-updated: 2026-09-18
+updated: 2026-09-23
 tags: [agentic-ecosystem]
 ---
 
@@ -11,11 +11,15 @@ tags: [agentic-ecosystem]
 ## Destination
 
 The agreed organizing principle is concepts and engineering problems, independent
-of any provider, framework, or harness. Visitors enter through Learn, Build,
-Choose, Connect, Debug, Secure, Evaluate, and Deploy. Every mature topic should
-connect understanding, design alternatives, a working example, verification, and
-troubleshooting. This applies equally to assembling existing tools and developing
-a harness from scratch.
+of any provider, framework, or harness. The public experience has four stable
+spaces: **Learn** for concepts, **Build** for implementation and troubleshooting,
+**Compare** for product evidence, and **Reference** for exact contracts and
+commands. Task journeys such as connect, debug, secure, evaluate, and deploy live
+inside the appropriate space instead of competing in the global navigation.
+Every mature topic should connect understanding, design alternatives, a working
+example, verification, and troubleshooting. This applies equally to assembling
+existing tools and developing a harness from scratch. See the
+[information architecture research](../research/2026-09-23-learning-experience.md).
 
 The maintainer plans a separate harness repository. Its design can draw on this
 research, and its experiments can contribute generalizable findings back. It gets

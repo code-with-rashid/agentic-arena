@@ -1,5 +1,5 @@
 site_name: agentic-arena
-site_description: Compare, explore, and choose the right agentic framework — with numbers you can regenerate.
+site_description: Learn agentic systems, build a harness from first principles, and compare frameworks with reproducible evidence.
 site_url: https://code-with-rashid.github.io/agentic-arena/
 repo_url: https://github.com/code-with-rashid/agentic-arena
 repo_name: code-with-rashid/agentic-arena
@@ -22,6 +22,11 @@ theme:
   features:
     - navigation.instant
     - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.indexes
+    - navigation.path
     - navigation.top
     - content.code.copy
     - toc.follow
@@ -41,72 +46,88 @@ validation:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
   - pymdownx.superfences
   - toc:
       permalink: true
   - tables
 
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  - javascripts/experience.js
+
 nav:
   - Home: index.md
-  - Ecosystem map: ecosystem.md
-  - Start from a problem:
-      - Learn: journeys/learn.md
-      - Build: journeys/build.md
-      - Choose: journeys/choose.md
-      - Connect: journeys/connect.md
-      - Debug: journeys/debug.md
-      - Secure: journeys/secure.md
-      - Evaluate: journeys/evaluate.md
-      - Deploy: journeys/deploy.md
-  - Harness architecture: concepts/architecture.md
-  - Build your own harness: build/README.md
-  - Minimal tool loop: build/loop.md
-  - Context and memory: build/context.md
-  - Tools and interoperability: build/protocols.md
-  - Reliability and restart: build/reliability.md
-  - Evaluation workbench: build/evaluation.md
-  - Security and operations: build/security-operations.md
-  - Harness design dossier: build/design-dossier.md
-  - Troubleshooting:
-      - Problem register: problems/index.md
-      - Context growth: problems/context-growth.md
-      - Tool errors: problems/tool-errors.md
-      - Retries: problems/retry-amplification.md
-      - Approval: problems/approval.md
-      - Restart: problems/restart.md
-      - Delegation: problems/delegation-cost.md
-  - Findings: findings.md
-  - Methodology: methodology.md
-  - Fairness controls: fairness-controls.md
-  - Codex subscription tests: codex-bridge.md
-  - Decision guide: decision-guide.md
-  - Feature matrix: feature-matrix.md
-  - Comparisons:
-      - Framework overhead: overhead.md
-      - Multi-agent / delegation: multi-agent.md
-      - When the gateway fails: transport.md
-      - Tool schemas: tool-schemas.md
-      - Structured output: structured-output.md
-  - Arenas:
-      - Overview: arenas/README.md
-      - structured_output: arenas/structured_output.md
-      - multi_agent: arenas/multi_agent.md
-      - rag: arenas/rag.md
-      - human_in_the_loop: arenas/human_in_the_loop.md
-      - durable_state: arenas/durable_state.md
-      - boundary_response: arenas/boundary_response.md
-  - Frameworks:
-      - Overview: frameworks/README.md
-      - LangGraph: frameworks/langgraph.md
-      - Pydantic AI: frameworks/pydantic-ai.md
-      - OpenAI Agents SDK: frameworks/openai-agents-sdk.md
-      - Microsoft Agent Framework: frameworks/microsoft-agent-framework.md
-      - Smolagents: frameworks/smolagents.md
-      - Google ADK: frameworks/google-adk.md
-      - CrewAI: frameworks/crewai.md
-      - Claude Agent SDK: frameworks/claude-agent-sdk.md
-  - Project:
-      - Dependencies: dependencies.md
-      - Next phases: next-phases.md
+  - Learn:
+      - Learning path: learn/index.md
+      - Choose a learning goal: journeys/learn.md
+      - Ecosystem map: ecosystem.md
+      - 1. System architecture: concepts/architecture.md
+      - 2. The agent loop: build/loop.md
+      - 3. Context and memory: build/context.md
+      - 4. Tools and protocols: build/protocols.md
+      - 5. Reliability and restart: build/reliability.md
+      - 6. Evaluation: build/evaluation.md
+      - 7. Security and operations: build/security-operations.md
+  - Build:
+      - Build your own harness: build/README.md
+      - Harness design dossier: build/design-dossier.md
+      - Practical guides:
+          - Build an agent: journeys/build.md
+          - Connect tools and agents: journeys/connect.md
+          - Debug behavior: journeys/debug.md
+          - Secure authority: journeys/secure.md
+          - Deploy and recover: journeys/deploy.md
+      - Solve a problem:
+          - Problem register: problems/index.md
+          - Context growth: problems/context-growth.md
+          - Tool errors: problems/tool-errors.md
+          - Retry amplification: problems/retry-amplification.md
+          - Approval flow: problems/approval.md
+          - Restart safety: problems/restart.md
+          - Delegation cost: problems/delegation-cost.md
+  - Compare:
+      - Comparison guide: compare/index.md
+      - Measured findings: findings.md
+      - Choose for your use case: journeys/choose.md
+      - Decision guide: decision-guide.md
+      - Feature matrix: feature-matrix.md
+      - Evaluate a claim: journeys/evaluate.md
+      - Evidence by dimension:
+          - Framework overhead: overhead.md
+          - Multi-agent and delegation: multi-agent.md
+          - Provider failures: transport.md
+          - Tool schemas: tool-schemas.md
+          - Structured output: structured-output.md
+      - Framework profiles:
+          - Overview: frameworks/README.md
+          - LangGraph: frameworks/langgraph.md
+          - Pydantic AI: frameworks/pydantic-ai.md
+          - OpenAI Agents SDK: frameworks/openai-agents-sdk.md
+          - Microsoft Agent Framework: frameworks/microsoft-agent-framework.md
+          - Smolagents: frameworks/smolagents.md
+          - Google ADK: frameworks/google-adk.md
+          - CrewAI: frameworks/crewai.md
+          - Claude Agent SDK: frameworks/claude-agent-sdk.md
+      - Evaluation arenas:
+          - Overview: arenas/README.md
+          - Structured output: arenas/structured_output.md
+          - Multi-agent: arenas/multi_agent.md
+          - RAG: arenas/rag.md
+          - Human in the loop: arenas/human_in_the_loop.md
+          - Durable state: arenas/durable_state.md
+          - Boundary response: arenas/boundary_response.md
+  - Reference:
+      - Reference home: reference/index.md
+      - Run modes: reference/run-modes.md
+      - Methodology: methodology.md
+      - Fairness controls: fairness-controls.md
+      - Codex bridge: codex-bridge.md
       - Scorecard example: scorecard-example.md
+      - Dependencies: dependencies.md
+  - Project:
+      - Next phases: next-phases.md

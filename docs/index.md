@@ -1,101 +1,63 @@
-# agentic-arena docs
+---
+hide:
+  - navigation
+  - toc
+---
 
-Diagnose a concrete failure with the [problem register](problems/index.md).
+<section class="arena-hero">
+  <div class="arena-eyebrow">A field guide and working lab for agentic systems</div>
+  <h1>Understand agents. Build the machinery. Compare the options.</h1>
+  <p class="arena-lede">Learn the concepts without committing to a framework, build a harness from first principles, and use reproducible evidence when you are ready to choose.</p>
+  <div class="arena-actions">
+    <a class="md-button md-button--primary" href="learn/">Start learning</a>
+    <a class="md-button" href="compare/">Explore the evidence</a>
+  </div>
+</section>
 
-Start from your problem:
-[Learn](journeys/learn.md) · [Build](journeys/build.md) ·
-[Choose](journeys/choose.md) · [Connect](journeys/connect.md) ·
-[Debug](journeys/debug.md) · [Secure](journeys/secure.md) ·
-[Evaluate](journeys/evaluate.md) · [Deploy](journeys/deploy.md).
+<section class="arena-section" aria-labelledby="choose-goal">
+  <div class="arena-section__intro">
+    <span class="arena-kicker">Your route</span>
+    <h2 id="choose-goal">What are you trying to do today?</h2>
+    <p>Choose one goal. We will keep the rest out of your way.</p>
+  </div>
+  <div class="path-picker" data-path-picker>
+    <div class="path-picker__choices" role="tablist" aria-label="Choose a goal">
+      <button type="button" role="tab" aria-selected="true" data-path="learn">I want to understand</button>
+      <button type="button" role="tab" aria-selected="false" data-path="build">I want to build</button>
+      <button type="button" role="tab" aria-selected="false" data-path="compare">I need to choose</button>
+      <button type="button" role="tab" aria-selected="false" data-path="solve">Something is failing</button>
+    </div>
+    <div class="path-picker__result" data-path-result>
+      <span class="path-picker__step">Recommended first step</span>
+      <h3>See the whole system before learning its parts</h3>
+      <p>Build a mental model of the model, harness, tools, state, boundaries, and environment.</p>
+      <a href="learn/">Open the learning path <span aria-hidden="true">→</span></a>
+    </div>
+  </div>
+</section>
 
-The [ecosystem map](ecosystem.md) shows coverage and gaps. The
-[architecture guide](concepts/architecture.md) and [build path](build/README.md)
-explain concepts independently of frameworks.
+<section class="arena-section arena-section--soft" aria-labelledby="four-spaces">
+  <div class="arena-section__intro">
+    <span class="arena-kicker">Four separate spaces</span>
+    <h2 id="four-spaces">Move through the ecosystem without mixing contexts</h2>
+  </div>
+  <div class="arena-card-grid">
+    <a class="arena-card arena-card--learn" href="learn/"><span class="arena-card__number">01</span><h3>Learn</h3><p>Concepts in a deliberate order, from the agent loop to reliable operation.</p><span class="arena-card__link">Follow the curriculum →</span></a>
+    <a class="arena-card arena-card--build" href="build/"><span class="arena-card__number">02</span><h3>Build</h3><p>Executable lessons and design decisions for your own framework-neutral harness.</p><span class="arena-card__link">Build from scratch →</span></a>
+    <a class="arena-card arena-card--compare" href="compare/"><span class="arena-card__number">03</span><h3>Compare</h3><p>Measured findings, framework profiles, arenas, and an honest decision guide.</p><span class="arena-card__link">Inspect the evidence →</span></a>
+    <a class="arena-card arena-card--reference" href="reference/"><span class="arena-card__number">04</span><h3>Reference</h3><p>Run modes, methodology, controls, commands, schemas, and project details.</p><span class="arena-card__link">Look something up →</span></a>
+  </div>
+</section>
 
-## Start with the question you need answered
+<section class="arena-section" aria-labelledby="trust-evidence">
+  <div class="arena-proof">
+    <div><span class="arena-kicker">Know what the evidence means</span><h2 id="trust-evidence">Three run modes. Three different claims.</h2><p>The site labels evidence by what the run can actually prove.</p></div>
+    <div class="evidence-levels"><div><strong>Mock</strong><span>Wiring and mechanics</span></div><div><strong>Codex</strong><span>Real-model functional check</span></div><div><strong>Live</strong><span>Native provider benchmark</span></div></div>
+    <a href="reference/run-modes/">Understand run modes →</a>
+  </div>
+</section>
 
-| Question | Best starting point |
-|---|---|
-| Which framework fits my workflow? | [Decision guide](decision-guide.md) and [feature matrix](feature-matrix.md) |
-| What has this project actually measured? | [Findings](findings.md), with reproduction commands |
-| Is the comparison fair? | [Methodology](methodology.md) and [fairness controls](fairness-controls.md) |
-| Can I test a real model without API billing? | [Codex subscription functional tests](codex-bridge.md) |
-| How do I add an adapter or arena? | [Contributing guide](https://github.com/code-with-rashid/agentic-arena/blob/main/CONTRIBUTING.md) |
+<section class="arena-section arena-final-cta"><span class="arena-kicker">New here?</span><h2>Spend ten minutes on the mental model.</h2><p>It gives every later page a place to fit.</p><a class="md-button md-button--primary" href="learn/">Begin with module 1</a></section>
 
-The evidence has three levels: `mock` proves wiring and isolates framework
-mechanics; `codex` exercises real responses through a subscription-backed
-translation layer; `live` is the native OpenAI-compatible provider benchmark.
-Only native `live` scorecards are published under `results/`.
-
-- **[Findings](findings.md)** — every result the repo has measured, in one page,
-  with the command that regenerates each number. Start here if you want the
-  answers rather than the machinery.
-- [Methodology](methodology.md) — the fairness and reproducibility rules. Read first.
-- [Fairness controls](fairness-controls.md) — every control the arena owns and who
-  checks it actually reaches each adapter. Four bugs of that shape have been found
-  one at a time; this is the list that finds the next one by inspection.
-- [Codex subscription tests](codex-bridge.md) — real-model functional checks with
-  an existing ChatGPT/Codex login, clearly separated from native API benchmarks.
-- [Decision guide](decision-guide.md) — how to pick a framework. Every claim tagged
-  [measured] or [claimed]; nothing about answer quality until a live run exists.
-- [Feature matrix](feature-matrix.md) — capabilities that aren't scorecard numbers.
-- [Framework overhead](overhead.md) — what each library adds to the wire for an
-  identical task, and what happens to that cost once the tool loop gets long.
-  One of only two things mock mode can compare honestly.
-- [Multi-agent](multi-agent.md) — what delegation costs, measured across five
-  pipelines (hand-rolled, graph, handoff chain, sub-agent-as-a-tool) to an exact
-  law in LLM calls, and how much of a handoff's extra prompt is the
-  `transfer_to_*` schemas rather than the transfer.
-- [When the gateway fails](transport.md) — retry and backoff behaviour when the
-  provider returns 429/500/400. The one dimension where the hand-rolled baseline
-  loses outright.
-- [Tool schemas](tool-schemas.md) — whether every framework describes the *same*
-  tool to the model. Two were not, and correcting it overturned this repo's
-  most-cited overhead finding.
-- [Structured output](structured-output.md) — which frameworks ask the provider
-  for a schema (none), what they do with a record that violates one (nothing),
-  and what that means for what the arena is grading.
-- [Dependencies](dependencies.md) — the pinning policy, why the harness has zero
-  runtime deps, and the deprecation register.
-- [Next phases](next-phases.md) — what is scaffolded but not yet real, and what
-  the first live scorecard needs.
-- Per-framework deep dives: [`frameworks/`](frameworks/README.md)
-- Per-arena reference notes: [`arenas/`](arenas/README.md) — what each arena tests, its
-  traps, and where its design is written down.
-- [Scorecard example](scorecard-example.md) — the shape of a `results/<id>/`
-  scorecard, before the first live run exists to produce a real one.
-
-## Reports
-
-- `python -m arena scorecard --arena <id>` — one arena, every adapter.
-- `python -m arena summary --print` — **all** arenas in one view: a coverage grid
-  plus the three things that compare honestly offline (fault recovery, prompt
-  size, pause support). Written to `runs/summary.md` for mock runs and
-  `results/summary.md` for live ones, so mock numbers never reach `results/`.
-
-## How a run works
-
-```
-arena run --arena tool_use --framework langgraph --mode mock
-   │
-   ├─ registry.load_arena("tool_use")      -> arena.toml + dataset.jsonl + mock_script.json
-   ├─ mode=mock: start arena.llm.mockserver, override base_url
-   ├─ registry.load_framework("langgraph") -> frameworks/langgraph/adapter.py :: Adapter()
-   ├─ adapter.build(arena, config)         -> an AgentRunner
-   ├─ for each dataset item (x repeat): runner.run(item) -> AgentResult
-   ├─ scorer.score_item(item, result)      -> pass/fail per mechanical check
-   └─ scorecard.write_scorecard(record)    -> live: results/tool_use/scorecard.{md,csv,json}
-                                              mock: runs/scorecards/tool_use/ (git-ignored)
-```
-
-## Repo map
-
-| Path | What |
-|---|---|
-| `arena/` | the harness: config, types, registry, runner, scorer, scorecard |
-| `arena/llm/` | OpenAI-compatible client + the stdlib mock server |
-| `arena/tools/` | shared `search` + `calculator` + corpus |
-| `arenas/<id>/` | one arena: `arena.toml`, `dataset.jsonl`, `mock_script.json` |
-| `frameworks/<name>/` | one adapter: `adapter.py`, `requirements.txt`, `README.md` |
-| `results/<id>/` | committed **live** scorecards |
-| `runs/` | raw run JSON (git-ignored) |
+Browse all four spaces: [Learn](learn/index.md) · [Build](build/README.md) ·
+[Compare](compare/index.md) · [Reference](reference/index.md)
