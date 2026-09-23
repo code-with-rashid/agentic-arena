@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "agentic-arena"
 version = "0.1.0"
-description = "Compare, explore, and choose the right agentic framework — with numbers you can regenerate."
+description = "Learn agentic systems, build a harness, and compare frameworks with reproducible evidence."
 readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.11"

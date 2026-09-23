@@ -2,13 +2,13 @@
 title: "Agentic Ecosystem Knowledge Base"
 type: index
 status: active
-updated: 2026-09-18
+updated: 2026-09-23
 tags: [agentic-ecosystem]
 ---
 
 # Agentic Ecosystem Knowledge Base
 
-Latest work: [roadmap implementation and verification](research/2026-09-19-implementation.md).
+Latest work: [learning experience and information architecture research](research/2026-09-23-learning-experience.md).
 
 A portable reference for understanding, choosing, building, evaluating, and operating agentic systems. Maintained alongside Agentic Arena. Open the repository's `knowledge/` directory as an existing vault in Obsidian, then open this note. No community plugins or paid sync are required. Standard Markdown links also work on GitHub and in coding harnesses.
 
@@ -16,6 +16,7 @@ A portable reference for understanding, choosing, building, evaluating, and oper
 
 - [Ordered implementation backlog](strategy/implementation-backlog.md): agent-ready GitHub issues and dependencies.
 - [Concept-first learning and harness path](strategy/concept-first-path.md): how the public reference and your future harness inform each other.
+- [Learning experience research](research/2026-09-23-learning-experience.md): why the public site is divided into Learn, Build, Compare, and Reference.
 - [Personal Obsidian notes](personal/README.md): private reflections and learning records kept out of Git.
 
 - [Project vision](strategy/vision.md): the destination and scope.
