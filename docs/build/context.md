@@ -1,5 +1,7 @@
 # Context, retrieval, and memory
 
+Use the interactive [context budget explorer](../labs/context-budget.md) to compare selection policies and inspect omissions before running the fixtures.
+
 State is what the runtime needs to continue. Context is what the model receives
 on one request. Memory is information selected for retention across requests or
 sessions. Retrieval chooses evidence; it does not make that evidence authoritative.

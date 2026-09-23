@@ -155,7 +155,108 @@
     retryValue.textContent = retries.value;
   }
 
-  const init = () => { initPathPicker(); initLearningProgress(); initFailureLab(); };
+  const contextFacts = [
+    { id: "approval", text: "Never deploy without explicit approval.", required: true },
+    { id: "objective", text: "Migrate the checkout service to v3.", required: false },
+    { id: "database-old", text: "The target database is orders-primary.", required: false },
+    { id: "discussion", text: "The team discussed dashboard colors.", required: false },
+    { id: "database-correction", text: "Correction: use orders-green, not orders-primary.", required: true },
+    { id: "health", text: "The v3 staging health check passed.", required: false },
+    { id: "request", text: "Prepare the migration plan; do not execute it.", required: false },
+  ];
+
+  const renderedLength = (fact) => `[${fact.id}] ${fact.text}\n`.length;
+
+  function selectRecent(facts, budget) {
+    const selected = [];
+    let used = 0;
+    [...facts].reverse().forEach((fact) => {
+      if (used + renderedLength(fact) <= budget) {
+        selected.unshift(fact);
+        used += renderedLength(fact);
+      }
+    });
+    return selected;
+  }
+
+  function selectProtected(facts, budget) {
+    const required = facts.filter((fact) => fact.required);
+    let used = required.reduce((sum, fact) => sum + renderedLength(fact), 0);
+    if (used > budget) return { selected: [], failure: true };
+    const selectedIds = new Set(required.map((fact) => fact.id));
+    [...facts].reverse().forEach((fact) => {
+      if (!selectedIds.has(fact.id) && used + renderedLength(fact) <= budget) {
+        selectedIds.add(fact.id);
+        used += renderedLength(fact);
+      }
+    });
+    return { selected: facts.filter((fact) => selectedIds.has(fact.id)), failure: false };
+  }
+
+  function simulateContext(policy, budget, query) {
+    let selected = [];
+    let failure = false;
+    let overflow = false;
+    if (policy === "full") {
+      selected = contextFacts;
+      overflow = selected.reduce((sum, fact) => sum + renderedLength(fact), 0) > budget;
+    } else if (policy === "recent") {
+      selected = selectRecent(contextFacts, budget);
+    } else if (policy === "protected") {
+      ({ selected, failure } = selectProtected(contextFacts, budget));
+    } else if (policy === "retrieval") {
+      const candidates = contextFacts.filter((fact) => fact.required || fact.text.toLowerCase().includes(query.toLowerCase()));
+      ({ selected, failure } = selectProtected(candidates, budget));
+    } else {
+      const compacted = [contextFacts[0], contextFacts[4], { id: "summary", text: "Checkout v3 migration planning; staging is healthy; do not execute.", required: false }];
+      ({ selected, failure } = selectProtected(compacted, budget));
+    }
+    const ids = new Set(selected.map((fact) => fact.id));
+    const missing = contextFacts.filter((fact) => fact.required && !ids.has(fact.id));
+    const used = selected.reduce((sum, fact) => sum + renderedLength(fact), 0);
+    let outcome = "Bounded context";
+    let lesson = "Required obligations survived and every omission remains visible by source ID.";
+    if (failure) {
+      outcome = "Failed visibly";
+      lesson = "The required obligations do not fit. Increase the budget or shorten them explicitly.";
+    } else if (overflow) {
+      outcome = "Budget exceeded";
+      lesson = "Full replay preserves evidence but does not obey the configured request budget.";
+    } else if (missing.length) {
+      outcome = "Obligation lost";
+      lesson = "A recent window can fit while silently dropping an early approval or correction.";
+    } else if (policy === "summary") {
+      outcome = "Compacted with provenance loss";
+      lesson = "Compaction saves space, but the synthetic summary no longer cites every source it replaced.";
+    }
+    return { selected, ids, missing, used, outcome, lesson, overflow, failure };
+  }
+
+  function initContextLab() {
+    const lab = document.querySelector("[data-context-lab]");
+    if (!lab || lab.dataset.initialized === "true") return;
+    lab.dataset.initialized = "true";
+    const policy = lab.querySelector("[data-context-policy]");
+    const budget = lab.querySelector("[data-context-budget]");
+    const query = lab.querySelector("[data-context-query]");
+    const render = () => {
+      const limit = Number(budget.value);
+      const run = simulateContext(policy.value, limit, query.value);
+      lab.querySelector("[data-context-budget-value]").textContent = limit;
+      lab.querySelector("[data-context-used]").textContent = `${run.used} / ${limit} characters`;
+      lab.querySelector("[data-context-outcome]").textContent = run.outcome;
+      lab.querySelector("[data-context-meter]").style.width = `${Math.min(100, (run.used / limit) * 100)}%`;
+      lab.querySelector("[data-context-meter]").dataset.overflow = String(run.overflow);
+      lab.querySelector("[data-context-text]").textContent = run.selected.length ? run.selected.map((fact) => `[${fact.id}] ${fact.text}`).join("\n") : "No request sent: required evidence exceeds the budget.";
+      lab.querySelector("[data-context-lesson]").textContent = run.lesson;
+      lab.querySelector("[data-context-sources]").innerHTML = contextFacts.map((fact) => `<li data-selected="${run.ids.has(fact.id)}"><span>${fact.id}${fact.required ? " · required" : ""}</span><p>${fact.text}</p><small>${run.ids.has(fact.id) ? "included" : "omitted"}</small></li>`).join("");
+      query.disabled = policy.value !== "retrieval";
+    };
+    [policy, budget, query].forEach((control) => control.addEventListener("input", render));
+    render();
+  }
+
+  const init = () => { initPathPicker(); initLearningProgress(); initFailureLab(); initContextLab(); };
   document.addEventListener("DOMContentLoaded", init);
   if (typeof document$ !== "undefined") document$.subscribe(init);
 })();

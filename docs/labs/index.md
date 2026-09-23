@@ -6,6 +6,7 @@ Use these labs to change one harness policy, predict the outcome, inspect the ev
 
 <div class="arena-card-grid arena-card-grid--compact">
   <a class="arena-card arena-card--build" href="tool-failure-recovery/"><span class="arena-card__number">01</span><h3>Recover from tool failure</h3><p>Explore malformed calls, provider errors, lost acknowledgements, retry budgets, stable operation keys, and reconciliation.</p><span class="arena-card__link">Open the lab →</span></a>
+  <a class="arena-card arena-card--learn" href="context-budget/"><span class="arena-card__number">02</span><h3>Control the context budget</h3><p>Compare replay, windows, protected evidence, retrieval, and compaction while watching omissions and integrity risks.</p><span class="arena-card__link">Open the explorer →</span></a>
 </div>
 
 ## How every lab works
