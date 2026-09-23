@@ -2,7 +2,7 @@
 title: "Ecosystem Map"
 type: map
 status: active
-updated: 2026-09-18
+updated: 2026-09-23
 tags: [agentic-ecosystem]
 ---
 
@@ -21,7 +21,7 @@ Follow the development lifecycle. The coverage column describes Agentic Arena to
 | Security and adversarial behavior | What happens under untrusted input? | Scripted resilience faults | [AgentDojo](../projects/agentdojo.md), [OASB](../projects/oasb.md); utility and security measured separately |
 | Evaluations and research | Can a result be independently reproduced? | Frozen datasets, mechanical scorers, repeat runs | [Harbor](../projects/harbor.md), [BoundaryBench](../projects/boundarybench.md), provenance manifests |
 | Observability and debugging | Can I explain a failure or bill? | Run records and wire/accounting tests | [Langfuse](../projects/langfuse.md), trace export and event fidelity |
-| Coding and interaction harnesses | How does an agent complete real development work? | [DeepSeek Harness](../projects/deepseek-harness.md) source review and separate comparison method | Isolated SDK experiment; [OpenHands](../projects/openhands.md), browser, and computer-use comparison scope |
+| Coding and interaction harnesses | How does an agent complete real development work? | Seven-profile [open-source landscape](../research/2026-09-23-coding-harness-landscape.md) and separate comparison method | Neutral run record, shared fixtures, then isolated adapters and repeated model trials |
 | Deployment and operations | Can I serve, recover, upgrade, and bound costs? | Restart tests and dependency pins | Queues, concurrency, cancellation, idempotency, SLOs, cost controls |
 | Developer experience and supply chain | Can contributors install and safely extend the stack? | Stdlib harness, pinned optional adapters, CI | Skills provenance, packaging, cross-platform recipes, licensing |
 

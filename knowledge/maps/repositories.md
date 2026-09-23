@@ -2,7 +2,7 @@
 title: "Repository Catalog"
 type: index
 status: active
-updated: 2026-09-18
+updated: 2026-09-23
 tags: [agentic-ecosystem]
 ---
 
@@ -21,8 +21,13 @@ All listed projects are references, not installed dependencies. Review depth is 
 | [Model Context Protocol](../projects/mcp.md) | Tool and context interoperability | overview | Research reference / possible integration |
 | [Agent2Agent Protocol](../projects/a2a.md) | Agent interoperability | overview | Research reference / possible integration |
 | [Harbor](../projects/harbor.md) | Agent evaluation infrastructure | overview | Research reference / possible integration |
-| [OpenHands](../projects/openhands.md) | Agentic software development | overview | Research reference / possible integration |
-| [DeepSeek Harness](../projects/deepseek-harness.md) | Plugin-composed coding harness | source-and-selected-contracts | First complete-harness profile / integration candidate |
+| [OpenHands](../projects/openhands.md) | SDK and remote coding workspace | source-and-selected-contracts | Complete-harness comparison candidate |
+| [DeepSeek Harness](../projects/deepseek-harness.md) | Plugin-composed coding harness | source-and-selected-contracts | Complete-harness comparison candidate |
+| [OpenCode](../projects/opencode.md) | Local client/server coding agent | source-and-selected-contracts | Complete-harness comparison candidate |
+| [Cline](../projects/cline.md) | Shared IDE, CLI, and SDK coding core | source-and-selected-contracts | Complete-harness comparison candidate |
+| [goose](../projects/goose.md) | MCP/ACP local agent and recipes | source-and-selected-contracts | Complete-harness comparison candidate |
+| [SWE-agent](../projects/swe-agent.md) | Research coding-agent runner | source-and-selected-contracts | Complete-harness comparison candidate |
+| [Aider](../projects/aider.md) | Git-native terminal pair programmer | source-and-selected-documentation | Adjacent lean editing baseline |
 | [Langfuse](../projects/langfuse.md) | Observability and evaluations | overview | Research reference / possible integration |
 
 Our own [Agentic Arena profile](../projects/agentic-arena.md) records current implementation. Candidate repositories in [the backlog](../research/backlog.md) have not yet received equivalent review. A profile's direction describes documented purpose plus a clearly labeled integration proposal, never an inferred promise from its maintainers.

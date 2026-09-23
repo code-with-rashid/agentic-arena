@@ -115,7 +115,14 @@ nav:
           - Claude Agent SDK: frameworks/claude-agent-sdk.md
       - Coding harnesses:
           - Overview: harnesses/README.md
+          - Comparison matrix: harnesses/comparison.md
           - DeepSeek Harness: harnesses/deepseek-harness.md
+          - OpenHands: harnesses/openhands.md
+          - OpenCode: harnesses/opencode.md
+          - Cline: harnesses/cline.md
+          - goose: harnesses/goose.md
+          - SWE-agent: harnesses/swe-agent.md
+          - Aider baseline: harnesses/aider.md
       - Evaluation arenas:
           - Overview: arenas/README.md
           - Structured output: arenas/structured_output.md
