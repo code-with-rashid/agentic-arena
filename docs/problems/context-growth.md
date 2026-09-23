@@ -12,6 +12,8 @@ Full transcript replay resends earlier messages. Fixed framework prompt overhead
 
 Measure request bytes/tokens per turn. Compare the initial intercept with the slope before blaming a framework's fixed prompt.
 
+Use the [context budget explorer](../labs/context-budget.md) to see how replay, recent windows, protected evidence, retrieval, and deterministic compaction change what reaches the model.
+
 From the repository root, with the relevant optional adapters installed:
 
 ```bash
@@ -35,5 +37,4 @@ Open question: does the same outcome hold for your actual provider, workload, co
 Context builder with explicit budget, retained obligations, source IDs, and observable exclusions.
 
 Return to [the problem register](index.md).
-
 
