@@ -8,7 +8,7 @@ tags: [agentic-ecosystem]
 
 # Agentic Ecosystem Knowledge Base
 
-Latest work: [open-source coding harness landscape](research/2026-09-23-coding-harness-landscape.md), following the [DeepSeek Harness source review](research/2026-09-23-deepseek-harness.md) and [separate comparison decision](decisions/003-separate-harness-track.md).
+Latest work: [developer workbench](initiatives/developer-workbench.md), beginning with an interactive and executable tool failure lab. It builds on the [open-source coding harness landscape](research/2026-09-23-coding-harness-landscape.md), [DeepSeek Harness source review](research/2026-09-23-deepseek-harness.md), and [separate comparison decision](decisions/003-separate-harness-track.md).
 
 A portable reference for understanding, choosing, building, evaluating, and operating agentic systems. Maintained alongside Agentic Arena. Open the repository's `knowledge/` directory as an existing vault in Obsidian, then open this note. No community plugins or paid sync are required. Standard Markdown links also work on GitHub and in coding harnesses.
 
@@ -17,6 +17,7 @@ A portable reference for understanding, choosing, building, evaluating, and oper
 - [Ordered implementation backlog](strategy/implementation-backlog.md): agent-ready GitHub issues and dependencies.
 - [Concept-first learning and harness path](strategy/concept-first-path.md): how the public reference and your future harness inform each other.
 - [Learning experience research](research/2026-09-23-learning-experience.md): why the public site is divided into Learn, Build, Compare, and Reference.
+- [Developer workbench](initiatives/developer-workbench.md): the reusable predict, configure, inspect, run, and transfer loop for hands-on labs.
 - [Personal Obsidian notes](personal/README.md): private reflections and learning records kept out of Git.
 
 - [Project vision](strategy/vision.md): the destination and scope.

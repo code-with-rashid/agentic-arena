@@ -75,6 +75,9 @@ nav:
       - 7. Security and operations: build/security-operations.md
   - Build:
       - Build your own harness: build/README.md
+      - Developer labs:
+          - Lab home: labs/index.md
+          - Tool failure and recovery: labs/tool-failure-recovery.md
       - Harness design dossier: build/design-dossier.md
       - Practical guides:
           - Build an agent: journeys/build.md

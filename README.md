@@ -115,7 +115,9 @@ methodological assumption. Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [next phases](https://code-with-rashid.github.io/agentic-arena/next-phases/).
 
 The research vault under [`knowledge/`](knowledge/README.md) records ecosystem
-projects, decisions, experiments, and direction. Open that directory in Obsidian
-when you need the project’s deeper working memory.
+projects, decisions, experiments, and direction. The [developer
+labs](docs/labs/index.md) turn the key contracts into interactive, locally
+reproducible exercises. Open that directory in Obsidian when you need the
+project’s deeper working memory.
 
 Apache-2.0 licensed.

@@ -10,6 +10,7 @@ hide:
   <p class="arena-lede">Learn the concepts without committing to a framework, build a harness from first principles, and use reproducible evidence when you are ready to choose.</p>
   <div class="arena-actions">
     <a class="md-button md-button--primary" href="learn/">Start learning</a>
+    <a class="md-button" href="labs/">Run a developer lab</a>
     <a class="md-button" href="compare/">Explore the evidence</a>
   </div>
 </section>
@@ -43,7 +44,7 @@ hide:
   </div>
   <div class="arena-card-grid">
     <a class="arena-card arena-card--learn" href="learn/"><span class="arena-card__number">01</span><h3>Learn</h3><p>Concepts in a deliberate order, from the agent loop to reliable operation.</p><span class="arena-card__link">Follow the curriculum →</span></a>
-    <a class="arena-card arena-card--build" href="build/"><span class="arena-card__number">02</span><h3>Build</h3><p>Executable lessons and design decisions for your own framework-neutral harness.</p><span class="arena-card__link">Build from scratch →</span></a>
+    <a class="arena-card arena-card--build" href="build/"><span class="arena-card__number">02</span><h3>Build</h3><p>Interactive labs, executable lessons, and design decisions for your own framework-neutral harness.</p><span class="arena-card__link">Build from scratch →</span></a>
     <a class="arena-card arena-card--compare" href="compare/"><span class="arena-card__number">03</span><h3>Compare</h3><p>Measured findings, framework profiles, arenas, and an honest decision guide.</p><span class="arena-card__link">Inspect the evidence →</span></a>
     <a class="arena-card arena-card--reference" href="reference/"><span class="arena-card__number">04</span><h3>Reference</h3><p>Run modes, methodology, controls, commands, schemas, and project details.</p><span class="arena-card__link">Look something up →</span></a>
   </div>

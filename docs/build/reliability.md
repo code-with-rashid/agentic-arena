@@ -1,5 +1,7 @@
 # Reliability: what survives failure?
 
+Use the interactive [tool failure and recovery lab](../labs/tool-failure-recovery.md) to predict and inspect these contracts before running the fixtures.
+
 Run the offline lesson:
 
 ```bash
@@ -45,4 +47,3 @@ Use the [restart](../problems/restart.md) and [approval](../problems/approval.md
 problem notes to choose an experiment before choosing a framework.
 
 Implementation: [reliability lesson](../../examples/harness/reliability.py).
-
