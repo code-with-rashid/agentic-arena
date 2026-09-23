@@ -89,6 +89,38 @@ body { letter-spacing: -0.006em; }
 .lesson-card small { color: var(--arena-muted); }
 .lesson-card:has(input:checked) { background: rgba(25,112,92,.07); border-color: rgba(25,112,92,.35); }
 
+.failure-lab { margin: 1.5rem 0 2.5rem; border: 1px solid var(--arena-border); border-radius: 1rem; overflow: hidden; background: var(--md-default-bg-color); box-shadow: 0 16px 45px rgba(20,35,45,.07); }
+.failure-lab__controls { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 1rem; padding: 1.25rem; background: var(--arena-soft); }
+[data-md-color-scheme="slate"] .failure-lab__controls { background: rgba(255,255,255,.04); }
+.failure-lab__controls label { display: flex; flex-direction: column; gap: .4rem; margin: 0; font-size: .7rem; font-weight: 700; }
+.failure-lab__controls select { width: 100%; padding: .55rem .65rem; border: 1px solid var(--arena-border); border-radius: .45rem; background: var(--md-default-bg-color); color: var(--md-default-fg-color); font: inherit; }
+.failure-lab__controls input[type="range"] { width: 100%; accent-color: var(--arena-green); }
+.failure-lab__controls .failure-lab__check { flex-direction: row; align-items: center; align-self: end; min-height: 2.25rem; }
+.failure-lab__check input { accent-color: var(--arena-green); }
+.failure-lab__prediction { padding: 1.25rem; border-top: 1px solid var(--arena-border); border-bottom: 1px solid var(--arena-border); }
+.failure-lab__prediction > span { display: block; margin-bottom: .65rem; font-weight: 700; }
+.failure-lab__prediction > div { display: flex; flex-wrap: wrap; gap: .5rem; }
+.failure-lab__prediction button { padding: .5rem .8rem; border: 1px solid var(--arena-border); border-radius: 99px; background: transparent; color: var(--md-default-fg-color); font: inherit; cursor: pointer; }
+.failure-lab__prediction button:hover, .failure-lab__prediction button[aria-pressed="true"] { border-color: var(--arena-green); background: var(--arena-green); color: #fff; }
+.failure-lab__result { padding: 1.25rem; }
+.failure-lab__summary { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: .65rem; }
+.failure-lab__summary div { padding: .8rem; border-radius: .65rem; background: var(--arena-soft); }
+[data-md-color-scheme="slate"] .failure-lab__summary div { background: rgba(255,255,255,.04); }
+.failure-lab__summary span, .failure-lab__summary strong { display: block; }
+.failure-lab__summary span { color: var(--arena-muted); font-size: .65rem; text-transform: uppercase; letter-spacing: .08em; }
+[data-md-color-scheme="slate"] .failure-lab__summary span { color: rgba(255,255,255,.62); }
+.failure-lab__summary strong { margin-top: .2rem; }
+.failure-lab__timeline { position: relative; display: grid; gap: .75rem; margin: 1.25rem 0 !important; padding: 0 !important; list-style: none !important; }
+.failure-lab__timeline::before { content: ""; position: absolute; top: 1rem; bottom: 1rem; left: .8rem; width: 2px; background: var(--arena-border); }
+.failure-lab__timeline li { position: relative; display: grid; grid-template-columns: 1.65rem 1fr; gap: .75rem; margin: 0 !important; }
+.failure-lab__timeline li > span { z-index: 1; display: flex; width: 1.65rem; height: 1.65rem; align-items: center; justify-content: center; border-radius: 50%; background: var(--arena-green); color: #fff; font-size: .65rem; font-weight: 800; }
+.failure-lab__timeline strong { text-transform: capitalize; }
+.failure-lab__timeline p { margin: .1rem 0 0; color: var(--arena-muted); }
+[data-md-color-scheme="slate"] .failure-lab__timeline p { color: rgba(255,255,255,.68); }
+.failure-lab__lesson { margin: 1rem 0 .25rem !important; padding: .8rem 1rem; border-left: 3px solid var(--arena-coral); background: var(--arena-soft); }
+[data-md-color-scheme="slate"] .failure-lab__lesson { background: rgba(255,255,255,.04); }
+.failure-lab__prediction-result { margin: .5rem 0 0 !important; color: var(--arena-muted); font-size: .72rem; }
+
 @media (max-width: 720px) {
   .path-picker__choices { grid-template-columns: 1fr 1fr; }
   .path-picker__choices button:nth-child(2) { border-right: 0; }
@@ -96,5 +128,7 @@ body { letter-spacing: -0.006em; }
   .arena-card-grid, .evidence-levels { grid-template-columns: 1fr; }
   .arena-section--soft { padding: 1.25rem; }
   .lesson-card { grid-template-columns: 1fr; gap: .65rem; }
+  .failure-lab__controls, .failure-lab__summary { grid-template-columns: 1fr; }
+  .failure-lab__controls .failure-lab__check { align-self: auto; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; } }

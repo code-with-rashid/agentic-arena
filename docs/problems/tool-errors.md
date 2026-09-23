@@ -12,6 +12,8 @@ A framework may reject before the tool body or omit a failed tool response. A to
 
 Inspect the next model request and independently record which sibling tools ran.
 
+First use the [tool failure and recovery lab](../labs/tool-failure-recovery.md) to see how a structured error returns to the model and where retries do and do not belong.
+
 From the repository root, with the relevant optional adapters installed:
 
 ```bash
@@ -35,5 +37,4 @@ Open question: does the same outcome hold for your actual provider, workload, co
 One terminal response per accepted call and an explicit partial-batch policy.
 
 Return to [the problem register](index.md).
-
 

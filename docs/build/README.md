@@ -1,5 +1,7 @@
 # Build your own harness
 
+Start with the [developer labs](../labs/index.md) when you want to learn by changing a policy and inspecting the result. The first lab covers [tool failure and recovery](../labs/tool-failure-recovery.md).
+
 Continue with [reliability, approval and restart](reliability.md).
 
 Then compare designs in the [evaluation workbench](evaluation.md), inspect
