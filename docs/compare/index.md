@@ -10,7 +10,7 @@ This is the comparison space. It keeps product selection and benchmark evidence 
 | Which framework fits my constraints? | [Decision guide](../decision-guide.md) |
 | Does a framework support a capability? | [Feature matrix](../feature-matrix.md) |
 | How much machinery does it add? | [Framework overhead](../overhead.md) |
-| How does a complete coding environment perform? | [Coding harnesses](../harnesses/README.md) |
+| How do complete coding environments differ? | [Coding harness comparison](../harnesses/comparison.md) |
 | What does delegation cost? | [Multi-agent comparison](../multi-agent.md) |
 | How does it behave when a provider fails? | [Transport failures](../transport.md) |
 

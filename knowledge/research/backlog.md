@@ -2,7 +2,7 @@
 title: "Research Backlog"
 type: backlog
 status: active
-updated: 2026-09-18
+updated: 2026-09-23
 tags: [agentic-ecosystem]
 ---
 
@@ -20,7 +20,7 @@ The items below are questions to investigate, not verified capabilities or endor
 | P2 | Memory | How do compaction and persistent memory affect cost and leakage between sessions? | Controlled corpus, contamination controls, model/version isolation |
 | P2 | Sandboxes | Which configuration was actually enforced during an experiment? | Pinned runtime/config, host evidence, bounded probes |
 | P2 | Agent protocols | Is identity retained over remote delegation and cancellation? | A2A contract review and independent endpoints |
-| P2 | Coding harnesses | Does a complete harness preserve task, authority, cancellation, and effect evidence under interruption? | Isolated DeepSeek Harness `sdk-minimal` run, then equivalent OpenHands review and shared task |
+| P1 | Coding harnesses | Can one neutral record preserve task, authority, lifecycle, and effect evidence across unlike harnesses? | Shared repository/effect fixtures; DeepSeek, OpenHands, OpenCode, Cline, goose, and SWE-agent adapters; Aider editing baseline |
 | P2 | Operations | What survives cancellation, process loss, retries, and duplicate delivery? | Durable queue/idempotency fixtures and reproducible fault plans |
 | P3 | Skills and supply chain | How are skill origin, permissions, and updates represented? | Primary manifests, package provenance, independent expectations |
 | P3 | Interaction | How do browser/computer-use environments change evaluation? | Dedicated task/observation contract, safe fixture environments |

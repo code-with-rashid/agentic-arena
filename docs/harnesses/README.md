@@ -11,11 +11,29 @@ agent finish development work safely and recoverably?"** Use the
 [framework comparison](../compare/index.md) when your question concerns the
 orchestration library inside an otherwise shared setup.
 
+## Choose the comparison you need
+
+There is no useful single ranking. The projects optimize for different jobs:
+
+| If you need to decide about… | Compare first |
+|---|---|
+| A reusable application and remote runtime | [OpenHands](openhands.md), [DeepSeek Harness](deepseek-harness.md), [OpenCode](opencode.md), [Cline](cline.md) |
+| A local, extensible developer agent | [OpenCode](opencode.md), [Cline](cline.md), [goose](goose.md) |
+| Repeatable research or benchmark runs | [SWE-agent](swe-agent.md), then the other harnesses through the shared experiment contract |
+| A lean terminal editing baseline | [Aider](aider.md) |
+| Architecture and evidence differences across all of them | [Comparison matrix](comparison.md) |
+
 ## Current profiles
 
 | Harness | Review state | What you can conclude |
 |---|---|---|
 | [DeepSeek Harness](deepseek-harness.md) | Source-reviewed at `46a7f68` (`0.1.7-rc.1`); not locally benchmarked | Architecture, integration boundary, current limitations, and transferable design lessons |
+| [OpenHands](openhands.md) | Source-reviewed at `5b36cac` (`v1.49.5`); not locally benchmarked | SDK/server split, event-driven conversations, remote workspaces, and security hooks |
+| [OpenCode](opencode.md) | Source-reviewed at `7cb044e` (`v1.18.32` release context); not locally benchmarked | Headless server/SDK surface, sessions, ordered permissions, and subagents |
+| [Cline](cline.md) | Source-reviewed at `9c0e4aa`; not locally benchmarked | Shared IDE/CLI/SDK core, checkpoints, approvals, and headless operation |
+| [goose](goose.md) | Source-reviewed at `e678c3b` (`v1.52.0`); not locally benchmarked | MCP-first extensions, portable recipes, ACP, permissions, and subagents |
+| [SWE-agent](swe-agent.md) | Source-reviewed at `3ea751c`; not locally benchmarked | Configurable research runner, isolated deployments, and rich trajectory artifacts |
+| [Aider](aider.md) | Adjacent baseline reviewed at `5dc9490`; not locally benchmarked | Git-native editing, repository maps, edit formats, and lower orchestration complexity |
 
 An entry here is not an endorsement. Review state is part of the result.
 
@@ -51,5 +69,5 @@ they are part of what a developer is choosing.
    harness transcript.
 5. Publish artifacts and limitations before making a comparative claim.
 
-This first profile establishes the method. More harnesses should enter only
-after the same source review and bounded execution path exist.
+Source review establishes comparison vocabulary. Behavioral conclusions still
+require the same bounded execution path for every admitted harness.

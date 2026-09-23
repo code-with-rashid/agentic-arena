@@ -2,33 +2,33 @@
 title: "OpenHands"
 type: repository
 status: active
-updated: 2026-09-18
-tags: [agentic-ecosystem]
+updated: 2026-09-23
+tags: [agentic-ecosystem, coding-harness]
 ---
 
 # OpenHands
 
-Domain: Agentic software development  
-Source: [upstream repository](https://github.com/OpenHands/OpenHands)  
-Review depth: **overview**  
-Source checked: 2026-09-18; upstream revision not pinned. Recheck before implementation.  
+Domain: Agentic software development<br>
+Source: [Software Agent SDK](https://github.com/OpenHands/software-agent-sdk)<br>
+Review depth: **source and selected contracts**<br>
+Source checked: 2026-09-23 at `5b36cacccc2bbe6f8fbce9e1d3ff4b0a3dcddadb` (`v1.49.5`)<br>
+License at reviewed revision: MIT<br>
 Execution by us: **none**.
 
 ## Documented direction
 
-Develops tooling for AI-driven software development. [Primary source](https://github.com/OpenHands/OpenHands).
+The V1 SDK owns agents, tools, conversations, workspaces, events, the Python SDK, Agent Server REST/WebSocket API, and TypeScript client. The application repository consumes those contracts. Workspaces may be local or ephemeral remote environments.
 
 ## Proposed relationship to Agentic Arena
 
-Use as a candidate for a future complete development-harness track, distinct from library adapter comparisons. This is our recommendation, not an upstream roadmap commitment.
+Primary complete-harness candidate. Compare its embedded SDK and Agent Server modes separately. Its event-driven loop, conversation persistence, remote workspaces, security analyzer, and confirmation policy are useful references for our independent harness.
 
 ## Evidence limits
 
-A full coding harness changes tools, prompts, execution, and workflow. Its results cannot be dropped into current framework overhead tables.
+No local execution or security validation was performed. A remote workspace is not equivalent to a local SDK run, and an action analyzer is not proof of outer containment.
 
 ## Review record and next step
 
-Repository overview inspected; the former All-Hands-AI URL redirects here. Next: inspect the relevant contracts and tests, record an immutable revision, verify license conditions before reuse, and run a bounded reproduction if integration is selected. [Additional source](https://github.com/OpenHands/OpenHands).
+Selected SDK architecture, Agent Server, workspace, persistence, pause/resume, and security documentation inspected. Next: run the same fixture through embedded SDK and Agent Server, then compare events and final workspace state independently.
 
-Related: [ecosystem map](../maps/ecosystem.md), [delivery plan](../strategy/delivery-plan.md), [research backlog](../research/backlog.md).
-
+Related: [harness landscape](../research/2026-09-23-coding-harness-landscape.md), [public profile](../../docs/harnesses/openhands.md), [comparison](../../docs/harnesses/comparison.md).

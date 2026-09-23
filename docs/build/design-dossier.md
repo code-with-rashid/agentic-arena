@@ -84,6 +84,17 @@ mechanics. Real-model task quality needs separately labelled, repeated trials.
 | Runtime choice | Run identical owned fixtures under two configurations; record exclusions rather than infer escape resistance |
 | Automation protocol | Correlate concurrent prompts with terminal results, usage, cancellation, and unknown-outcome recovery |
 
+## Design references from complete harnesses
+
+The [coding harness comparison](../harnesses/comparison.md) supplies design
+references rather than a shopping list. DeepSeek Harness informs durable event
+semantics; OpenHands informs SDK/runtime/client separation; OpenCode informs
+causal session APIs and ordered policy; Cline informs workspace checkpoints;
+goose informs protocol-first extensions and portable workflows; SWE-agent
+informs reproducible trajectories; Aider informs bounded repository context,
+edit protocols, and Git-native recovery. A new harness should adopt a behavior
+only when its own problem record and acceptance experiment justify the cost.
+
 These are proposals and gaps, not claims that the teaching examples implement
 distributed leases, production identity, or full mediation.
 
