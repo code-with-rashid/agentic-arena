@@ -62,6 +62,9 @@ references. Do not persist credentials inside state.
 | R9: preserve useful work under restrictions | [Tool errors](../problems/tool-errors.md), [boundary arena](../arenas/boundary_response.md) | Per-call policy or batch preflight | Mixed denied/allowed batch and fallback retain allowed effects |
 | R10: choose execution containment explicitly | [Approval](../problems/approval.md), [runtime recipe](security-operations.md) | Process, container, VM or remote service | Verify effective limits/owned writes/cleanup; report unsupported hosts |
 | R11: charge delegation transparently | [Delegation cost](../problems/delegation-cost.md), existing multi-agent experiments | Direct loop, handoff or sub-agent | Equal task/tools/context and independently checked usage; provenance across delegation is a future spike |
+| R12: separate durable facts from live signals | [DeepSeek Harness source review](../harnesses/deepseek-harness.md) | Event journal plus ephemeral control bus, or one typed stream with retention rules | Rebuild model-visible history from committed facts after a crash; transient status may disappear |
+| R13: reconcile unknown tool outcomes | [Restart](../problems/restart.md), [DeepSeek Harness source review](../harnesses/deepseek-harness.md) | Stable operation ID plus sink lookup, outbox, or explicit human resolution | Kill after invocation and before settlement; never repeat an effect without reconciliation |
+| R14: make extensions part of authority | [DeepSeek Harness source review](../harnesses/deepseek-harness.md) | Signed allowlist, isolated extensions, or reviewed in-process plugins | Record extension source/version/capabilities; reject an unapproved extension before code loads |
 
 The executable tests live under [tests](../../tests/); none of these requirements
 depends on a provider-specific reasoning capability. The current fixtures test
@@ -79,6 +82,7 @@ mechanics. Real-model task quality needs separately labelled, repeated trials.
 | Protocol authentication | Bind caller identity to a tool permission and test revocation; MCP transport success alone is insufficient |
 | Trace export | Round-trip redacted events through a local collector with deliberate loss; fail completeness |
 | Runtime choice | Run identical owned fixtures under two configurations; record exclusions rather than infer escape resistance |
+| Automation protocol | Correlate concurrent prompts with terminal results, usage, cancellation, and unknown-outcome recovery |
 
 These are proposals and gaps, not claims that the teaching examples implement
 distributed leases, production identity, or full mediation.
@@ -109,4 +113,3 @@ update a neutral [problem record](../problems/index.md), link evidence and rejec
 alternatives, then revise this dossier and the [knowledge vault](../../knowledge/README.md).
 A result should improve the ecosystem guide even when it argues against our own
 implementation choice.
-

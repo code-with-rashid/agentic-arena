@@ -10,6 +10,7 @@ This is the comparison space. It keeps product selection and benchmark evidence 
 | Which framework fits my constraints? | [Decision guide](../decision-guide.md) |
 | Does a framework support a capability? | [Feature matrix](../feature-matrix.md) |
 | How much machinery does it add? | [Framework overhead](../overhead.md) |
+| How does a complete coding environment perform? | [Coding harnesses](../harnesses/README.md) |
 | What does delegation cost? | [Multi-agent comparison](../multi-agent.md) |
 | How does it behave when a provider fails? | [Transport failures](../transport.md) |
 
@@ -21,6 +22,7 @@ This is the comparison space. It keeps product selection and benchmark evidence 
 <div class="arena-card-grid arena-card-grid--compact">
   <a class="arena-card" href="../findings/"><h3>Findings</h3><p>The shortest route to every measured result and its reproduction command.</p></a>
   <a class="arena-card" href="../frameworks/"><h3>Framework profiles</h3><p>Capabilities, integration notes, and measured behavior by framework.</p></a>
+  <a class="arena-card" href="../harnesses/"><h3>Coding harnesses</h3><p>Whole working environments, their architecture, and the separate evidence needed to compare them fairly.</p></a>
   <a class="arena-card" href="../arenas/"><h3>Evaluation arenas</h3><p>What each workload tests, its traps, and the evidence it produces.</p></a>
   <a class="arena-card" href="../methodology/"><h3>Methodology</h3><p>How shared models, tools, tasks, and scoring keep comparisons fair.</p></a>
 </div>
