@@ -113,6 +113,9 @@ nav:
           - Google ADK: frameworks/google-adk.md
           - CrewAI: frameworks/crewai.md
           - Claude Agent SDK: frameworks/claude-agent-sdk.md
+      - Coding harnesses:
+          - Overview: harnesses/README.md
+          - DeepSeek Harness: harnesses/deepseek-harness.md
       - Evaluation arenas:
           - Overview: arenas/README.md
           - Structured output: arenas/structured_output.md

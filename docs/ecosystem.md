@@ -13,9 +13,8 @@ Agentic Arena connects concepts, implementation patterns, and evidence. Choose a
 | Evaluation/research | What would establish the claim? | [Evaluate](journeys/evaluate.md) | Mechanical scorers, comparison methodology, research profiles |
 | Observability | Can the evidence explain an outcome? | [Evaluate](journeys/evaluate.md) | Run records and educational independent-oracle examples |
 | Operations | Can I bound, recover, and clean up work? | [Deploy](journeys/deploy.md) | Local recipes; no production certification |
-| Coding/interaction | How does a complete harness perform? | [Research backlog](../knowledge/research/backlog.md) | Source research; general browser/computer benchmarks remain open |
+| Coding/interaction | How does a complete harness perform? | [Coding harnesses](harnesses/README.md) | DeepSeek Harness source review; executable and general interaction benchmarks remain open |
 | Optimization/training | Can improvement avoid evaluation leakage? | [Research backlog](../knowledge/research/backlog.md) | Research gap |
 | Skills/supply chain | Can extensions be trusted and updated? | [Research backlog](../knowledge/research/backlog.md) | Research gap |
 
 External projects and review depths live in [the repository catalog](../knowledge/maps/repositories.md). Our planned production harness is separate and receives the same evidence standards as other implementations.
-

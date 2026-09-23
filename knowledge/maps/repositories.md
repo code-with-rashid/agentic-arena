@@ -22,7 +22,7 @@ All listed projects are references, not installed dependencies. Review depth is 
 | [Agent2Agent Protocol](../projects/a2a.md) | Agent interoperability | overview | Research reference / possible integration |
 | [Harbor](../projects/harbor.md) | Agent evaluation infrastructure | overview | Research reference / possible integration |
 | [OpenHands](../projects/openhands.md) | Agentic software development | overview | Research reference / possible integration |
+| [DeepSeek Harness](../projects/deepseek-harness.md) | Plugin-composed coding harness | source-and-selected-contracts | First complete-harness profile / integration candidate |
 | [Langfuse](../projects/langfuse.md) | Observability and evaluations | overview | Research reference / possible integration |
 
 Our own [Agentic Arena profile](../projects/agentic-arena.md) records current implementation. Candidate repositories in [the backlog](../research/backlog.md) have not yet received equivalent review. A profile's direction describes documented purpose plus a clearly labeled integration proposal, never an inferred promise from its maintainers.
-

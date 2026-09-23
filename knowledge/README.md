@@ -8,7 +8,7 @@ tags: [agentic-ecosystem]
 
 # Agentic Ecosystem Knowledge Base
 
-Latest work: [learning experience and information architecture research](research/2026-09-23-learning-experience.md).
+Latest work: [DeepSeek Harness source review](research/2026-09-23-deepseek-harness.md) and the [separate complete-harness comparison decision](decisions/003-separate-harness-track.md).
 
 A portable reference for understanding, choosing, building, evaluating, and operating agentic systems. Maintained alongside Agentic Arena. Open the repository's `knowledge/` directory as an existing vault in Obsidian, then open this note. No community plugins or paid sync are required. Standard Markdown links also work on GitHub and in coding harnesses.
 
@@ -22,6 +22,7 @@ A portable reference for understanding, choosing, building, evaluating, and oper
 - [Project vision](strategy/vision.md): the destination and scope.
 - [Ecosystem map](maps/ecosystem.md): lifecycle domains, coverage, and open questions.
 - [Repository catalog](maps/repositories.md): researched projects and how they relate.
+- [DeepSeek Harness](projects/deepseek-harness.md): the first source-reviewed complete coding-harness profile.
 - [Current Agentic Arena](projects/agentic-arena.md): implemented capabilities and evidence limits.
 - [Delivery plan](strategy/delivery-plan.md): milestones and completion gates.
 - [Boundary Response Arena](initiatives/boundary-response.md): the implemented fixture-backed reliability/security experiment, tracked in [issue #107](https://github.com/code-with-rashid/agentic-arena/issues/107).

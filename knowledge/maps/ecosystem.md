@@ -21,7 +21,7 @@ Follow the development lifecycle. The coverage column describes Agentic Arena to
 | Security and adversarial behavior | What happens under untrusted input? | Scripted resilience faults | [AgentDojo](../projects/agentdojo.md), [OASB](../projects/oasb.md); utility and security measured separately |
 | Evaluations and research | Can a result be independently reproduced? | Frozen datasets, mechanical scorers, repeat runs | [Harbor](../projects/harbor.md), [BoundaryBench](../projects/boundarybench.md), provenance manifests |
 | Observability and debugging | Can I explain a failure or bill? | Run records and wire/accounting tests | [Langfuse](../projects/langfuse.md), trace export and event fidelity |
-| Coding and interaction harnesses | How does an agent complete real development work? | Codex used as functional model transport | [OpenHands](../projects/openhands.md), coding/browser/computer-use comparison scope |
+| Coding and interaction harnesses | How does an agent complete real development work? | [DeepSeek Harness](../projects/deepseek-harness.md) source review and separate comparison method | Isolated SDK experiment; [OpenHands](../projects/openhands.md), browser, and computer-use comparison scope |
 | Deployment and operations | Can I serve, recover, upgrade, and bound costs? | Restart tests and dependency pins | Queues, concurrency, cancellation, idempotency, SLOs, cost controls |
 | Developer experience and supply chain | Can contributors install and safely extend the stack? | Stdlib harness, pinned optional adapters, CI | Skills provenance, packaging, cross-platform recipes, licensing |
 
@@ -30,4 +30,3 @@ Follow the development lifecycle. The coverage column describes Agentic Arena to
 Keep model, framework, tool contract, execution environment, policy, and task versions explicit. Change one axis per controlled experiment. Compare default configuration and hardened/configured variants as separately named entries.
 
 A reader should navigate **question → domain → project → evidence → recipe → result**. [Catalog](repositories.md) lists initial projects; [backlog](../research/backlog.md) tracks unreviewed areas.
-
