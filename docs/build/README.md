@@ -1,8 +1,10 @@
 # Build your own harness
 
-Start with the [developer labs](../labs/index.md) when you want to learn by changing a policy and inspecting the result. The first lab covers [tool failure and recovery](../labs/tool-failure-recovery.md).
+Start with the [developer labs](../labs/index.md) when you want to learn by changing a policy and inspecting the result. Work through tool recovery, context budgets, and approval across restart; then compose those contracts in the [architecture builder](../labs/architecture-builder.md) and test your claims in the [evidence workspace](../labs/evidence-workspace.md).
 
 Continue with [reliability, approval and restart](reliability.md).
+
+The builder exports a versioned decision record for the [design dossier](design-dossier.md). The evidence workspace keeps mock, offline, Codex functional, and live-provider claims distinct before you compare results.
 
 Then compare designs in the [evaluation workbench](evaluation.md), inspect
 [boundary response](../arenas/boundary_response.md), choose

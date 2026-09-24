@@ -2,13 +2,13 @@
 title: "Developer Workbench"
 type: initiative
 status: active
-updated: 2026-09-23
+updated: 2026-09-24
 tags: [agentic-ecosystem, developer-experience, learning]
 ---
 
 # Developer Workbench
 
-Status: tracked in [issue #127](https://github.com/code-with-rashid/agentic-arena/issues/127). Implemented slices: [tool failure and recovery](../../docs/labs/tool-failure-recovery.md), the [context budget explorer](../../docs/labs/context-budget.md), and the [approval and restart clinic](../../docs/labs/approval-restart.md).
+Status: tracked in [issue #127](https://github.com/code-with-rashid/agentic-arena/issues/127). All planned slices are implemented: [tool failure and recovery](../../docs/labs/tool-failure-recovery.md), the [context budget explorer](../../docs/labs/context-budget.md), the [approval and restart clinic](../../docs/labs/approval-restart.md), the [harness architecture builder](../../docs/labs/architecture-builder.md), and the [evidence workspace](../../docs/labs/evidence-workspace.md).
 
 ## Purpose
 
@@ -31,6 +31,8 @@ Turn the repository from a reading collection into a place where developers can 
 3. Approval and restart clinic: pause, persist, resume, reject, and verify zero unauthorized effects.
 4. Harness architecture builder: compose loop, state, tools, boundaries, evaluation, and operations into a design dossier.
 5. Evidence workspace: save comparable run manifests and framework findings without mixing measured facts with design guidance.
+
+The architecture builder exports `agentic-arena.harness-design/v1`. The evidence workspace exports `agentic-arena.run-record/v1` and a manifest comparison record. Browser share links encode configuration choices; downloaded records preserve the versioned contract. These formats should change version when a field changes meaning.
 
 ## Evidence rule
 
