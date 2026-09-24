@@ -80,6 +80,8 @@ nav:
           - Tool failure and recovery: labs/tool-failure-recovery.md
           - Context budget explorer: labs/context-budget.md
           - Approval and restart clinic: labs/approval-restart.md
+          - Harness architecture builder: labs/architecture-builder.md
+          - Evidence workspace: labs/evidence-workspace.md
       - Harness design dossier: build/design-dossier.md
       - Practical guides:
           - Build an agent: journeys/build.md

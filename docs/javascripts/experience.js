@@ -332,7 +332,209 @@
     render();
   }
 
-  const init = () => { initPathPicker(); initLearningProgress(); initFailureLab(); initContextLab(); initApprovalLab(); };
+  const copyText = async (value, status, message) => {
+    try {
+      await navigator.clipboard.writeText(value);
+      status.textContent = message;
+    } catch (_) {
+      status.textContent = "Copy was blocked. Select the record and copy it manually.";
+    }
+  };
+
+  const downloadRecord = (filename, record) => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2)], { type: "application/json" }));
+    link.download = filename;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  const setQuery = (values) => {
+    const url = new URL(window.location.href);
+    Object.entries(values).forEach(([key, value]) => url.searchParams.set(key, String(value)));
+    history.replaceState(null, "", url);
+    return url.toString();
+  };
+
+  function buildHarnessDesign({ workload, risk, restart, approval, delegation }) {
+    const components = [
+      ["model_port", "Bounded requests and correlated action proposals"],
+      ["context_builder", "Select evidence without granting authority"],
+      ["scheduler", "Own task, call, action, and deadline budgets"],
+      ["tool_dispatcher", "Validate requests and return one result per call"],
+      ["executor", "Apply allowed operations in an explicit runtime"],
+      ["trace_and_eval", "Record events and check effects independently"],
+    ];
+    const requirements = new Set(["R1", "R2", "R4", "R7", "R8", "R10"]);
+    if (restart !== "stateless") {
+      components.push(["checkpoint_store", "Restore serializable run state"]);
+      ["R3", "R12"].forEach((item) => requirements.add(item));
+    }
+    if (approval !== "none" || risk !== "read_only") {
+      components.push(["policy_and_approval", "Bind authority to an exact operation"]);
+      ["R5", "R9"].forEach((item) => requirements.add(item));
+    }
+    if (restart === "effect_safe" || risk === "irreversible") {
+      components.push(["effect_journal", "Keep stable operation identity and reconcile ambiguity"]);
+      ["R6", "R13"].forEach((item) => requirements.add(item));
+    }
+    if (delegation) {
+      components.push(["delegation_supervisor", "Own child budgets, provenance, and cancellation"]);
+      requirements.add("R11");
+    }
+    if (workload === "coding") {
+      components.push(["workspace_boundary", "Scope repository reads, writes, commands, and cleanup"]);
+      requirements.add("R14");
+    }
+    const experiments = [
+      "Reject malformed and unknown tool calls without losing correlation.",
+      "Fail visibly when required context cannot fit the request budget.",
+      "Verify allowed and denied effects through an independent sink.",
+    ];
+    if (restart !== "stateless") experiments.push("Resume in a fresh process from serialized state.");
+    if (restart === "effect_safe" || risk === "irreversible") experiments.push("Crash after effect commit and prove replay creates one effect.");
+    if (delegation) experiments.push("Cancel a parent during child work and account for the child outcome.");
+    return {
+      schema: "agentic-arena.harness-design/v1",
+      evidence_level: "design-guidance",
+      decisions: { workload, effect_risk: risk, restart, approval, delegation },
+      components: components.map(([id, responsibility]) => ({ id, responsibility })),
+      requirements: [...requirements].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1))),
+      acceptance_experiments: experiments,
+      boundary: "This record proposes contracts; it does not prove production behavior.",
+    };
+  }
+
+  function initDesignLab() {
+    const lab = document.querySelector("[data-design-lab]");
+    if (!lab || lab.dataset.initialized === "true") return;
+    lab.dataset.initialized = "true";
+    const controls = {
+      workload: lab.querySelector("[data-design-workload]"),
+      risk: lab.querySelector("[data-design-risk]"),
+      restart: lab.querySelector("[data-design-restart]"),
+      approval: lab.querySelector("[data-design-approval]"),
+      delegation: lab.querySelector("[data-design-delegation]"),
+    };
+    const status = lab.querySelector("[data-design-action]");
+    let record;
+    const params = new URLSearchParams(window.location.search);
+    Object.entries(controls).forEach(([key, control]) => {
+      if (!params.has(key)) return;
+      if (control.type === "checkbox") control.checked = params.get(key) === "true";
+      else if ([...control.options].some((option) => option.value === params.get(key))) control.value = params.get(key);
+    });
+    const render = () => {
+      const values = {
+        workload: controls.workload.value,
+        risk: controls.risk.value,
+        restart: controls.restart.value,
+        approval: controls.approval.value,
+        delegation: controls.delegation.checked,
+      };
+      record = buildHarnessDesign(values);
+      lab.querySelector("[data-design-components]").innerHTML = record.components.map((item, index) => `<li><span>${String(index + 1).padStart(2, "0")}</span><div><strong>${item.id.replaceAll("_", " ")}</strong><p>${item.responsibility}</p></div></li>`).join("");
+      lab.querySelector("[data-design-record]").textContent = JSON.stringify(record, null, 2);
+      lab.querySelector("[data-design-requirements]").textContent = record.requirements.join(" · ");
+      lab.querySelector("[data-design-boundary]").textContent = record.boundary;
+      setQuery(values);
+      status.textContent = "";
+    };
+    Object.values(controls).forEach((control) => control.addEventListener("input", render));
+    lab.querySelector("[data-design-copy]").addEventListener("click", () => copyText(JSON.stringify(record, null, 2), status, "Design record copied."));
+    lab.querySelector("[data-design-download]").addEventListener("click", () => { downloadRecord("harness-design-v1.json", record); status.textContent = "Design record downloaded."; });
+    lab.querySelector("[data-design-share]").addEventListener("click", () => copyText(window.location.href, status, "Share link copied."));
+    render();
+  }
+
+  const evidenceClaims = {
+    wiring: { modes: ["mock", "offline-fixture", "codex", "live"], question: "Does the path connect and return the expected shape?" },
+    recovery: { modes: ["offline-fixture", "codex", "live"], question: "Does the harness preserve the recovery contract under a controlled fault?" },
+    real_model: { modes: ["codex", "live"], question: "Can a real model complete the fixed functional path?" },
+    provider_comparison: { modes: ["live"], question: "How do repeated native-provider runs compare under shared controls?" },
+  };
+
+  function evidenceLimitation(claim, mode, repetitions) {
+    if (mode === "mock") return "Fixed responses establish wiring and mechanics, not model capability.";
+    if (mode === "offline-fixture") return "The controlled fixture establishes local behavior, not provider performance.";
+    if (mode === "codex") return "A translated subscription run is a functional check, not a native benchmark.";
+    if (claim === "provider_comparison" && repetitions < 3) return "Native evidence is eligible, but fewer than three repetitions do not describe variability.";
+    return "Native evidence can support this claim when shared controls and uncertainty are reported.";
+  }
+
+  function makeEvidenceRecord(claim, mode, model, repetitions, dataset, scorer) {
+    return {
+      schema: "agentic-arena.run-record/v1",
+      claim: { id: claim, question: evidenceClaims[claim].question },
+      evidence: { mode, supports_claim: evidenceClaims[claim].modes.includes(mode), limitation: evidenceLimitation(claim, mode, repetitions) },
+      provenance: { commit: "record-at-run-time", config: "shared", model, dataset, scorer, repetitions, exclusions: [] },
+      observations: [],
+      design_guidance: [],
+    };
+  }
+
+  function compareEvidence(left, right) {
+    const fields = ["claim", "mode", "dataset", "scorer"];
+    if (["real_model", "provider_comparison"].includes(left.claim.id)) fields.push("model");
+    const values = {
+      claim: [left.claim.id, right.claim.id], mode: [left.evidence.mode, right.evidence.mode],
+      dataset: [left.provenance.dataset, right.provenance.dataset], scorer: [left.provenance.scorer, right.provenance.scorer],
+      model: [left.provenance.model, right.provenance.model],
+    };
+    const blocking = fields.filter((field) => values[field][0] !== values[field][1]);
+    return {
+      schema: "agentic-arena.manifest-comparison/v1",
+      comparable: left.evidence.supports_claim && right.evidence.supports_claim && blocking.length === 0,
+      matched_fields: fields.filter((field) => !blocking.includes(field)),
+      blocking_differences: blocking,
+      note: "A comparable contract still needs repeated runs and uncertainty reporting.",
+    };
+  }
+
+  function initEvidenceLab() {
+    const lab = document.querySelector("[data-evidence-lab]");
+    if (!lab || lab.dataset.initialized === "true") return;
+    lab.dataset.initialized = "true";
+    const selectors = ["claim", "dataset", "scorer", "a-mode", "a-model", "a-repetitions", "b-mode", "b-model", "b-repetitions"];
+    const controls = Object.fromEntries(selectors.map((name) => [name, lab.querySelector(`[data-evidence-${name}]`)]));
+    const status = lab.querySelector("[data-evidence-action]");
+    const params = new URLSearchParams(window.location.search);
+    selectors.forEach((name) => {
+      const control = controls[name];
+      if (!params.has(name)) return;
+      if (control.tagName === "SELECT" && ![...control.options].some((option) => option.value === params.get(name))) return;
+      control.value = params.get(name);
+    });
+    let envelope;
+    const render = () => {
+      const claim = controls.claim.value;
+      const dataset = controls.dataset.value;
+      const scorer = controls.scorer.value;
+      const left = makeEvidenceRecord(claim, controls["a-mode"].value, controls["a-model"].value, Math.max(1, Number(controls["a-repetitions"].value)), dataset, scorer);
+      const right = makeEvidenceRecord(claim, controls["b-mode"].value, controls["b-model"].value, Math.max(1, Number(controls["b-repetitions"].value)), dataset, scorer);
+      const comparison = compareEvidence(left, right);
+      envelope = { schema: "agentic-arena.evidence-workspace/v1", records: [left, right], comparison };
+      [["a", left], ["b", right]].forEach(([side, record]) => {
+        const target = lab.querySelector(`[data-evidence-${side}-support]`);
+        target.dataset.supported = String(record.evidence.supports_claim);
+        target.innerHTML = `<strong>${record.evidence.supports_claim ? "Supports this claim" : "Cannot support this claim"}</strong><p>${record.evidence.limitation}</p>`;
+      });
+      lab.querySelector("[data-evidence-verdict]").textContent = comparison.comparable ? "Comparable contract" : "Do not compare directly";
+      lab.querySelector("[data-evidence-reason]").textContent = comparison.comparable ? comparison.note : (comparison.blocking_differences.length ? `Blocking differences: ${comparison.blocking_differences.join(", ")}.` : "At least one run uses an evidence mode that cannot support the claim.");
+      const fields = ["claim", "mode", "dataset", "scorer", ...(["real_model", "provider_comparison"].includes(claim) ? ["model"] : [])];
+      lab.querySelector("[data-evidence-fields]").innerHTML = fields.map((field) => `<li data-matched="${comparison.matched_fields.includes(field)}"><span>${field.replaceAll("_", " ")}</span><strong>${comparison.matched_fields.includes(field) ? "match" : "different"}</strong></li>`).join("");
+      lab.querySelector("[data-evidence-record]").textContent = JSON.stringify(envelope, null, 2);
+      setQuery(Object.fromEntries(selectors.map((name) => [name, controls[name].value])));
+      status.textContent = "";
+    };
+    Object.values(controls).forEach((control) => control.addEventListener("input", render));
+    lab.querySelector("[data-evidence-copy]").addEventListener("click", () => copyText(JSON.stringify(envelope, null, 2), status, "Evidence records copied."));
+    lab.querySelector("[data-evidence-download]").addEventListener("click", () => { downloadRecord("evidence-workspace-v1.json", envelope); status.textContent = "Evidence records downloaded."; });
+    lab.querySelector("[data-evidence-share]").addEventListener("click", () => copyText(window.location.href, status, "Share link copied."));
+    render();
+  }
+
+  const init = () => { initPathPicker(); initLearningProgress(); initFailureLab(); initContextLab(); initApprovalLab(); initDesignLab(); initEvidenceLab(); };
   document.addEventListener("DOMContentLoaded", init);
   if (typeof document$ !== "undefined") document$.subscribe(init);
 })();
