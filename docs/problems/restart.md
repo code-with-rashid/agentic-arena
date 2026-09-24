@@ -12,6 +12,8 @@ In-memory continuation cannot survive process loss. Persisting before versus aft
 
 Restart in a fresh interpreter. Inspect checkpoint contents and the effect sink independently.
 
+Use the [approval and restart clinic](../labs/approval-restart.md) to move the crash point and see which guarantee belongs to durable state versus stable effect identity.
+
 From the repository root, with the relevant optional adapters installed:
 
 ```bash
@@ -35,5 +37,4 @@ Open question: does the same outcome hold for your actual provider, workload, co
 Stable operation IDs, durable sink receipts, and explicit unknown-outcome reconciliation.
 
 Return to [the problem register](index.md).
-
 

@@ -256,7 +256,83 @@
     render();
   }
 
-  const init = () => { initPathPicker(); initLearningProgress(); initFailureLab(); initContextLab(); };
+  function simulateApproval({ decision, gated, durable, stable, crash }) {
+    const timeline = [{ actor: "model", state: "proposed", detail: "Book room R1 for the requested meeting." }];
+    let effects = 0;
+    let restarts = 0;
+    const record = (outcome) => ({ outcome, effects, restarts, timeline });
+    if (!gated) {
+      effects = 1;
+      timeline.push({ actor: "tool", state: "applied", detail: "Advisory approval allowed the booking to run." });
+    }
+    timeline.push({ actor: "harness", state: "paused", detail: "The pending operation and approval request are recorded." });
+    if (crash === "after_pause") {
+      restarts = 1;
+      timeline.push({ actor: "process", state: "crashed", detail: "The process exits while approval is pending." });
+      if (!durable) {
+        timeline.push({ actor: "harness", state: "lost", detail: "In-memory pause state cannot be resumed." });
+        return record("Lost pending operation");
+      }
+      timeline.push({ actor: "harness", state: "restored", detail: "A fresh process loads serializable pause state." });
+    }
+    timeline.push({ actor: "human", state: decision, detail: `The trusted decision is ${decision}.` });
+    if (decision === "deny") {
+      if (effects) {
+        timeline.push({ actor: "oracle", state: "detected", detail: "The independent sink already contains a booking." });
+        return record("Unauthorized effect");
+      }
+      timeline.push({ actor: "harness", state: "stopped", detail: "The denied operation is never dispatched." });
+      return record("Denied safely");
+    }
+    if (!gated) {
+      timeline.push({ actor: "harness", state: "completed", detail: "Approval arrives after the effect already happened." });
+      return record("Completed without enforcement");
+    }
+    effects = 1;
+    timeline.push({ actor: "tool", state: "applied", detail: "The approved operation commits once." });
+    let outcome = "Approved once";
+    if (crash === "after_effect") {
+      restarts = 1;
+      timeline.push({ actor: "process", state: "crashed", detail: "The acknowledgement is lost before checkpointing." });
+      if (!durable) {
+        timeline.push({ actor: "harness", state: "lost", detail: "Resume state was not durable." });
+        return record("Effect committed; run state lost");
+      }
+      timeline.push({ actor: "harness", state: "restored", detail: "A fresh process retries the pending operation." });
+      if (stable) {
+        timeline.push({ actor: "tool", state: "replayed", detail: "The stable operation ID returns the first receipt." });
+        outcome = "Resumed without duplication";
+      } else {
+        effects += 1;
+        timeline.push({ actor: "tool", state: "duplicated", detail: "A new operation ID creates a second booking." });
+        outcome = "Duplicate after restart";
+      }
+    }
+    timeline.push({ actor: "oracle", state: "verified", detail: `Independent effect count: ${effects}.` });
+    return record(outcome);
+  }
+
+  function initApprovalLab() {
+    const lab = document.querySelector("[data-approval-lab]");
+    if (!lab || lab.dataset.initialized === "true") return;
+    lab.dataset.initialized = "true";
+    const decision = lab.querySelector("[data-approval-decision]");
+    const crash = lab.querySelector("[data-approval-crash]");
+    const gated = lab.querySelector("[data-approval-gated]");
+    const durable = lab.querySelector("[data-approval-durable]");
+    const stable = lab.querySelector("[data-approval-stable]");
+    const render = () => {
+      const run = simulateApproval({ decision: decision.value, crash: crash.value, gated: gated.checked, durable: durable.checked, stable: stable.checked });
+      lab.querySelector("[data-approval-outcome]").textContent = run.outcome;
+      lab.querySelector("[data-approval-restarts]").textContent = run.restarts;
+      lab.querySelector("[data-approval-effects]").textContent = run.effects;
+      lab.querySelector("[data-approval-timeline]").innerHTML = run.timeline.map((step, index) => `<li><span>${index + 1}</span><div><strong>${step.actor} · ${step.state}</strong><p>${step.detail}</p></div></li>`).join("");
+    };
+    [decision, crash, gated, durable, stable].forEach((control) => control.addEventListener("input", render));
+    render();
+  }
+
+  const init = () => { initPathPicker(); initLearningProgress(); initFailureLab(); initContextLab(); initApprovalLab(); };
   document.addEventListener("DOMContentLoaded", init);
   if (typeof document$ !== "undefined") document$.subscribe(init);
 })();

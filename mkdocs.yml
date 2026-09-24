@@ -79,6 +79,7 @@ nav:
           - Lab home: labs/index.md
           - Tool failure and recovery: labs/tool-failure-recovery.md
           - Context budget explorer: labs/context-budget.md
+          - Approval and restart clinic: labs/approval-restart.md
       - Harness design dossier: build/design-dossier.md
       - Practical guides:
           - Build an agent: journeys/build.md

@@ -8,7 +8,7 @@ tags: [agentic-ecosystem, developer-experience, learning]
 
 # Developer Workbench
 
-Status: tracked in [issue #127](https://github.com/code-with-rashid/agentic-arena/issues/127). Implemented slices: [tool failure and recovery](../../docs/labs/tool-failure-recovery.md) and the [context budget explorer](../../docs/labs/context-budget.md).
+Status: tracked in [issue #127](https://github.com/code-with-rashid/agentic-arena/issues/127). Implemented slices: [tool failure and recovery](../../docs/labs/tool-failure-recovery.md), the [context budget explorer](../../docs/labs/context-budget.md), and the [approval and restart clinic](../../docs/labs/approval-restart.md).
 
 ## Purpose
 

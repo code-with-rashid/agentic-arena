@@ -12,6 +12,8 @@ Reporting a pause and preventing an action are distinct mechanisms. Tool policy 
 
 Record the actual fixture side effect before and after suspension; deliberately ignore advisory signals.
 
+Use the [approval and restart clinic](../labs/approval-restart.md) to compare advisory and enforced pauses, then inject a crash on either side of the effect.
+
 From the repository root, with the relevant optional adapters installed:
 
 ```bash
@@ -35,5 +37,4 @@ Open question: does the same outcome hold for your actual provider, workload, co
 Authorization bound to identity and immutable operation, checked immediately before effect.
 
 Return to [the problem register](index.md).
-
 
