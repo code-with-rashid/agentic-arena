@@ -2,7 +2,7 @@
 title: "Vision: an Agentic Development and Research Hub"
 type: strategy
 status: active
-updated: 2026-09-23
+updated: 2026-09-27
 tags: [agentic-ecosystem]
 ---
 
@@ -20,6 +20,11 @@ Every mature topic should connect understanding, design alternatives, a working
 example, verification, and troubleshooting. This applies equally to assembling
 existing tools and developing a harness from scratch. See the
 [information architecture research](../research/2026-09-23-learning-experience.md).
+Education, framework comparison, and complete coding-harness comparison remain
+in this repository because they share one developer journey and evidence system.
+Their public routes and evidence contracts stay distinct. See the
+[repository-scope research](../research/2026-09-27-repository-scope.md) and
+[Decision 004](../decisions/004-one-repository-bounded-journeys.md).
 
 The maintainer plans a separate harness repository. Its design can draw on this
 research, and its experiments can contribute generalizable findings back. It gets

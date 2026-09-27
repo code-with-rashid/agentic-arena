@@ -2,13 +2,19 @@
 title: "Agentic Ecosystem Knowledge Base"
 type: index
 status: active
-updated: 2026-09-23
+updated: 2026-09-27
 tags: [agentic-ecosystem]
 ---
 
 # Agentic Ecosystem Knowledge Base
 
-Latest work: [developer workbench](initiatives/developer-workbench.md), beginning with an interactive and executable tool failure lab. It builds on the [open-source coding harness landscape](research/2026-09-23-coding-harness-landscape.md), [DeepSeek Harness source review](research/2026-09-23-deepseek-harness.md), and [separate comparison decision](decisions/003-separate-harness-track.md).
+Latest direction: keep Agentic Arena as one ecosystem repository with bounded
+user journeys, while developing the planned production harness separately. See
+the [repository-scope research](research/2026-09-27-repository-scope.md) and
+[Decision 004](decisions/004-one-repository-bounded-journeys.md). The current
+implementation track is the [developer workbench](initiatives/developer-workbench.md),
+built on the [open-source coding harness landscape](research/2026-09-23-coding-harness-landscape.md)
+and [separate comparison decision](decisions/003-separate-harness-track.md).
 
 A portable reference for understanding, choosing, building, evaluating, and operating agentic systems. Maintained alongside Agentic Arena. Open the repository's `knowledge/` directory as an existing vault in Obsidian, then open this note. No community plugins or paid sync are required. Standard Markdown links also work on GitHub and in coding harnesses.
 
@@ -17,6 +23,8 @@ A portable reference for understanding, choosing, building, evaluating, and oper
 - [Ordered implementation backlog](strategy/implementation-backlog.md): agent-ready GitHub issues and dependencies.
 - [Concept-first learning and harness path](strategy/concept-first-path.md): how the public reference and your future harness inform each other.
 - [Learning experience research](research/2026-09-23-learning-experience.md): why the public site is divided into Learn, Build, Compare, and Reference.
+- [Repository scope research](research/2026-09-27-repository-scope.md): what current open-source attention and information-architecture guidance imply about keeping the three tracks together.
+- [One repository with bounded journeys](decisions/004-one-repository-bounded-journeys.md): the accepted repository boundary and the rule for future splits.
 - [Developer workbench](initiatives/developer-workbench.md): the reusable predict, configure, inspect, run, and transfer loop for hands-on labs.
 - [Personal Obsidian notes](personal/README.md): private reflections and learning records kept out of Git.
 
