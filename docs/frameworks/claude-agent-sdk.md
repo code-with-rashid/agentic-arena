@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: protocol-mismatch
+evidence_level: none
+last_verified: 2026-09-02
+revalidate_after: 2027-01-02
+reviewed_version: "unverified package version"
+best_for: "Claude CLI-based agents that need the SDK's complete subprocess-driven experience."
+owns: "The Claude CLI loop, system prompting, tools, permissions, and token accounting."
+important_limit: "It cannot use the shared OpenAI-compatible gateway without changing the evaluated protocol and loop."
+evidence_summary: "No arena results by design; retained as an explicit protocol mismatch."
+---
+
 # Claude Agent SDK — deep dive
 
 ## At a glance

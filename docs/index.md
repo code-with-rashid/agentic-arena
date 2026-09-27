@@ -26,7 +26,7 @@ hide:
       <button type="button" role="tab" aria-selected="true" data-path="learn">I want to understand</button>
       <button type="button" role="tab" aria-selected="false" data-path="build">I want to build</button>
       <button type="button" role="tab" aria-selected="false" data-path="compare">I need to choose</button>
-      <button type="button" role="tab" aria-selected="false" data-path="solve">Something is failing</button>
+      <button type="button" role="tab" aria-selected="false" data-path="verify">I need to verify</button>
     </div>
     <div class="path-picker__result" data-path-result>
       <span class="path-picker__step">Recommended first step</span>
@@ -45,7 +45,7 @@ hide:
   <div class="arena-card-grid">
     <a class="arena-card arena-card--learn" href="learn/"><span class="arena-card__number">01</span><h3>Learn</h3><p>Concepts in a deliberate order, from the agent loop to reliable operation.</p><span class="arena-card__link">Follow the curriculum →</span></a>
     <a class="arena-card arena-card--build" href="build/"><span class="arena-card__number">02</span><h3>Build</h3><p>Interactive labs, executable lessons, and design decisions for your own framework-neutral harness.</p><span class="arena-card__link">Build from scratch →</span></a>
-    <a class="arena-card arena-card--compare" href="compare/"><span class="arena-card__number">03</span><h3>Compare</h3><p>Measured findings, framework profiles, arenas, and an honest decision guide.</p><span class="arena-card__link">Inspect the evidence →</span></a>
+    <a class="arena-card arena-card--compare" href="compare/"><span class="arena-card__number">03</span><h3>Compare</h3><p>Choose between building-block frameworks or complete coding harnesses, then inspect the right evidence.</p><span class="arena-card__link">Choose what to compare →</span></a>
     <a class="arena-card arena-card--reference" href="reference/"><span class="arena-card__number">04</span><h3>Reference</h3><p>Run modes, methodology, controls, commands, schemas, and project details.</p><span class="arena-card__link">Look something up →</span></a>
   </div>
 </section>

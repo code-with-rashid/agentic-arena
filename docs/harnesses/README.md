@@ -1,4 +1,4 @@
-# Compare complete coding harnesses
+# Choose a coding agent or harness
 
 A framework supplies building blocks. A coding harness owns the working
 experience around a model: prompts, tools, execution, permissions, persistence,
@@ -10,6 +10,11 @@ Use this track when your question is **"Which complete environment helps an
 agent finish development work safely and recoverably?"** Use the
 [framework comparison](../compare/index.md) when your question concerns the
 orchestration library inside an otherwise shared setup.
+
+Every profile begins with the same decision and evidence summary: best fit,
+owned responsibilities, important limitation, evidence status, pinned version,
+and review deadline. Read the [profile evidence guide](../reference/profile-evidence.md)
+before treating a source review as measured runtime behavior.
 
 ## Choose the comparison you need
 

@@ -1,3 +1,16 @@
+---
+profile_type: coding-harness
+evidence_status: source-reviewed
+evidence_level: source-review
+last_verified: 2026-09-23
+revalidate_after: 2027-01-21
+reviewed_version: "v1.1.0 context at 3ea751c"
+best_for: "Repeatable research runs on repository issues with detailed trajectories and deployments."
+owns: "Prompts, tools, parsing, correction, limits, deployment, retries, review loops, and trajectory capture."
+important_limit: "Benchmark-oriented defaults and daily interactive coding UX are different product questions."
+evidence_summary: "Pinned source review only; Agentic Arena has not run it locally or with a real model."
+---
+
 # SWE-agent
 
 SWE-agent is a research-oriented coding harness that takes repository problems

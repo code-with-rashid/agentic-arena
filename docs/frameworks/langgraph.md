@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: mock-tested
+evidence_level: mock
+last_verified: 2026-09-27
+revalidate_after: 2027-01-25
+reviewed_version: "langgraph 1.2.11"
+best_for: "Stateful graph orchestration with native interrupts and checkpointing."
+owns: "Graph execution, tool routing, interrupts, and checkpoint integration."
+important_limit: "A graph step is not one model call, and malformed tool arguments still escape recovery."
+evidence_summary: "All seven core arenas in mock mode; 7/8 resilience; no native live scorecard."
+---
+
 # LangGraph — deep dive
 
 ## At a glance

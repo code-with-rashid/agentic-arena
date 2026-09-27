@@ -1,3 +1,16 @@
+---
+profile_type: coding-harness
+evidence_status: source-reviewed
+evidence_level: source-review
+last_verified: 2026-09-23
+revalidate_after: 2027-01-21
+reviewed_version: "v1.52.0 at e678c3b"
+best_for: "Protocol-first local agents composed from MCP extensions, ACP clients, and reusable recipes."
+owns: "Sessions, local tools, extensions, recipes, permissions, clients, and subagents."
+important_limit: "Extensions and recipe commands are executable supply-chain inputs, and sandbox mode is configuration-dependent."
+evidence_summary: "Pinned source review only; Agentic Arena has not run it locally or with a real model."
+---
+
 # goose
 
 goose is an open-source local agent for development and general workflows. It

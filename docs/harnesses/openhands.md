@@ -1,3 +1,16 @@
+---
+profile_type: coding-harness
+evidence_status: source-reviewed
+evidence_level: source-review
+last_verified: 2026-09-23
+revalidate_after: 2027-01-21
+reviewed_version: "OpenHands Software Agent SDK v1.49.5 at 5b36cac"
+best_for: "An embeddable coding-agent SDK paired with remote, long-running workspace services."
+owns: "Agents, tools, conversations, events, workspaces, an Agent Server, and client APIs."
+important_limit: "Local and remote workspace providers change the evaluated execution and recovery boundary."
+evidence_summary: "Pinned source review only; Agentic Arena has not run it locally or with a real model."
+---
+
 # OpenHands
 
 OpenHands now separates its application from the OpenHands Software Agent SDK.

@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: mock-tested
+evidence_level: mock
+last_verified: 2026-09-27
+revalidate_after: 2027-01-25
+reviewed_version: "openai-agents 0.22.0"
+best_for: "Lightweight agent loops, tools, handoffs, approvals, sessions, and tracing."
+owns: "Agent execution, function tools, handoffs, approval state, run state, and usage reporting."
+important_limit: "Tracing uploads to OpenAI unless disabled, and unknown tool names escape recovery."
+evidence_summary: "All seven core arenas in mock mode; 7/8 resilience; no native live scorecard."
+---
+
 # OpenAI Agents SDK — deep dive
 
 ## At a glance

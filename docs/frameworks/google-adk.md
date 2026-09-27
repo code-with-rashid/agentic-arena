@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: mock-tested
+evidence_level: mock
+last_verified: 2026-09-27
+revalidate_after: 2027-01-25
+reviewed_version: "google-adk 2.8.0; litellm 1.99.0"
+best_for: "Google-oriented agents that need explicit runners, sessions, tools, and delegation."
+owns: "Agent execution, run budgets, tools, sessions, events, and agent delegation."
+important_limit: "Non-Google routing adds LiteLLM and a heavy dependency tree; two dispatch faults remain uncaught."
+evidence_summary: "All seven core arenas in mock mode; 6/8 resilience; no native live scorecard."
+---
+
 # Google ADK
 
 [Adapter](../../frameworks/google_adk/adapter.py) · `google-adk==2.8.0` +

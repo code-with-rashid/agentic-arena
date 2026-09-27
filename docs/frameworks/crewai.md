@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: diagnostic-only
+evidence_level: diagnostic
+last_verified: 2026-09-02
+revalidate_after: 2027-01-02
+reviewed_version: "crewai >=0.130,<1.0 (unverified range)"
+best_for: "Role-based teams and task flows built around CrewAI's text ReAct execution model."
+owns: "Agents, crews, tasks, role prompts, text action parsing, and execution flow."
+important_limit: "The current adapter records no native tool calls and is excluded from required comparison CI."
+evidence_summary: "Diagnostic mock run only: answers are produced, but tool-use scoring is 0/15."
+---
+
 # CrewAI — deep dive
 
 ## At a glance

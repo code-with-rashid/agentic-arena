@@ -1,3 +1,16 @@
+---
+profile_type: coding-harness
+evidence_status: source-reviewed
+evidence_level: source-review
+last_verified: 2026-09-23
+revalidate_after: 2027-01-21
+reviewed_version: "source revision 9c0e4aa"
+best_for: "A shared coding-agent core spanning IDE, terminal, desktop, and SDK experiences."
+owns: "Agent interaction, tools, provider routing, rules, skills, approvals, sessions, and Git-backed checkpoints."
+important_limit: "Conversation recovery and workspace rewind are separate, and ignored paths are outside checkpoint restore."
+evidence_summary: "Pinned source review only; Agentic Arena has not run it locally or with a real model."
+---
+
 # Cline
 
 Cline provides one agent core across its IDE extensions, terminal CLI, desktop

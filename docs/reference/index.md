@@ -7,6 +7,7 @@ Look up the mechanics of Agentic Arena: run modes, comparison controls, evaluati
 | Need | Reference |
 |---|---|
 | Understand what a result can prove | [Run modes](run-modes.md) |
+| Interpret profile evidence and freshness | [Profile evidence labels](profile-evidence.md) |
 | Reproduce or audit a comparison | [Methodology](../methodology.md) |
 | Check controlled inputs | [Fairness controls](../fairness-controls.md) |
 | Run with a subscription-backed model | [Codex bridge](../codex-bridge.md) |

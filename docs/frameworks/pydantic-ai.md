@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: mock-tested
+evidence_level: mock
+last_verified: 2026-09-27
+revalidate_after: 2027-01-25
+reviewed_version: "pydantic-ai-slim 2.37.0"
+best_for: "Typed Python agents with validated tool I/O and explicit dependency injection."
+owns: "Agent execution, typed tools and outputs, usage limits, and deferred tool requests."
+important_limit: "Durable resume replays serialized messages rather than restoring a native checkpoint."
+evidence_summary: "All seven core arenas pass in mock mode; no native live scorecard."
+---
+
 # Pydantic AI — deep dive
 
 ## At a glance

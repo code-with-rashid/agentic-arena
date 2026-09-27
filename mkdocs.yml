@@ -1,5 +1,5 @@
 site_name: agentic-arena
-site_description: Learn agentic systems, build a harness from first principles, and compare frameworks with reproducible evidence.
+site_description: Learn agentic systems, build a harness from first principles, and compare frameworks and coding agents with reproducible evidence.
 site_url: https://code-with-rashid.github.io/agentic-arena/
 repo_url: https://github.com/code-with-rashid/agentic-arena
 repo_name: code-with-rashid/agentic-arena
@@ -98,20 +98,11 @@ nav:
           - Restart safety: problems/restart.md
           - Delegation cost: problems/delegation-cost.md
   - Compare:
-      - Comparison guide: compare/index.md
-      - Measured findings: findings.md
-      - Choose for your use case: journeys/choose.md
-      - Decision guide: decision-guide.md
-      - Feature matrix: feature-matrix.md
-      - Evaluate a claim: journeys/evaluate.md
-      - Evidence by dimension:
-          - Framework overhead: overhead.md
-          - Multi-agent and delegation: multi-agent.md
-          - Provider failures: transport.md
-          - Tool schemas: tool-schemas.md
-          - Structured output: structured-output.md
-      - Framework profiles:
-          - Overview: frameworks/README.md
+      - Choose what to compare: compare/index.md
+      - Choose a framework or SDK:
+          - Framework overview: frameworks/README.md
+          - Decision guide: decision-guide.md
+          - Feature matrix: feature-matrix.md
           - LangGraph: frameworks/langgraph.md
           - Pydantic AI: frameworks/pydantic-ai.md
           - OpenAI Agents SDK: frameworks/openai-agents-sdk.md
@@ -120,9 +111,9 @@ nav:
           - Google ADK: frameworks/google-adk.md
           - CrewAI: frameworks/crewai.md
           - Claude Agent SDK: frameworks/claude-agent-sdk.md
-      - Coding harnesses:
-          - Overview: harnesses/README.md
-          - Comparison matrix: harnesses/comparison.md
+      - Choose a coding agent:
+          - Harness overview: harnesses/README.md
+          - System comparison: harnesses/comparison.md
           - DeepSeek Harness: harnesses/deepseek-harness.md
           - OpenHands: harnesses/openhands.md
           - OpenCode: harnesses/opencode.md
@@ -130,19 +121,29 @@ nav:
           - goose: harnesses/goose.md
           - SWE-agent: harnesses/swe-agent.md
           - Aider baseline: harnesses/aider.md
-      - Evaluation arenas:
-          - Overview: arenas/README.md
-          - Structured output: arenas/structured_output.md
-          - Multi-agent: arenas/multi_agent.md
-          - RAG: arenas/rag.md
-          - Human in the loop: arenas/human_in_the_loop.md
-          - Durable state: arenas/durable_state.md
-          - Boundary response: arenas/boundary_response.md
+      - Evidence behind decisions:
+          - Measured findings: findings.md
+          - Choose for your use case: journeys/choose.md
+          - Evaluate a claim: journeys/evaluate.md
+          - Methodology: methodology.md
+          - Fairness controls: fairness-controls.md
+          - Framework overhead: overhead.md
+          - Multi-agent and delegation: multi-agent.md
+          - Provider failures: transport.md
+          - Tool schemas: tool-schemas.md
+          - Structured output: structured-output.md
+          - Evaluation arenas:
+              - Overview: arenas/README.md
+              - Structured output: arenas/structured_output.md
+              - Multi-agent: arenas/multi_agent.md
+              - RAG: arenas/rag.md
+              - Human in the loop: arenas/human_in_the_loop.md
+              - Durable state: arenas/durable_state.md
+              - Boundary response: arenas/boundary_response.md
   - Reference:
       - Reference home: reference/index.md
       - Run modes: reference/run-modes.md
-      - Methodology: methodology.md
-      - Fairness controls: fairness-controls.md
+      - Profile evidence labels: reference/profile-evidence.md
       - Codex bridge: codex-bridge.md
       - Scorecard example: scorecard-example.md
       - Dependencies: dependencies.md

@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: mock-tested
+evidence_level: mock
+last_verified: 2026-09-27
+revalidate_after: 2027-01-25
+reviewed_version: "agent-framework-core 1.16.0; agent-framework-openai 1.14.1"
+best_for: "Python or .NET agent applications that need Microsoft ecosystem integration and tool approval."
+owns: "Agent execution, tools, middleware, approval sessions, and provider clients."
+important_limit: "The default tool loop is uncapped, and the measured approval state does not survive process rebuild."
+evidence_summary: "Six core arenas in mock mode; durable state is explicitly unsupported; no native live scorecard."
+---
+
 # Microsoft Agent Framework — deep dive
 
 ## At a glance
