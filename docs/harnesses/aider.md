@@ -1,3 +1,16 @@
+---
+profile_type: coding-harness
+evidence_status: source-reviewed
+evidence_level: source-review
+last_verified: 2026-09-23
+revalidate_after: 2027-01-21
+reviewed_version: "v0.86.0 context at 5dc9490"
+best_for: "A lower-complexity, Git-native terminal editing baseline."
+owns: "Repository context, edit formats, model interaction, lint and test commands, commits, and undo."
+important_limit: "Its reviewed scope does not provide the remote lifecycle, policy, or delegation surface of the main cohort."
+evidence_summary: "Pinned source review only; Agentic Arena has not run it locally or with a real model."
+---
+
 # Aider: adjacent baseline
 
 Aider is an open-source terminal pair programmer with deep Git integration. It

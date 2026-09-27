@@ -1,3 +1,16 @@
+---
+profile_type: framework
+evidence_status: mock-tested
+evidence_level: mock
+last_verified: 2026-09-27
+revalidate_after: 2027-01-25
+reviewed_version: "smolagents 1.26.0"
+best_for: "Compact tool-calling or code-writing agents with a small conceptual surface."
+owns: "The agent loop, tool and code execution modes, managed agents, and prompt templates."
+important_limit: "The measured tool-calling prompt is large, and approval plus durable restart are unsupported."
+evidence_summary: "Five core arenas in mock mode; 8/8 resilience with higher retry cost; no native live scorecard."
+---
+
 # smolagents
 
 [Adapter](../../frameworks/smolagents/adapter.py) · `smolagents[openai]==1.26.0` ·

@@ -2,8 +2,8 @@
   const routes = {
     learn: { title: "See the whole system before learning its parts", body: "Build a mental model of the model, harness, tools, state, boundaries, and environment.", href: "learn/", label: "Open the learning path" },
     build: { title: "Build a minimal harness, then make it dependable", body: "Start with one executable tool loop and add context, protocols, restart safety, evaluation, and isolation deliberately.", href: "build/", label: "Open the build path" },
-    compare: { title: "Start with the claim, then inspect the evidence", body: "See measured findings first, check the methodology, and only then apply the decision guide to your constraints.", href: "compare/", label: "Open the comparison room" },
-    solve: { title: "Name the failure before choosing a framework fix", body: "Use the problem register for context growth, tool errors, retries, approvals, restarts, and delegation cost.", href: "problems/", label: "Open the problem register" },
+    compare: { title: "Choose the system boundary before comparing products", body: "Decide whether you need a framework used inside your application or a complete coding harness, then inspect evidence that matches that choice.", href: "compare/", label: "Choose what to compare" },
+    verify: { title: "Test whether two claims can be compared", body: "Match the run mode, model, dataset, scorer, and repetition contract before treating two results as evidence for the same decision.", href: "labs/evidence-workspace/", label: "Open the evidence workspace" },
   };
 
   function initPathPicker() {
@@ -21,6 +21,7 @@
     buttons.forEach((button) => button.addEventListener("click", () => render(button.dataset.path)));
     let saved = "learn";
     try { saved = localStorage.getItem("arena-path") || "learn"; } catch (_) { /* private browsing */ }
+    if (!buttons.some((button) => button.dataset.path === saved)) saved = "learn";
     render(saved);
   }
 

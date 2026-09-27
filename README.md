@@ -5,26 +5,28 @@
 [![python](https://img.shields.io/badge/python-3.11%2B-blue)](pyproject.toml)
 [![license](https://img.shields.io/github/license/code-with-rashid/agentic-arena)](LICENSE)
 
-**Learn agentic systems, build a harness from first principles, and compare frameworks with evidence you can regenerate.**
+**Learn agentic systems, build a harness from first principles, and choose frameworks or complete coding agents with evidence you can regenerate.**
 
 [Open the interactive field guide →](https://code-with-rashid.github.io/agentic-arena/)
 
-Agentic Arena has four separate spaces so you can focus on one job at a time:
+Choose the route that matches your current question:
 
-| Space | Use it when you want to |
+| I want to… | Start here |
 |---|---|
-| [Learn](https://code-with-rashid.github.io/agentic-arena/learn/) | understand the concepts in a deliberate order |
-| [Build](https://code-with-rashid.github.io/agentic-arena/build/) | create a framework-neutral harness and make it reliable |
-| [Compare](https://code-with-rashid.github.io/agentic-arena/compare/) | inspect measured findings and choose components |
-| [Reference](https://code-with-rashid.github.io/agentic-arena/reference/) | look up run modes, methods, controls, and commands |
+| Understand agentic systems | [Follow the concept-first learning path](https://code-with-rashid.github.io/agentic-arena/learn/) |
+| Build my own harness | [Use the executable build path](https://code-with-rashid.github.io/agentic-arena/build/) |
+| Choose a framework or SDK | [Compare building blocks](https://code-with-rashid.github.io/agentic-arena/frameworks/) |
+| Choose a complete coding agent | [Compare coding harnesses](https://code-with-rashid.github.io/agentic-arena/harnesses/) |
+| Verify a comparison claim | [Open the evidence workspace](https://code-with-rashid.github.io/agentic-arena/labs/evidence-workspace/) |
+| Look up an exact contract | [Use the reference](https://code-with-rashid.github.io/agentic-arena/reference/) |
 
 ## What is in the repository?
 
 The project combines a concept-first field guide with a reproducible comparison
-lab. Shared workloads run through framework adapters while the model, tools,
-datasets, and scoring stay fixed. The differences that remain expose framework
-overhead, retries, tool behavior, orchestration, pause/resume support, and
-durability.
+lab. Framework experiments hold the model, tools, datasets, and scoring fixed.
+Complete coding harnesses use a separate contract because they also own prompts,
+execution, permissions, persistence, and interaction. The two subjects inform
+the same developer journey without being mixed into one ranking.
 
 ```text
 arena/              comparison harness and scoring
@@ -32,7 +34,7 @@ arenas/             shared evaluation workloads
 frameworks/         framework adapters
 docs/               public field guide
 examples/harness/   executable build-from-scratch lessons
-knowledge/          Obsidian research and project memory
+knowledge/          shared research and local, Git-ignored Obsidian notes
 results/            published native live scorecards
 ```
 

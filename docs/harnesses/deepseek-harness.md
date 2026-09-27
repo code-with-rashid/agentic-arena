@@ -1,3 +1,16 @@
+---
+profile_type: coding-harness
+evidence_status: source-reviewed
+evidence_level: source-review
+last_verified: 2026-09-23
+revalidate_after: 2027-01-21
+reviewed_version: "0.1.7-rc.1 at 46a7f68"
+best_for: "Studying an explicitly plugin-composed coding harness with durable session events."
+owns: "Profiles, model adapters, tools, sessions, policy, execution, skills, subagents, and SDK surfaces."
+important_limit: "Developer-preview software with no security audit; the reviewed SDK lacks approval and turn-cancel methods."
+evidence_summary: "Pinned source review only; Agentic Arena has not run it locally or with a real model."
+---
+
 # DeepSeek Harness
 
 DeepSeek Harness is an experimental, plugin-composed coding harness from

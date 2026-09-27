@@ -1,3 +1,16 @@
+---
+profile_type: coding-harness
+evidence_status: source-reviewed
+evidence_level: source-review
+last_verified: 2026-09-23
+revalidate_after: 2027-01-21
+reviewed_version: "v1.18.32 context at 7cb044e"
+best_for: "A local coding agent with addressable sessions and a strong headless server API."
+owns: "Sessions, messages, diffs, lifecycle operations, tools, permissions, clients, and subagents."
+important_limit: "Permission rules govern tool use but do not provide process isolation or attenuate every child policy."
+evidence_summary: "Pinned source review only; Agentic Arena has not run it locally or with a real model."
+---
+
 # OpenCode
 
 OpenCode is an open-source coding agent organized around a local client/server
