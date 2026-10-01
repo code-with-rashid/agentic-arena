@@ -4,5 +4,5 @@
 # The `agent-framework` meta-package instead pulls `agent-framework-core[all]`
 # (azure, boto3, redis, qdrant, ollama, numpy, ...), none of which this adapter
 # uses.
-agent-framework-core==1.16.0
-agent-framework-openai==1.14.1
+agent-framework-core==1.19.0
+agent-framework-openai==1.14.4
