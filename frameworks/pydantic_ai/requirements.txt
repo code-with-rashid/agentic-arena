@@ -1,4 +1,4 @@
 # Pinned so scorecards are reproducible. Bump deliberately, then refresh results/.
 # `-slim` + the `openai` extra is all the adapter needs; the full `pydantic-ai`
 # meta-package adds provider SDKs we don't use.
-pydantic-ai-slim[openai]==2.37.0
+pydantic-ai-slim[openai]==2.51.0
