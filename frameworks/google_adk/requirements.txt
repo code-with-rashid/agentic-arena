@@ -11,6 +11,6 @@
 # pauses, but only for as long as the process lives. aiosqlite already ships with
 # google-adk, and the URL must use it: plain `sqlite://` fails with
 # "the asyncio extension requires an async driver".
-google-adk==2.8.0
-litellm==1.99.0
-sqlalchemy==2.0.52
+google-adk==2.10.0
+litellm==1.103.0
+sqlalchemy==2.1.1
