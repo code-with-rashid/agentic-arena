@@ -27,7 +27,7 @@ jobs:
       # build. Links that leave the docs tree are rewritten to github.com by
       # docs/hooks/fix_links.py before this runs.
       - run: mkdocs build --strict
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: site
 
@@ -48,4 +48,4 @@ jobs:
       url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - id: deploy
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
